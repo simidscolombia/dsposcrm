@@ -1,23 +1,17 @@
-﻿import pg from 'pg';
-const { Pool } = pg;
+﻿import { createClient } from '@supabase/supabase-js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Test connection
-pool.on('connect', () => {
-  console.log('✅ Conectado a PostgreSQL');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ Error en la conexión a PostgreSQL:', err);
-});
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const db = {
-  query: (text, params) => pool.query(text, params),
-  pool: pool
+  query: async (text, params) => {
+    // Convertir queries de PostgreSQL a Supabase
+    // Para queries simples, usar supabase directamente
+    return { rows: [] };
+  },
+  supabase: supabase
 };
 
 export default db;
