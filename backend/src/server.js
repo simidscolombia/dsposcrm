@@ -8,7 +8,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://discovery-systems-pos.vercel.app', 'https://discovery-systems-pos-git-main-simidscolombia.vercel.app'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Rutas
