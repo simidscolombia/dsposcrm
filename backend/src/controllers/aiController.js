@@ -96,6 +96,14 @@ class AIController {
 
       const responseTime = Date.now() - startTime;
 
+      // CRM: Captura de Lead (Simulado por ahora)
+      console.log('CRM LEAD CAPTURED:', {
+        name: leadData.name,
+        description: wizardAnswers.businessDescription,
+        prize: wizardAnswers.prizeWon,
+        contact: leadData.whatsapp
+      });
+
       // Guardar en analytics
       if (leadId) {
         await db.query(

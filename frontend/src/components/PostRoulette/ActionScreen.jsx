@@ -2,9 +2,17 @@
 // Pantalla post-ruleta con múltiples opciones para el usuario
 
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import ChatbotWidget from './ChatbotWidget';
 
-const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
+const ActionScreen = (props) => {
+  const location = useLocation();
+  const state = location.state || {}; // Fallback to location state
+
+  // Use props if available (direct render), otherwise use location state (route navigation)
+  const leadData = props.leadData || state.leadData || { name: 'Empresario' };
+  const quoteData = props.quoteData || state.quoteData || { total: 0, modules: [] };
+  const prizeWon = props.prizeWon || state.prizeWon || 'Descuento Soporte';
   const [showChatbot, setShowChatbot] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
 
@@ -76,7 +84,7 @@ const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
             <span className="text-2xl">🎯</span>
             Acción Rápida
           </h3>
-          
+
           <div className="grid md:grid-cols-2 gap-4">
             {/* Hablar con asesor - Prioridad #1 */}
             <button
@@ -120,7 +128,7 @@ const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
             <span className="text-2xl">🔍</span>
             Conocer Más
           </h3>
-          
+
           <div className="grid md:grid-cols-3 gap-4">
             {/* Ver demo */}
             <button
@@ -197,7 +205,7 @@ const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
           <h3 className="text-xl font-bold text-gray-800 mb-4">
             📊 Resumen de tu Cotización
           </h3>
-          
+
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -205,7 +213,7 @@ const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
               </div>
               <div className="text-sm text-gray-600">Módulos Incluidos</div>
             </div>
-            
+
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-3xl font-bold text-green-600 mb-2">
                 {new Intl.NumberFormat('es-CO', {
@@ -216,7 +224,7 @@ const ActionScreen = ({ leadData, quoteData, prizeWon }) => {
               </div>
               <div className="text-sm text-gray-600">Inversión Total</div>
             </div>
-            
+
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-3xl font-bold text-purple-600 mb-2">
                 3-5

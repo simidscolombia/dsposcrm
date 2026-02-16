@@ -17,6 +17,7 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
 
   // Scroll automático al último mensaje
   useEffect(() => {
@@ -54,7 +55,7 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
 
     try {
       // Llamar al backend (Claude AI)
-      const response = await axios.post('/api/ai/chatbot', {
+      const response = await axios.post(`${API_URL}/api/ai/chatbot`, {
         question: text,
         context: quoteContext,
       });
@@ -72,7 +73,7 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error en chatbot:', error);
-      
+
       const errorMessage = {
         id: messages.length + 2,
         type: 'bot',
@@ -115,11 +116,10 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                message.type === 'user'
+              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${message.type === 'user'
                   ? 'bg-indigo-500 text-white rounded-br-none'
                   : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
-              }`}
+                }`}
             >
               {message.type === 'bot' && (
                 <div className="flex items-center gap-2 mb-2">
@@ -135,9 +135,8 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
                 {message.text}
               </p>
               <div
-                className={`text-xs mt-2 ${
-                  message.type === 'user' ? 'text-indigo-200' : 'text-gray-400'
-                }`}
+                className={`text-xs mt-2 ${message.type === 'user' ? 'text-indigo-200' : 'text-gray-400'
+                  }`}
               >
                 {formatTime(message.timestamp)}
               </div>
@@ -221,7 +220,7 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
             )}
           </button>
         </div>
-        
+
         <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
           <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
           <span>Asistido por IA • Respuestas en tiempo real</span>

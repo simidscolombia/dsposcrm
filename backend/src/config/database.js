@@ -1,17 +1,17 @@
-﻿import { createClient } from '@supabase/supabase-js';
+﻿import pg from 'pg';
+import dotenv from 'dotenv';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+dotenv.config();
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 const db = {
-  query: async (text, params) => {
-    // Convertir queries de PostgreSQL a Supabase
-    // Para queries simples, usar supabase directamente
-    return { rows: [] };
-  },
-  supabase: supabase
+  query: (text, params) => pool.query(text, params),
 };
 
 export default db;
