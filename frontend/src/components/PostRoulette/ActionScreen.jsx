@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import ChatbotWidget from './ChatbotWidget';
 
 const ActionScreen = (props) => {
@@ -74,7 +74,8 @@ const ActionScreen = (props) => {
       // Mover inicio de tabla dinámicamente según largo de intro
       const tableStartY = 80 + (splitIntro.length * 5) + 10;
 
-      doc.autoTable({
+      // Uso correcto de autoTable como función externa
+      autoTable(doc, {
         startY: tableStartY,
         head: [['Módulo / Producto', 'Descripción', 'Valor']],
         body: tableBody,
@@ -85,7 +86,7 @@ const ActionScreen = (props) => {
       });
 
       // -- TOTALES --
-      let finalY = doc.lastAutoTable.finalY + 10;
+      let finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) || (tableStartY + 50); // Fallback seguro swsi no hay tabla
 
       // Línea de total
       doc.setDrawColor(37, 99, 235);
