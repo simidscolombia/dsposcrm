@@ -11,17 +11,19 @@
     "format": "prettier --write src/**/*.{js,jsx}"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
     "axios": "^1.6.5",
     "chart.js": "^4.4.1",
-    "react-chartjs-2": "^5.2.0",
-    "framer-motion": "^10.18.0",
-    "react-confetti": "^6.1.0",
-    "react-icons": "^5.0.1",
-    "dayjs": "^1.11.10",
     "clsx": "^2.1.0",
+    "dayjs": "^1.11.10",
+    "framer-motion": "^10.18.0",
+    "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-confetti": "^6.1.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.0.1",
+    "react-router-dom": "^6.21.1",
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {

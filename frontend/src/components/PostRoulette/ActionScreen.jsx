@@ -3,6 +3,8 @@
 
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import ChatbotWidget from './ChatbotWidget';
 
 const ActionScreen = (props) => {
@@ -25,8 +27,103 @@ const ActionScreen = (props) => {
   };
 
   const handleDownloadPDF = () => {
-    if (quoteData.pdfUrl) {
-      window.open(quoteData.pdfUrl, '_blank');
+    try {
+      const doc = new jsPDF();
+
+      // -- HEADER --
+      // Fondo azul para el encabezado
+      doc.setFillColor(37, 99, 235); // Blue-600
+      doc.rect(0, 0, 210, 40, 'F');
+
+      // Título Empresa (Blanco)
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(26);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Discovery Systems", 20, 25);
+
+      // -- INFO CLIENTE --
+      doc.setTextColor(0, 0, 0); // Negro
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`Fecha: ${fecha}`, 140, 50);
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Cliente: ${leadData.name || 'Empresario'}`, 20, 60);
+
+      if (leadData.businessName) {
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Negocio: ${leadData.businessName}`, 20, 66);
+      }
+
+      // -- INTRODUCCIÓN --
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const introText = quoteData.introduction || "Gracias por su interés en nuestras soluciones POS. A continuación presentamos su cotización personalizada.";
+      const splitIntro = doc.splitTextToSize(introText, 170);
+      doc.text(splitIntro, 20, 80);
+
+      // -- TABLA DE PRODUCTOS --
+      const tableBody = (quoteData.modules || []).map(m => [
+        m.name,
+        m.description || 'N/A',
+        new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(m.price || 0)
+      ]);
+
+      // Mover inicio de tabla dinámicamente según largo de intro
+      const tableStartY = 80 + (splitIntro.length * 5) + 10;
+
+      doc.autoTable({
+        startY: tableStartY,
+        head: [['Módulo / Producto', 'Descripción', 'Valor']],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 10, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [240, 249, 255] }
+      });
+
+      // -- TOTALES --
+      let finalY = doc.lastAutoTable.finalY + 10;
+
+      // Línea de total
+      doc.setDrawColor(37, 99, 235);
+      doc.setLineWidth(0.5);
+      doc.line(120, finalY, 190, finalY);
+
+      finalY += 5;
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(37, 99, 235);
+      const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(quoteData.total || 0);
+      doc.text(`TOTAL INVERSIÓN: ${totalFormatted}`, 100, finalY);
+
+      // -- BENEFICIOS / ROI --
+      finalY += 15;
+      doc.setFontSize(11);
+      doc.setTextColor(50, 50, 50);
+      doc.setFont('helvetica', 'italic');
+
+      const roiText = quoteData.roi ? `Beneficio ROI: ${quoteData.roi}` : "Garantiza el control total de tu negocio desde el primer día.";
+      const splitRoi = doc.splitTextToSize(roiText, 170);
+      doc.text(splitRoi, 20, finalY);
+
+      // -- FOOTER --
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont('helvetica', 'normal');
+      doc.text("Discovery Systems SAS | Soluciones Tecnológicas", 105, 275, { align: 'center' });
+      doc.text("Contacto: +57 300 123 4567 | www.discoverysystems.com.co", 105, 280, { align: 'center' });
+
+      // Guardar PDF
+      const fileName = `Cotizacion_Discovery_${(leadData.name || 'Cliente').replace(/\s+/g, '_')}.pdf`;
+      doc.save(fileName);
+
+    } catch (error) {
+      console.error("Error generando PDF:", error);
+      alert("Hubo un error generando el PDF. Por favor intenta nuevamente.");
     }
   };
 
