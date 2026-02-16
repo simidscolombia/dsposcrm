@@ -38,8 +38,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log('🚀 Servidor Discovery Systems corriendo en puerto ' + PORT);
-  console.log('✅ Health check: http://localhost:' + PORT + '/health');
-  console.log('🤖 AI API: http://localhost:' + PORT + '/api/ai');
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log('🚀 Servidor Discovery Systems corriendo en puerto ' + PORT);
+    console.log('✅ Health check: http://localhost:' + PORT + '/health');
+    console.log('🤖 AI API: http://localhost:' + PORT + '/api/ai');
+  });
+}
+
+export default app;
