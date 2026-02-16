@@ -1,6 +1,7 @@
 ﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import db from './config/database.js'; // Importar DB
 import aiRoutes from './routes/aiRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import leadRoutes from './routes/leadRoutes.js';
