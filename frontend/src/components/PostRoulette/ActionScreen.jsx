@@ -65,11 +65,17 @@ const ActionScreen = (props) => {
       doc.text(splitIntro, 20, 80);
 
       // -- TABLA DE PRODUCTOS --
-      const tableBody = (quoteData.modules || []).map(m => [
-        m.name,
-        m.description || 'N/A',
-        new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(m.price || 0)
-      ]);
+      const tableBody = (quoteData.modules || []).map(m => {
+        if (typeof m === 'string') {
+          // Fallback para datos antiguos (string simple)
+          return [m, 'Incluido en el plan', '-'];
+        }
+        return [
+          m.name || 'Producto',
+          m.description || 'Detalle no especificado',
+          new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(m.price || 0)
+        ];
+      });
 
       // Mover inicio de tabla dinámicamente según largo de intro
       const tableStartY = 80 + (splitIntro.length * 5) + 10;

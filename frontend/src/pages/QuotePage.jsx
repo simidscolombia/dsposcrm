@@ -101,7 +101,11 @@ const QuotePage = () => {
 
     // Helper fallback
     const fallbackQuote = (data) => ({
-        modules: ['Sistema POS Facturación', 'Inventario', 'Reportes'],
+        modules: [
+            { name: 'Licencia Sistema POS', description: 'Facturación, Inventario y Ventas', price: 1500000 },
+            { name: 'Módulo de Reportes', description: 'Estadísticas en tiempo real', price: 500000 },
+            { name: 'Soporte e Implementación', description: 'Capacitación y configuración remota', price: 500000 }
+        ],
         total: 2500000,
         pdfUrl: '#'
     });
