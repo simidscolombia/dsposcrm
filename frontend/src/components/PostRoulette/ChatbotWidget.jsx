@@ -17,7 +17,8 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
+  const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
+  const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
 
   // Scroll automático al último mensaje
   useEffect(() => {
@@ -117,8 +118,8 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
           >
             <div
               className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${message.type === 'user'
-                  ? 'bg-indigo-500 text-white rounded-br-none'
-                  : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                ? 'bg-indigo-500 text-white rounded-br-none'
+                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
                 }`}
             >
               {message.type === 'bot' && (

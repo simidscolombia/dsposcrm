@@ -8,7 +8,8 @@ const ProductCatalog = ({ onContinue, systemType }) => {
     const [cart, setCart] = useState({});
 
     // Configuración de API URL
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
+    const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
+    const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
 
     // Cargar productos desde el Backend
     useEffect(() => {
