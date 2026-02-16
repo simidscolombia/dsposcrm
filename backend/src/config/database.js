@@ -5,16 +5,23 @@ dotenv.config();
 
 const { Pool } = pg;
 
+// Ajuste para Supabase Transaction Pooler: Evitar error de certificado autofirmado
+const connectionString = process.env.DATABASE_URL
+  ? process.env.DATABASE_URL.replace("sslmode=require", "sslmode=no-verify")
+  : undefined;
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 10, // Serverless needs fewer connections
-  connectionTimeoutMillis: 5000 // Error if connection takes too long
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false, // CLAVE: Aceptar certificado de Supabase
+  },
+  max: 10,
+  connectionTimeoutMillis: 5000
 });
 
-console.log('DB Config:', {
-  hasUrl: !!process.env.DATABASE_URL,
-  ssl: true
+console.log('DB Config Loaded:', {
+  hasUrl: !!connectionString,
+  sslMode: 'no-verify (forced)'
 });
 
 const db = {
