@@ -38,6 +38,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint Temporal de Diagnóstico
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW()');
+    res.json({ status: 'OK', time: result.rows[0].now, config: 'Connection Successful' });
+  } catch (err) {
+    console.error('DB Error:', err);
+    res.status(500).json({
+      status: 'ERROR',
+      message: err.message,
+      code: err.code,
+      detail: 'Revisa la contraseña y el Project ID'
+    });
+  }
+});
+
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log('🚀 Servidor Discovery Systems corriendo en puerto ' + PORT);
