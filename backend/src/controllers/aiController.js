@@ -1,8 +1,6 @@
 // backend/src/controllers/aiController.js
 // Controlador para endpoints de IA
 
-import claudeService from '../services/geminiService.js'; // Renombrado a claudeService temporalmente para minimizar cambios en el resto del archivo, o mejor cambiar el nombre de la variable.
-// Mejor hago:
 import claudeService from '../services/geminiService.js';
 import db from '../config/database.js';
 
