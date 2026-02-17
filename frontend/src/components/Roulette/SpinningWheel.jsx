@@ -303,10 +303,26 @@ const SpinningWheel = ({ onSpinEnd }) => {
                     </button>
                 )}
             </div>
+            {/* Estilos para animación pop-in (Vite Compatible) */}
+            <style>{`
+                @keyframes pop-in {
+                    0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+                    80% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+                    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                }
+                .animate-pop-in {
+                    animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                }
+                @keyframes bounce-slow {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .animate-bounce-slow {
+                    animation: bounce-slow 2s infinite;
+                }
+            `}</style>
         </div>
     );
 };
 
 export default SpinningWheel;
-
-// Force Vercel Rebuild - Roulette Sound Patch v2
