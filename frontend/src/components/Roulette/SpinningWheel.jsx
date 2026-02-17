@@ -1,25 +1,62 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaPlay, FaGift, FaStar } from 'react-icons/fa';
+import Confetti from 'react-confetti';
 
 const SpinningWheel = ({ onSpinEnd }) => {
     const [isSpinning, setIsSpinning] = useState(false);
     const [result, setResult] = useState(null);
-    const canvasRef = useRef(null);
-    const wheelRef = useRef(null);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [showGiftModal, setShowGiftModal] = useState(false);
 
-    // Configuración de Premios (Colores sólidos y alternados para estilo Casino)
+    const canvasRef = useRef(null);
+    const audioCtxRef = useRef(null);
+    const lastTickRef = useRef(0);
+
+    // Inicializar Audio Context
+    useEffect(() => {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        return () => {
+            if (audioCtxRef.current) audioCtxRef.current.close();
+        };
+    }, []);
+
+    // Función para sonido "Tick" (Click de ruleta)
+    const playTick = () => {
+        if (!audioCtxRef.current) return;
+        const ctx = audioCtxRef.current;
+
+        // Oscilador para sonido de "golpe" seco
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        // Frecuencia que baja rápido (efecto 'tud')
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+
+        // Volumen corto
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    };
+
+    // Configuración de Premios
     const prizesConfig = [
-        { label: '5% OFF', color: '#E74C3C', text: '#FFFFFF', weight: 40, detail: 'Descuento Licencia' }, // Rojo
-        { label: 'KIT INICIO', color: '#34495E', text: '#FFFFFF', weight: 20, detail: 'Rollos + Cables' },    // Azul Oscuro
-        { label: '10% OFF', color: '#F1C40F', text: '#2C3E50', weight: 15, detail: 'Descuento Combo' },    // Amarillo
-        { label: 'SETUP FREE', color: '#2ECC71', text: '#FFFFFF', weight: 10, detail: 'Instalación Gratis' }, // Verde
-        { label: 'MES GRATIS', color: '#9B59B6', text: '#FFFFFF', weight: 5, detail: 'Soporte Premium' },    // Morado
-        { label: 'CAPACITA', color: '#E67E22', text: '#FFFFFF', weight: 10, detail: 'Sesión Extra' }        // Naranja
+        { label: '5% OFF', color: '#E74C3C', text: '#FFFFFF', weight: 40, detail: 'Descuento Licencia' },
+        { label: 'KIT INICIO', color: '#34495E', text: '#FFFFFF', weight: 20, detail: 'Rollos + Cables' },
+        { label: '10% OFF', color: '#F1C40F', text: '#2C3E50', weight: 15, detail: 'Descuento Combo' },
+        { label: 'SETUP FREE', color: '#2ECC71', text: '#FFFFFF', weight: 10, detail: 'Instalación Gratis' },
+        { label: 'MES GRATIS', color: '#9B59B6', text: '#FFFFFF', weight: 5, detail: 'Soporte Premium' },
+        { label: 'CAPACITA', color: '#E67E22', text: '#FFFFFF', weight: 10, detail: 'Sesión Extra' }
     ];
 
-    // Generar segmentos repetidos para llenar la rueda (Estilo Ruleta de la Fortuna)
     const segments = [];
-    const repeatCount = 4; // Repetir el set 4 veces (24 segmentos en total)
+    const repeatCount = 4;
     for (let i = 0; i < repeatCount; i++) {
         prizesConfig.forEach(p => segments.push(p));
     }
