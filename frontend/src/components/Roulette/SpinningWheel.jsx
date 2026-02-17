@@ -226,12 +226,17 @@ const SpinningWheel = ({ onSpinEnd }) => {
                 setResult(winnerConfig);
             }
         };
-
         animate();
     };
 
     return (
-        <div className="flex flex-col items-center justify-center p-6 animate-fade-in">
+        <div className="flex flex-col items-center justify-center p-6 animate-fade-in relative min-h-[500px]">
+
+            {showConfetti && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, pointerEvents: 'none' }}>
+                    <Confetti recycle={false} numberOfPieces={500} width={window.innerWidth} height={window.innerHeight} />
+                </div>
+            )}
             {/* Cabecera Resultado */}
             <div className="h-24 mb-4 flex items-center justify-center">
                 {result ? (
@@ -248,6 +253,7 @@ const SpinningWheel = ({ onSpinEnd }) => {
                     <div className="text-center">
                         <h2 className="text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
                         <p className="text-gray-500">Prueba tu suerte para obtener beneficios exclusivos</p>
+                        <p className="text-xs text-gray-300 mt-2 font-mono">v3.5 - SONIDO ACTIVO 🔊</p>
                     </div>
                 )}
             </div>
