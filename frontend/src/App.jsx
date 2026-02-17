@@ -1,7 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import QuotePage from './pages/QuotePage';
 import ActionScreen from './components/PostRoulette/ActionScreen';
+// Admin Imports
+import AdminLayout from './components/Admin/Layout/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminCategories from './pages/admin/AdminCategories';
 
 function App() {
   // Global Click Sound Effect
@@ -55,10 +59,17 @@ function App() {
       <Routes>
         <Route path="/" element={<QuotePage />} />
         <Route path="/resultado" element={<ActionScreen />} />
+
+        {/* Rutas Administrativas */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="categories" element={<AdminCategories />} />
+          {/* Products próximamente */}
+        </Route>
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-
