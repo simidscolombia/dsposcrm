@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import QuotePage from './pages/QuotePage';
 import ActionScreen from './components/PostRoulette/ActionScreen';
 // Admin Imports
@@ -49,13 +49,13 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v4.5 - MERCADOLIBRE DEPLOY 🛍️ - FORCE UPDATE");
+    console.log("v5.3 - HASH ROUTER FIX ⚓");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<QuotePage />} />
         <Route path="/resultado" element={<ActionScreen />} />
@@ -68,7 +68,7 @@ function App() {
           {/* Products próximamente */}
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
