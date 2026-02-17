@@ -1,85 +1,83 @@
 # 📔 BITÁCORA DEL PROYECTO: DISCOVERY SYSTEMS POS / ECOSYSTEM
 
-**Fecha de Última Actualización:** 2026-02-15
-**Estado:** Iniciando Fase 2 (Migración a Nube: Supabase + Vercel).
+**Fecha de Última Actualización:** 2026-02-16
+**Estado:** Fase 2 Completada (Infraestructura Cloud Operativa).
+
+---
+
+## 📅 SESIÓN: 16 de Febrero, 2026
+**Objetivo:** Despliegue a Producción (Vercel + Supabase) y Corrección de Errores Críticos.
+
+### 🚀 1. Logros Técnicos (Infraestructura & Despliegue)
+1.  **Conexión Base de Datos (Supabase):**
+    *   Se resolvió el error de conexión en Vercel corrigiendo la `DATABASE_URL` para usar el **Transaction Pooler** (puerto 6543) y forzando `sslmode=no-verify` en el código para evitar rechazos de certificados autofirmados.
+    *   **Resultado:** Conexión estable y rápida desde Vercel Functions.
+
+2.  **API Gateway (Frontend-Backend):**
+    *   Se corrigió la duplicación de rutas `/api/api/products` en el frontend sanitizando la variable `VITE_API_URL`.
+    *   **Resultado:** Comunicación fluida entre cliente y servidor.
+
+3.  **Generación de Documentos (PDF):**
+    *   Se implementó un generador de cotizaciones **Client-Side** usando `jspdf` y `jspdf-autotable`.
+    *   Se crearon datos de "Respaldo Robusto" para asegurar que el PDF siempre se genere, incluso si la IA falla.
+    *   **Resultado:** Descarga instantánea de cotizaciones profesionales con precios y descripciones.
+
+4.  **Flujo de Datos (CRM):**
+    *   Se verificó que los Leads capturados en el Wizard se guardan correctamente en la tabla `crm_leads` de Supabase.
+    *   **Resultado:** 6 Leads capturados en pruebas de producción.
+
+---
+
+## 📊 RESUMEN: Dónde Estamos vs. A Dónde Vamos
+
+### ✅ Lo que TENEMOS (Estado Actual - MVP Producción)
+*   **Infraestructura:** Desplegada y estable en Vercel (Frontend + Backend Serverless).
+*   **Base de Datos:** PostgreSQL en Supabase operativa y conectada.
+*   **Captación:** Wizard interactivo funcional que califica al cliente (Tipo de negocio, ubicación, presupuesto).
+*   **Inteligencia:** Gemini AI analiza el negocio y genera la propuesta comercial (texto).
+*   **Conversión:** Generación de PDF profesional para el cliente.
+*   **Retención:** Los datos del cliente (Lead) se guardan en el CRM.
+
+### 🎯 Lo que QUEREMOS (Próximos Pasos - Fase 3 & 4)
+*   **Gestión de Cotizaciones (Backend):**
+    *   Guardar la cotización final (precios y módulos) en `crm_quotes` para tener historial y re-enviar.
+    *   Actualmente solo se guarda el Lead, la cotización es efímera (se genera y se descarga).
+*   **Panel Administrativo:**
+    *   Interfaz para que el equipo de ventas vea los Leads capturados en Supabase.
+    *   Poder cambiar el estado del Lead (Nuevo -> Contactado -> Venta).
+*   **Automatización WhatsApp:**
+    *   Enviar el PDF automáticamente al WhatsApp del cliente tras generarlo.
+*   **Inventario Real:**
+    *   Conectar el catálogo del Wizard con el stock real de la bodega (tabla `crm_inventory`).
+
+### 💎 Nueva Visión Estratégica: Portal de Cliente & Soporte Híbrido
+Se definió que la evolución natural del sistema POS es convertirse en una **Plataforma Integral de Servicio**.
+
+#### 1. El Portal de Cliente (Discovery App)
+*   **Concepto:** Un espacio privado donde el cliente tiene el control total de su relación con Discovery.
+*   **Acceso "Magic Link":** Eliminación de fricción (login sin password) mediante enlaces seguros enviados por WhatsApp.
+*   **Funcionalidades Clave:**
+    *   Ver historial de cotizaciones y pedidos.
+    *   Rastreo de envíos en tiempo real de Hardware.
+    *   Acceso a facturas y garantías.
+
+#### 2. Sistema de Soporte Híbrido (IA + Humano)
+*   **Objetivo:** Resolver el "caos operativo" del soporte actual vía WhatsApp.
+*   **Nivel 1 (IA - Primera Línea):** 
+    *   Chatbot entrenado con manuales técnicos (RAG).
+    *   Resuelve el 80% de casos repetitivos (configuración, dudas simples) al instante.
+*   **Nivel 2 (Humano - Especialista):**
+    *   Si la IA no puede, escala el caso generando un **Ticket Estructurado**.
+    *   El técnico recibe contexto completo, no un audio suelto.
+
+---
+
+### 📝 Notas de Cierre
+El sistema ya es funcional para el **cliente final**. Puede entrar, cotizar y descargar su propuesta.
+El siguiente gran paso es **refinar el cotizador** (detalles visuales y lógicos) y luego iniciar la construcción del ecosistema de soporte.
 
 ---
 
 ## 📅 SESIÓN: 15 de Febrero, 2026
 **Objetivo:** Definición de la experiencia de usuario post-captura, diseño del ecosistema CRM y flujo operativo.
-
-### 🚀 1. Mejoras Implementadas (Frontend)
-1.  **Selección de Tipo de Negocio (Wizard):**
-    *   Se reestructuró para mostrar primero **Categorías Macro** (Gastronomía, Salud, etc.) y luego sub-tipos específicos.
-    *   Se agregó opción "Otro" para captura manual.
-2.  **Catálogo de Productos Inteligente:**
-    *   **Lógica "Solo Software":** Muestra filtrado solo licencias.
-    *   **Lógica "Combo Completo":** Pre-carga el carrito con un kit estándar (PC, Impresora, Cajón, Lector) editable.
-    *   **Lógica "A Medida":** Permite armar desde cero.
-    *   **Nuevos Productos Mock:** Se agregaron "Impresora Portátil" y "Lector 2D".
-
----
-
-### 🧠 2. Definición Estratégica: Ecosistema "Discovery Hub"
-Se acordó no programar aún la Fase 2, sino estructurarla conceptualmente.
-
-#### A. El Cerebro (CRM Operativo)
-No usaremos un CRM externo genérico. Construiremos uno a medida con las siguientes capacidades:
-*   **Gestión de Leads:** Captura automática desde el Wizard.
-*   **Embudo de Ventas:** Estados claros (Nuevo -> Contactado -> En Demo -> Negociación -> Cerrado).
-*   **Gestión de Inventario (Básico):** Control de hardware disponible para armar combos.
-
-#### B. La Fuerza de Ventas Híbrida (IA + Humano)
-*   **Agente 1 (WhatsApp/Web):** Primer contacto, filtro y respuesta de preguntas frecuentes.
-*   **Agente 2 (Coordinador Interno):** Mueve leads en el CRM, recuerda citas a vendedores.
-*   **Modo Supervisado (HITL):** 
-    *   Si la IA no sabe una respuesta técnica compleja, "gana tiempo" con el cliente y notifica al humano.
-    *   El humano responde internamente y la IA redacta la respuesta final al cliente.
-
-#### C. Experiencia "Demo Interactiva"
-*   En lugar de un video largo, usar **Clips Modulares** (30-60 seg) según el tipo de negocio del cliente.
-*   Mientras el cliente ve el video, un **Chatbot Lateral** resuelve dudas específicas sobre lo que se está viendo.
-
-#### D. Módulo de Operaciones & Logística (Back-Office)
-Una vez cerrada la venta, se activa una "Línea de Ensamblaje" digital:
-1.  **Admisión:** Verificación de pago y datos.
-2.  **Alistamiento:** Bodega escanea seriales y prueba equipos.
-3.  **Configuración:** Implementador instala software y base de datos.
-4.  **Logística:** Generación de guía de envío y notificación al cliente ("Tu pedido va en camino 🚚").
-5.  **Entrega:** Capacitación y Acta de Entrega digital.
-
----
-
-### 📝 3. Próximos Pasos (Roadmap Técnico)
-
-#### Fase 1: Cimientos (Backend Real) ✅ COMPLETADO
-- [x] Crear modelos de Base de Datos: `crm_leads`, `crm_products`, `crm_quotes`.
-- [x] Migrar datos "quemados" del frontend a la nueva BD (Seed Data aplicado).
-- [x] Implementar Controladores y Rutas API (`/api/leads`, `/api/products`).
-- [x] Conectar Frontend: Wizard lee productos reales y guarda leads en BD.
-
-#### Fase 2: Infraestructura Cloud & Admin Panel (EN PROCESO ☁️)
-- [ ] **Configuración Supabase:**
-    - [ ] Crear Proyecto en Supabase.
-    - [ ] Migrar esquema de Base de Datos local a Nube.
-    - [ ] Configurar Auth (Usuarios Admin).
-- [ ] **Despliegue Vercel:**
-    - [ ] Conectar Repositorio GitHub.
-    - [ ] Configurar Variables de Entorno en Vercel.
-    - [ ] Despliegue Frontend y Backend (Serverless Functions).
-- [ ] **Desarrollo Panel Admin:**
-    - [ ] Login con Supabase Auth.
-    - [ ] Dashboard de Leads.
-    - [ ] Gestión de Inventario.
-
-#### Fase 3: Conexión IA & WhatsApp
-- [ ] Integrar API de WhatsApp (Twilio/Meta).
-- [ ] Entrenar Agente con Manual de Usuario.
-- [ ] Implementar sistema de "Consulta al Experto" (Notificaciones).
-
-#### Fase 4: Portal del Cliente
-- [ ] Link único para rastreo de pedido ("Uber style").
-
----
-
-**Nota:** Se detiene el desarrollo de código por hoy para consolidar esta visión estratégica en la bitácora.
+...
