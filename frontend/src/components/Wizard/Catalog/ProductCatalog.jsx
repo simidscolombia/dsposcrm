@@ -158,6 +158,9 @@ const ProductCatalog = ({ onContinue, systemType }) => {
                     ? 'Hemos pre-seleccionado lo mejor para ti. Puedes cambiar componentes o agregar extras.'
                     : 'Selecciona los elementos que necesitas para potenciar tu negocio.'}
             </p>
+            <div className="md:hidden text-center mb-4">
+                <span className="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-bold">v4.5 - NUEVO ESTILO 🛍️</span>
+            </div>
 
             {filteredProducts.length === 0 ? (
                 <div className="text-center text-gray-400 py-10">

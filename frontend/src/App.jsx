@@ -44,6 +44,9 @@ function App() {
     };
 
     document.addEventListener('click', playClickSound);
+
+    console.log("v4.5 - MERCADOLIBRE DEPLOY 🛍️ - FORCE UPDATE");
+
     return () => document.removeEventListener('click', playClickSound);
   }, []);
 
