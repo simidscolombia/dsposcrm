@@ -148,13 +148,15 @@ const SpinningWheel = ({ onSpinEnd }) => {
     const spinWheel = () => {
         if (isSpinning || result) return;
 
-        setIsSpinning(true);
-        let currentVelocity = 0.5; // Velocidad inicial alta (radianes por frame)
-        let currentAngle = angle;
-        let deceleration = 0.003; // Qué tan rápido frena
-        let spinning = true;
+        // Resume Audio Context
+        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume();
+        }
 
-        // Elegir premio ganador ponderado
+        setIsSpinning(true);
+        setResult(null);
+
+        // Lógica de Ganador
         const totalWeight = prizesConfig.reduce((acc, p) => acc + p.weight, 0);
         let random = Math.random() * totalWeight;
         let winnerConfig = prizesConfig[0];
@@ -166,159 +168,141 @@ const SpinningWheel = ({ onSpinEnd }) => {
             random -= prize.weight;
         }
 
-        // Calcular ángulo final objetivo para que caiga en el premio
-        // El puntero está arriba (-PI/2 o 270 grados).
-        // Hay múltiples segmentos con el mismo premio. Elegimos uno aleatorio.
         const winnerIndices = segments.map((s, i) => s.label === winnerConfig.label ? i : -1).filter(i => i !== -1);
         const targetIndex = winnerIndices[Math.floor(Math.random() * winnerIndices.length)];
-
-        // Angulo donde inicia el segmento ganador (en radianes)
         const segmentArc = (2 * Math.PI) / segments.length;
-        // Queremos que el CENTRO del segmento quede en -PI/2 (arriba)
-        // Angle actual + Delta = Target.
-        // Target visual: el segmento debe estar en -PI/2.
-        // Si el segmento empieza en Index * Arc.
-        // Rotation + Index * Arc + Arc/2 = -PI/2 + K * 2PI
-        // Rotation = -PI/2 - Index*Arc - Arc/2 + K*2PI
 
-        // Hacemos que gire al menos 5 vueltas (10PI)
-        const minSpins = 10 * Math.PI;
-        // Ajuste fino para centrar
-        const targetRotation = - (targetIndex * segmentArc) - (segmentArc / 2) - (Math.PI / 2);
+        const minSpins = 10 * 2 * Math.PI; // 10 vueltas
+        const targetRotation = minSpins - (targetIndex * segmentArc) - (segmentArc / 2) - (Math.PI / 2);
 
-        // Ajustamos currentAngle para que desemboque en targetRotation tras desacelerar?
-        // Es complejo calcular física inversa exacta con requestAnimationFrame.
-        // Haremos un truco: Simular física y "ajustar" suavemente al final (snap).
-        // O más fácil: usar CSS transition para el ángulo final calculado.
-        // Vamos a usar requestAnimationFrame puro para control total de luces y render.
+        const startAngle = angle % (2 * Math.PI);
+        const finalAngle = startAngle + targetRotation + (2 * Math.PI * 2);
 
-        // RE-CALCULO SIMPLIFICADO: Easing function
-        const duration = 6000; // ms
+        const duration = 8500; // 8.5 Segundos (Suspenso total)
         const startTimestamp = Date.now();
-        const startAngle = angle;
-        // Queremos llegar a targetRotation + muchas vueltas.
-        const fullSpins = 8 * 2 * Math.PI;
-        const endAngle = startAngle + fullSpins + (2 * Math.PI - (startAngle % (2 * Math.PI))) + targetRotation;
-        // Nota: la matemática de ángulos exactos puede fallar por modulo.
-        // Aproximación: Gira mucho y lueg usa "Snap" lógico. 
-        // Mejor approach fiable: CSS Transition en un div container y Canvas solo renderiza? 
-        // No, el usuario quiere "mejor". Canvas es mejor.
 
-        // Vamos a animar 'angle' de start a end usando easeOutCubic
         const animate = () => {
             const now = Date.now();
             const elapsed = now - startTimestamp;
             const progress = Math.min(elapsed / duration, 1);
 
-            // Ease Out Quart
-            const ease = 1 - Math.pow(1 - progress, 4);
+            // Ease Out Quint (Muy lento al final)
+            const ease = 1 - Math.pow(1 - progress, 5);
 
-            const newAngle = startAngle + (endAngle - startAngle) * ease;
-            setAngle(newAngle);
+            const currentAngle = startAngle + (finalAngle - startAngle) * ease;
+            setAngle(currentAngle);
+
+            const currentTick = Math.floor(currentAngle / segmentArc);
+            if (currentTick > lastTickRef.current) {
+                playTick();
+                lastTickRef.current = currentTick;
+            }
 
             if (progress < 1) {
                 requestAnimationFrame(animate);
-                // Sonido tick sencillo basado en velocidad (derivada)
-                // const velocity = (endAngle - startAngle) * 4 * Math.pow(1 - progress, 3) / duration;
-                // if (Math.random() < velocity * 50) playClick(); // Mock sound
             } else {
                 setIsSpinning(false);
-                setResult(winnerConfig);
+                // Pequeña pausa dramática antes del POP
+                setTimeout(() => {
+                    setResult(winnerConfig);
+                    setShowConfetti(true);
+                    setShowGiftModal(true);
+                }, 800);
             }
         };
+
         animate();
     };
 
     return (
         <div className="flex flex-col items-center justify-center p-6 animate-fade-in relative min-h-[500px]">
-
+            {/* Confeti Global - Fixed */}
             {showConfetti && (
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 9999, pointerEvents: 'none' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10000, pointerEvents: 'none' }}>
                     <Confetti recycle={false} numberOfPieces={500} width={window.innerWidth} height={window.innerHeight} />
                 </div>
             )}
-            {/* Cabecera Resultado */}
-            <div className="h-24 mb-4 flex items-center justify-center">
-                {result ? (
-                    <div className="text-center animate-zoom-in">
-                        <div className="text-gray-400 font-medium">¡La suerte está de tu lado!</div>
-                        <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-red-500 uppercase filter drop-shadow-md">
-                            {result.label}
-                        </h2>
-                        <span className="inline-block mt-2 px-4 py-1 bg-blue-50 text-blue-600 rounded-full font-bold text-sm">
-                            {result.detail}
-                        </span>
-                    </div>
-                ) : (
-                    <div className="text-center">
-                        <h2 className="text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
-                        <p className="text-gray-500">Prueba tu suerte para obtener beneficios exclusivos</p>
-                        <p className="text-xs text-gray-300 mt-2 font-mono">v3.5 - SONIDO ACTIVO 🔊</p>
-                    </div>
-                )}
-            </div>
+
+            {/* Cabecera Inicial (Oculta si hay modal) */}
+            {!result && !isSpinning && !showGiftModal && (
+                <div className="text-center mb-6">
+                    <h2 className="text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
+                    <p className="text-gray-500">Prueba tu suerte y gana beneficios</p>
+                    <p className="text-xs text-green-500 mt-2 font-mono font-bold">SUSPENSO EDITION v4.1 🐢</p>
+                </div>
+            )}
+
+            {/* Mensaje de Ánimo */}
+            {isSpinning && (
+                <div className="text-center mb-6 animate-pulse">
+                    <h2 className="text-3xl font-bold text-blue-600">¡Girando...! 🤞</h2>
+                </div>
+            )}
 
             {/* Ruleta */}
-            <div className="relative mb-8">
-                {/* Puntero Físico */}
+            <div className={`relative mb-8 transition-all duration-1000 ${showGiftModal ? 'scale-90 blur-sm opacity-50' : 'scale-100'}`}>
                 <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="w-8 h-10 bg-white border-2 border-gray-300 rounded-b-xl shadow-md flex justify-center">
-                        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-red-600 mt-6"></div>
-                    </div>
+                    <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[25px] border-t-red-600"></div>
                 </div>
-
-                <canvas
-                    ref={canvasRef}
-                    width={400}
-                    height={400}
-                    className="max-w-full h-auto filter drop-shadow-xl"
-                />
-
-                {/* Botón Central Overlay (Opcional, ya dibujado en canvas pero este puede ser clickeable) */}
+                <canvas ref={canvasRef} width={400} height={400} className="max-w-full h-auto filter drop-shadow-2xl" />
                 <button
-                    onClick={spinWheel}
-                    disabled={isSpinning || result}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-transparent z-30 cursor-pointer disabled:cursor-default"
+                    onClick={spinWheel} disabled={isSpinning || result}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-transparent z-30 cursor-pointer"
                     aria-label="Girar"
                 />
             </div>
 
-            {/* Botones de Acción */}
-            <div className="h-16">
-                {!isSpinning && !result && (
-                    <button
-                        onClick={spinWheel}
-                        className="bg-gradient-to-r from-red-500 to-pink-600 text-white text-lg font-bold py-3 px-10 rounded-full shadow-lg hover:scale-105 transition-transform animate-pulse"
-                    >
-                        GIRAR AHORA
-                    </button>
-                )}
+            {/* Botón Girar Inicial */}
+            {!isSpinning && !result && !showGiftModal && (
+                <button
+                    onClick={spinWheel}
+                    className="bg-gradient-to-r from-red-500 to-pink-600 text-white text-xl font-bold py-4 px-12 rounded-full shadow-xl hover:scale-105 transition-transform"
+                >
+                    GIRAR AHORA
+                </button>
+            )}
 
-                {result && (
-                    <button
-                        onClick={() => onSpinEnd(result.label)}
-                        className="bg-green-500 text-white text-lg font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-green-600 transition-colors flex items-center gap-2 animate-fade-in-up"
-                    >
-                        <FaGift /> RECLAMAR PREMIO
-                    </button>
-                )}
-            </div>
-            {/* Estilos para animación pop-in (Vite Compatible) */}
+            {/* MODAL DE REGALO (Fixed Overlay) */}
+            {showGiftModal && result && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }} className="animate-fade-in">
+
+                    <div className="bg-white/95 backdrop-blur-md p-10 rounded-3xl shadow-2xl text-center border-4 border-yellow-400 max-w-sm mx-4 relative animate-pop-in">
+
+                        <div className="text-8xl mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
+                            🎁
+                        </div>
+
+                        <h2 className="text-5xl font-black text-gray-800 mb-2 tracking-tight">
+                            ¡GANASTE!
+                        </h2>
+
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-4xl font-black py-4 px-6 rounded-2xl shadow-inner mb-6 transform -rotate-2 mt-4 inline-block border-2 border-white/50">
+                            {result.label}
+                        </div>
+
+                        <p className="text-gray-600 text-lg mb-8 font-medium">
+                            {result.detail}
+                        </p>
+
+                        <button
+                            onClick={() => onSpinEnd(result.label)}
+                            className="w-full bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-5 px-8 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                        >
+                            RECLAMAR PREMIO <FaGift />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Estilos CSS */}
             <style>{`
                 @keyframes pop-in {
-                    0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-                    80% { transform: scale(1.1) rotate(5deg); opacity: 1; }
-                    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                    0% { transform: scale(0.5); opacity: 0; }
+                    60% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
                 }
                 .animate-pop-in {
-                    animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                }
-                @keyframes bounce-slow {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-10px); }
-                }
-                .animate-bounce-slow {
-                    animation: bounce-slow 2s infinite;
+                    animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
                 }
             `}</style>
         </div>
