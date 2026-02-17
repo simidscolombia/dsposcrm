@@ -215,7 +215,7 @@ const SpinningWheel = ({ onSpinEnd }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center p-6 animate-fade-in relative min-h-[500px]">
+        <div className="flex flex-col items-center justify-center p-4 md:p-6 animate-fade-in relative min-h-[500px] w-full">
             {/* Confeti Global - Fixed */}
             {showConfetti && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10000, pointerEvents: 'none' }}>
@@ -225,68 +225,78 @@ const SpinningWheel = ({ onSpinEnd }) => {
 
             {/* Cabecera Inicial (Oculta si hay modal) */}
             {!result && !isSpinning && !showGiftModal && (
-                <div className="text-center mb-6">
-                    <h2 className="text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
-                    <p className="text-gray-500">Prueba tu suerte y gana beneficios</p>
-                    <p className="text-xs text-green-500 mt-2 font-mono font-bold">SUSPENSO EDITION v4.1 🐢</p>
+                <div className="text-center mb-6 px-4">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
+                    <p className="text-sm md:text-base text-gray-500 mt-1">Prueba tu suerte y gana beneficios</p>
+                    <p className="text-[10px] md:text-xs text-green-500 mt-2 font-mono font-bold uppercase tracking-wider">v4.2 - MOBILE READY 📱</p>
                 </div>
             )}
 
             {/* Mensaje de Ánimo */}
             {isSpinning && (
                 <div className="text-center mb-6 animate-pulse">
-                    <h2 className="text-3xl font-bold text-blue-600">¡Girando...! 🤞</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold text-blue-600">¡Girando...! 🤞</h2>
                 </div>
             )}
 
-            {/* Ruleta */}
-            <div className={`relative mb-8 transition-all duration-1000 ${showGiftModal ? 'scale-90 blur-sm opacity-50' : 'scale-100'}`}>
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[25px] border-t-red-600"></div>
+            {/* Ruleta Responsive */}
+            <div className={`relative mb-8 transition-all duration-1000 w-full flex justify-center ${showGiftModal ? 'scale-90 blur-sm opacity-50' : 'scale-100'}`}>
+                <div className="relative w-full max-w-[320px] md:max-w-[400px] aspect-square">
+                    {/* Puntero Físico */}
+                    <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-20">
+                        <div className="w-0 h-0 border-l-[12px] md:border-l-[15px] border-l-transparent border-r-[12px] md:border-r-[15px] border-r-transparent border-t-[20px] md:border-t-[25px] border-t-red-600"></div>
+                    </div>
+
+                    <canvas
+                        ref={canvasRef}
+                        width={400}
+                        height={400}
+                        className="w-full h-full object-contain filter drop-shadow-xl md:drop-shadow-2xl"
+                    />
+
+                    <button
+                        onClick={spinWheel} disabled={isSpinning || result}
+                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-14 md:w-20 md:h-20 rounded-full bg-transparent z-30 cursor-pointer"
+                        aria-label="Girar"
+                    />
                 </div>
-                <canvas ref={canvasRef} width={400} height={400} className="max-w-full h-auto filter drop-shadow-2xl" />
-                <button
-                    onClick={spinWheel} disabled={isSpinning || result}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-transparent z-30 cursor-pointer"
-                    aria-label="Girar"
-                />
             </div>
 
             {/* Botón Girar Inicial */}
             {!isSpinning && !result && !showGiftModal && (
                 <button
                     onClick={spinWheel}
-                    className="bg-gradient-to-r from-red-500 to-pink-600 text-white text-xl font-bold py-4 px-12 rounded-full shadow-xl hover:scale-105 transition-transform"
+                    className="w-[90%] md:w-auto bg-gradient-to-r from-red-500 to-pink-600 text-white text-lg md:text-xl font-bold py-4 px-8 md:px-12 rounded-full shadow-xl hover:scale-105 transition-transform active:scale-95"
                 >
                     GIRAR AHORA
                 </button>
             )}
 
-            {/* MODAL DE REGALO (Fixed Overlay) */}
+            {/* MODAL DE REGALO (Fixed Overlay - Mobile Optimized) */}
             {showGiftModal && result && (
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }} className="animate-fade-in">
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }} className="animate-fade-in p-4">
 
-                    <div className="bg-white/95 backdrop-blur-md p-10 rounded-3xl shadow-2xl text-center border-4 border-yellow-400 max-w-sm mx-4 relative animate-pop-in">
+                    <div className="bg-white/95 backdrop-blur-md p-6 md:p-10 rounded-3xl shadow-2xl text-center border-4 border-yellow-400 w-full max-w-sm relative animate-pop-in mx-auto">
 
-                        <div className="text-8xl mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
+                        <div className="text-6xl md:text-8xl mb-4 md:mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
                             🎁
                         </div>
 
-                        <h2 className="text-5xl font-black text-gray-800 mb-2 tracking-tight">
+                        <h2 className="text-3xl md:text-5xl font-black text-gray-800 mb-2 tracking-tight">
                             ¡GANASTE!
                         </h2>
 
-                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-4xl font-black py-4 px-6 rounded-2xl shadow-inner mb-6 transform -rotate-2 mt-4 inline-block border-2 border-white/50">
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-2xl md:text-4xl font-black py-3 px-4 md:py-4 md:px-6 rounded-2xl shadow-inner mb-4 md:mb-6 transform -rotate-2 mt-2 md:mt-4 inline-block border-2 border-white/50 break-words max-w-full">
                             {result.label}
                         </div>
 
-                        <p className="text-gray-600 text-lg mb-8 font-medium">
+                        <p className="text-gray-600 text-base md:text-lg mb-6 md:mb-8 font-medium px-2">
                             {result.detail}
                         </p>
 
                         <button
                             onClick={() => onSpinEnd(result.label)}
-                            className="w-full bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-5 px-8 rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                            className="w-full bg-green-500 hover:bg-green-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 px-6 rounded-xl shadow-xl hover:shadow-2xl active:translate-y-1 transition-all flex items-center justify-center gap-2 md:gap-3"
                         >
                             RECLAMAR PREMIO <FaGift />
                         </button>
