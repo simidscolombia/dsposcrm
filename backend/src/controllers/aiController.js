@@ -1,7 +1,7 @@
 // backend/src/controllers/aiController.js
 // Controlador para endpoints de IA
 
-import claudeService from '../services/claudeService.js';
+import aiService from '../services/geminiService.js';
 import db from '../config/database.js';
 
 class AIController {
@@ -23,7 +23,7 @@ class AIController {
       const startTime = Date.now();
 
       // Llamar a Claude AI
-      const result = await claudeService.analyzeBusinessDescription(
+      const result = await aiService.analyzeBusinessDescription(
         description,
         previousAnswers || []
       );
@@ -89,7 +89,8 @@ class AIController {
       const startTime = Date.now();
 
       // Llamar a Claude AI
-      const result = await claudeService.generatePersonalizedQuote(
+      const result = await aiService.generateQuote(
+        leadId,
         leadData,
         wizardAnswers
       );
@@ -163,7 +164,7 @@ class AIController {
       const startTime = Date.now();
 
       // Llamar a Claude AI
-      const result = await claudeService.chatbotResponse(
+      const result = await aiService.chatBot(
         question,
         context || {}
       );
