@@ -1,7 +1,7 @@
 // backend/src/controllers/aiController.js
 // Controlador para endpoints de IA
 
-import claudeService from '../services/geminiService.js';
+import claudeService from '../services/claudeService.js';
 import db from '../config/database.js';
 
 class AIController {

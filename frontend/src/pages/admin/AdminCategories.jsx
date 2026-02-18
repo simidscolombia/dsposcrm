@@ -10,7 +10,7 @@ const AdminCategories = () => {
     const [editMode, setEditMode] = useState(false);
     const [currentId, setCurrentId] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
+    const API_URL = '/api';
 
     const fetchCategories = async () => {
         try {

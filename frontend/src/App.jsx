@@ -6,6 +6,7 @@ import ActionScreen from './components/PostRoulette/ActionScreen';
 import AdminLayout from './components/Admin/Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCategories from './pages/admin/AdminCategories';
+import AdminProducts from './pages/admin/AdminProducts';
 
 function App() {
   // Global Click Sound Effect
@@ -65,7 +66,7 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="categories" element={<AdminCategories />} />
-          {/* Products próximamente */}
+          <Route path="products" element={<AdminProducts />} />
         </Route>
       </Routes>
     </HashRouter>

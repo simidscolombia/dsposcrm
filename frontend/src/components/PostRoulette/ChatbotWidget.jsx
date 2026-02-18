@@ -17,8 +17,7 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
-  const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
+  const API_URL = '/api';
 
   // Scroll automático al último mensaje
   useEffect(() => {
