@@ -107,3 +107,26 @@ CREATE TABLE IF NOT EXISTS analytics_events (
 CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads(whatsapp);
 CREATE INDEX IF NOT EXISTS idx_ai_interactions_lead_id ON ai_interactions(lead_id);
 CREATE INDEX IF NOT EXISTS idx_crm_products_category ON crm_products(category);
+
+-- 7. Tabla de Premios (Ruleta)
+CREATE TABLE IF NOT EXISTS crm_prizes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    probability INTEGER DEFAULT 0, -- Porcentaje de aparición (0-100)
+    type VARCHAR(50) DEFAULT 'discount', -- 'discount', 'free_month', 'hardware', 'ebook'
+    value VARCHAR(100), -- Ej: '10%' o 'Impresora'
+    icon VARCHAR(50), -- Emoji o icono
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insertar premios por defecto
+INSERT INTO crm_prizes (name, description, probability, type, value, icon)
+VALUES
+('Descuento 5%', '5% de descuento en tu compra', 40, 'discount', '5%', '🏷️'),
+('Descuento 10%', '10% de descuento en tu compra', 30, 'discount', '10%', '🔥'),
+('Mes Gratis', '1 mes de suscripción gratis', 20, 'free_month', '1 mes', '📅'),
+('Lector de Barras', 'Lector de código de barras gratis', 5, 'hardware', 'Lector', '🔫'),
+('Ebook POS', 'Guía "Cómo gestionar tu negocio"', 5, 'ebook', 'PDF', '📚')
+ON CONFLICT DO NOTHING;

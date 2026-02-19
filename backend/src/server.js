@@ -1,7 +1,6 @@
 ﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import debugRoutes from './routes/debugRoutes.js';
 import db from './config/database.js'; // Importar DB
 import aiRoutes from './routes/aiRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -9,6 +8,7 @@ import leadRoutes from './routes/leadRoutes.js';
 import adminDbRoutes from './routes/adminDbRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js'; // Restore missing import
+import prizeRoutes from './routes/prizeRoutes.js'; // Nueva ruta de premios
 
 dotenv.config();
 
@@ -21,13 +21,13 @@ app.use(cors({
 app.use(express.json());
 
 // Rutas
-app.use('/api', debugRoutes); // Debug: /api/debug-express
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/admin', adminDbRoutes); // Ruta para DB Init
 app.use('/api/categories', categoryRoutes); // Ruta para Categorías
+app.use('/api/prizes', prizeRoutes); // Ruta para Premios
 
 app.get('/health', (req, res) => {
   res.json({

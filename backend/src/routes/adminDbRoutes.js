@@ -55,7 +55,37 @@ router.post('/init-tables', async (req, res) => {
             console.log('✅ Categorías por defecto insertadas.');
         }
 
-        res.json({ success: true, message: 'Tablas administrativas creadas correctamente.' });
+        // 4. Crear Tabla de Premios
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS crm_prizes (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT,
+                probability INTEGER DEFAULT 0,
+                type VARCHAR(50) DEFAULT 'discount',
+                value VARCHAR(100),
+                icon VARCHAR(50),
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        console.log('✅ Tabla crm_prizes verificada.');
+
+        // 5. Insertar Premios por Defecto (si está vacía)
+        const checkPrizes = await db.query('SELECT COUNT(*) FROM crm_prizes');
+        if (parseInt(checkPrizes.rows[0].count) === 0) {
+            await db.query(`
+                INSERT INTO crm_prizes (name, description, probability, type, value, icon) VALUES
+                ('Descuento 5%', '5% de descuento en tu compra', 40, 'discount', '5%', '🏷️'),
+                ('Descuento 10%', '10% de descuento en tu compra', 30, 'discount', '10%', '🔥'),
+                ('Mes Gratis', '1 mes de suscripción gratis', 20, 'free_month', '1 mes', '📅'),
+                ('Lector de Barras', 'Lector de código de barras gratis', 5, 'hardware', 'Lector', '🔫'),
+                ('Ebook POS', 'Guía "Cómo gestionar tu negocio"', 5, 'ebook', 'PDF', '📚');
+            `);
+            console.log('✅ Premios por defecto insertados.');
+        }
+
+        res.json({ success: true, message: 'Todas las tablas administrativas (incluyendo premios) creadas correctamente.' });
 
     } catch (error) {
         console.error('Error inicializando DB:', error);
