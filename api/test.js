@@ -18,12 +18,26 @@ export default async function handler(req, res) {
 
     try {
         const client = await pool.connect();
+
+        // Test 1: Lectura
         const result = await client.query('SELECT NOW() as time, version()');
+
+        // Test 2: Escritura (Intento)
+        // Intentamos insertar una categoria dummy que luego borramos (o rollback)
+        await client.query('BEGIN');
+        const insertResult = await client.query(
+            `INSERT INTO crm_categories (name, slug, description, "order") 
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+            ['Test Vercel ' + Date.now(), 'test-' + Date.now(), 'Test de escritura', 999]
+        );
+        await client.query('ROLLBACK'); // No guardamos nada realmente, solo probamos permiso
+
         client.release();
 
         res.status(200).json({
             status: 'SUCCESS',
-            message: 'Conexión exitosa a Supabase 🚀',
+            message: 'Lectura y Escritura exitosa en Supabase 🚀',
+            write_test: 'OK (Rollback performed)',
             time: result.rows[0].time,
             version: result.rows[0].version,
             env_check: cleanUrl
