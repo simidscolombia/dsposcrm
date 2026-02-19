@@ -6,7 +6,8 @@ dotenv.config();
 const { Pool } = pg;
 
 // Ajuste para Supabase y Vercel Serverless
-const connectionString = process.env.DATABASE_URL;
+// Limpiamos params extra que a veces rompen pg en serverless
+const connectionString = process.env.DATABASE_URL ? process.env.DATABASE_URL.split('?')[0] : null;
 
 const pool = new Pool({
   connectionString,
