@@ -6,22 +6,17 @@
             "destination": "/api/index.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ],
-    "builds": [
-        {
-            "src": "api/index.js",
-            "use": "@vercel/node"
+            "source": "/assets/(.*)",
+            "destination": "/frontend/dist/assets/$1"
         },
         {
-            "src": "frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+            "source": "/(.*)",
+            "destination": "/frontend/dist/index.html"
         }
     ],
-    "outputDirectory": "frontend/dist"
+    "functions": {
+        "api/index.js": {
+            "maxDuration": 10
+        }
+    }
 }
