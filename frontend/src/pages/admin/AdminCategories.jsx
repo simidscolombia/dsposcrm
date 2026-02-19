@@ -48,7 +48,8 @@ const AdminCategories = () => {
             resetForm();
         } catch (error) {
             console.error('Error guardando categoría:', error);
-            alert('Error al guardar: ' + (error.response?.data?.error || 'Desconocido'));
+            const errorMsg = error.response?.data?.error || error.message || 'Error desconocido';
+            alert(`Error al guardar: ${typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg}`);
         }
     };
 
