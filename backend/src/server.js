@@ -8,6 +8,7 @@ import productRoutes from './routes/productRoutes.js';
 import leadRoutes from './routes/leadRoutes.js';
 import adminDbRoutes from './routes/adminDbRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js'; // Restore missing import
 
 dotenv.config();
 
