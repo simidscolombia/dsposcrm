@@ -1,4 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { FaPlay, FaGift, FaStar } from 'react-icons/fa';
 import Confetti from 'react-confetti';
 
@@ -8,15 +10,71 @@ const SpinningWheel = ({ onSpinEnd }) => {
     const [showConfetti, setShowConfetti] = useState(false);
     const [showGiftModal, setShowGiftModal] = useState(false);
 
+    // Configuración Dinámica de Premios
+    const [prizesConfig, setPrizesConfig] = useState([]);
+    const [loadingPrizes, setLoadingPrizes] = useState(true);
+
     const canvasRef = useRef(null);
     const audioCtxRef = useRef(null);
     const lastTickRef = useRef(0);
+
+    const COLORS = ['#E74C3C', '#2ECC71', '#F1C40F', '#3498DB', '#9B59B6', '#E67E22', '#1ABC9C', '#34495E'];
+
+    // Cargar Premios desde API
+    useEffect(() => {
+        const fetchPrizes = async () => {
+            // Fallback default
+            const defaultPrizes = [
+                { label: '5% OFF', color: '#E74C3C', text: '#FFFFFF', weight: 40, detail: 'Descuento Licencia' },
+                { label: 'KIT INICIO', color: '#34495E', text: '#FFFFFF', weight: 20, detail: 'Rollos + Cables' },
+                { label: '10% OFF', color: '#F1C40F', text: '#2C3E50', weight: 15, detail: 'Descuento Combo' },
+                { label: 'SETUP FREE', color: '#2ECC71', text: '#FFFFFF', weight: 10, detail: 'Instalación Gratis' },
+                { label: 'MES GRATIS', color: '#9B59B6', text: '#FFFFFF', weight: 5, detail: 'Soporte Premium' },
+                { label: 'CAPACITA', color: '#E67E22', text: '#FFFFFF', weight: 10, detail: 'Sesión Extra' }
+            ];
+
+            try {
+                const API_URL = '/api'; // Relative
+                const res = await axios.get(`${API_URL}/prizes`);
+                console.log('Roulette Prizes Response:', res.data); // Debug
+
+                if (res.data.success && res.data.prizes && res.data.prizes.length > 0) {
+                    const activePrizes = res.data.prizes.filter(p => p.is_active);
+
+                    if (activePrizes.length > 0) {
+                        const mappedPrizes = activePrizes.map((p, index) => ({
+                            label: p.name,
+                            color: COLORS[index % COLORS.length], // Ciclar colores
+                            text: (index % COLORS.length === 2) ? '#2C3E50' : '#FFFFFF', // Amarillo con texto oscuro
+                            weight: p.probability,
+                            detail: p.description || p.value,     // Descripción o Valor
+                            icon: p.icon || '🎁'
+                        }));
+                        setPrizesConfig(mappedPrizes);
+                    } else {
+                        setPrizesConfig(defaultPrizes);
+                    }
+                } else {
+                    setPrizesConfig(defaultPrizes);
+                }
+            } catch (error) {
+                console.error('Error fetching roulette prizes:', error);
+                setPrizesConfig(defaultPrizes);
+            } finally {
+                setLoadingPrizes(false);
+            }
+        };
+        fetchPrizes();
+    }, []);
 
     // Inicializar Audio Context
     useEffect(() => {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
         return () => {
-            if (audioCtxRef.current) audioCtxRef.current.close();
+            if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+                // audioCtxRef.current.close().catch(e => console.log(e)); 
+                // Avoid cleanup error if context is pending
+            }
         };
     }, []);
 
@@ -24,6 +82,7 @@ const SpinningWheel = ({ onSpinEnd }) => {
     const playTick = () => {
         if (!audioCtxRef.current) return;
         const ctx = audioCtxRef.current;
+        if (ctx.state === 'suspended') ctx.resume();
 
         // Oscilador para sonido de "golpe" seco
         const osc = ctx.createOscillator();
@@ -38,27 +97,24 @@ const SpinningWheel = ({ onSpinEnd }) => {
         osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
 
         // Volumen corto
-        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
 
         osc.start();
         osc.stop(ctx.currentTime + 0.1);
     };
 
-    // Configuración de Premios
-    const prizesConfig = [
-        { label: '5% OFF', color: '#E74C3C', text: '#FFFFFF', weight: 40, detail: 'Descuento Licencia' },
-        { label: 'KIT INICIO', color: '#34495E', text: '#FFFFFF', weight: 20, detail: 'Rollos + Cables' },
-        { label: '10% OFF', color: '#F1C40F', text: '#2C3E50', weight: 15, detail: 'Descuento Combo' },
-        { label: 'SETUP FREE', color: '#2ECC71', text: '#FFFFFF', weight: 10, detail: 'Instalación Gratis' },
-        { label: 'MES GRATIS', color: '#9B59B6', text: '#FFFFFF', weight: 5, detail: 'Soporte Premium' },
-        { label: 'CAPACITA', color: '#E67E22', text: '#FFFFFF', weight: 10, detail: 'Sesión Extra' }
-    ];
-
+    // Construir Segmentos Dinámicos
     const segments = [];
-    const repeatCount = 4;
-    for (let i = 0; i < repeatCount; i++) {
-        prizesConfig.forEach(p => segments.push(p));
+    if (prizesConfig.length > 0) {
+        // Asegurar que haya suficientes segmentos visuales (min 6-8)
+        let repeatCount = 1;
+        if (prizesConfig.length <= 2) repeatCount = 4;
+        else if (prizesConfig.length <= 4) repeatCount = 2;
+
+        for (let i = 0; i < repeatCount; i++) {
+            prizesConfig.forEach(p => segments.push(p));
+        }
     }
 
     // Estado de animación
@@ -66,12 +122,18 @@ const SpinningWheel = ({ onSpinEnd }) => {
 
     // Dibujar la ruleta en Canvas
     useEffect(() => {
+        if (loadingPrizes || prizesConfig.length === 0) return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         const radius = canvas.width / 2 - 20; // Margen para luces
+
+        // Si no hay segmentos, no dibujar nada o dibujar error
+        if (segments.length === 0) return;
+
         const segmentAngle = (2 * Math.PI) / segments.length;
 
         // Limpiar
@@ -121,8 +183,13 @@ const SpinningWheel = ({ onSpinEnd }) => {
             ctx.rotate(startAngle + segmentAngle / 2);
             ctx.textAlign = 'right';
             ctx.fillStyle = seg.text;
-            ctx.font = 'bold 14px Arial';
-            ctx.fillText(seg.label, radius - 10, 5);
+            ctx.font = 'bold 13px Arial'; // Reduce font slightly for longer names
+
+            // Truncate text if too long
+            let label = seg.label;
+            if (label.length > 15) label = label.substring(0, 12) + '...';
+
+            ctx.fillText(label, radius - 10, 5);
             ctx.restore();
         });
 
@@ -141,12 +208,12 @@ const SpinningWheel = ({ onSpinEnd }) => {
         ctx.textBaseline = 'middle';
         ctx.fillText('🎁', centerX, centerY);
 
-    }, [angle, isSpinning, segments]);
+    }, [angle, isSpinning, segments, loadingPrizes, prizesConfig]);
 
 
     // Lógica de Giro
     const spinWheel = () => {
-        if (isSpinning || result) return;
+        if (isSpinning || result || loadingPrizes) return;
 
         // Resume Audio Context
         if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
@@ -156,29 +223,46 @@ const SpinningWheel = ({ onSpinEnd }) => {
         setIsSpinning(true);
         setResult(null);
 
-        // Lógica de Ganador
-        const totalWeight = prizesConfig.reduce((acc, p) => acc + p.weight, 0);
+        // Lógica de Ganador (Usando pesos reales de la API)
+        // Para asegurar que coincida con DB, recalcular pesos.
+        // OJO: segments puede tener duplicados. Debemos elegir un segmento ganador.
+
+        // 1. Elegir PREMIO ganador basado en pesos únicos (prizesConfig)
+        const totalWeight = prizesConfig.reduce((acc, p) => acc + (p.weight || 0), 0);
         let random = Math.random() * totalWeight;
-        let winnerConfig = prizesConfig[0];
+        let winnerPrize = prizesConfig[0];
+
         for (const prize of prizesConfig) {
             if (random < prize.weight) {
-                winnerConfig = prize;
+                winnerPrize = prize;
                 break;
             }
             random -= prize.weight;
         }
 
-        const winnerIndices = segments.map((s, i) => s.label === winnerConfig.label ? i : -1).filter(i => i !== -1);
+        // 2. Encontrar todos los índices en los SEGMENTOS que corresponden a ese premio ganador
+        const winnerIndices = segments.map((s, i) => s.label === winnerPrize.label ? i : -1).filter(i => i !== -1);
+
+        // 3. Elegir uno de esos segmentos al azar
         const targetIndex = winnerIndices[Math.floor(Math.random() * winnerIndices.length)];
+
         const segmentArc = (2 * Math.PI) / segments.length;
 
-        const minSpins = 10 * 2 * Math.PI; // 10 vueltas
+        const minSpins = 5 * 2 * Math.PI; // 5 vueltas mínimo (más rápido)
+        // Calcular rotación objetivo para que la aguja (arriba - PI/2) caiga en el centro del segmento
         const targetRotation = minSpins - (targetIndex * segmentArc) - (segmentArc / 2) - (Math.PI / 2);
 
-        const startAngle = angle % (2 * Math.PI);
-        const finalAngle = startAngle + targetRotation + (2 * Math.PI * 2);
+        // Ajustar desde el ángulo actual para que sea suave
+        // IMPORTANTE: angle crece negativamente o positivamente?
+        // Queremos girar horario (positivo?).
+        // Si angle es 0, targetRotation será negativo (anti-horario??).
+        // Vamos a sumar 2PI varias veces.
 
-        const duration = 8500; // 8.5 Segundos (Suspenso total)
+        const startAngle = angle % (2 * Math.PI);
+        const finalAngle = startAngle + (10 * 2 * Math.PI) + (2 * Math.PI - (targetIndex * segmentArc) - (segmentArc / 2) - (Math.PI / 2));
+        // Simplificado: Gira mucho (10 vueltas) + offset
+
+        const duration = 6000; // 6 Segundos
         const startTimestamp = Date.now();
 
         const animate = () => {
@@ -204,15 +288,24 @@ const SpinningWheel = ({ onSpinEnd }) => {
                 setIsSpinning(false);
                 // Pequeña pausa dramática antes del POP
                 setTimeout(() => {
-                    setResult(winnerConfig);
+                    setResult(winnerPrize); // Guardar el objeto premio completo
                     setShowConfetti(true);
                     setShowGiftModal(true);
-                }, 800);
+                }, 500);
             }
         };
 
         animate();
     };
+
+    if (loadingPrizes) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 min-h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+                <p className="text-gray-500 font-medium">Cargando premios...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col items-center justify-center p-4 md:p-6 animate-fade-in relative min-h-[500px] w-full">
@@ -228,7 +321,6 @@ const SpinningWheel = ({ onSpinEnd }) => {
                 <div className="text-center mb-6 px-4">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
                     <p className="text-sm md:text-base text-gray-500 mt-1">Prueba tu suerte y gana beneficios</p>
-                    <p className="text-[10px] md:text-xs text-green-500 mt-2 font-mono font-bold uppercase tracking-wider">v4.2 - MOBILE READY 📱</p>
                 </div>
             )}
 
@@ -279,7 +371,7 @@ const SpinningWheel = ({ onSpinEnd }) => {
                     <div className="bg-white/95 backdrop-blur-md p-6 md:p-10 rounded-3xl shadow-2xl text-center border-4 border-yellow-400 w-full max-w-sm relative animate-pop-in mx-auto">
 
                         <div className="text-6xl md:text-8xl mb-4 md:mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
-                            🎁
+                            {result.icon || '🎁'}
                         </div>
 
                         <h2 className="text-3xl md:text-5xl font-black text-gray-800 mb-2 tracking-tight">
