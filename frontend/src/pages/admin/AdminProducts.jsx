@@ -190,6 +190,61 @@ const AdminProducts = () => {
                             {editMode ? 'Editar Producto' : 'Nuevo Producto'}
                         </h2>
 
+                        {/* Importador IA */}
+                        {!editMode && (
+                            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100">
+                                <label className="block text-xs font-bold text-purple-600 uppercase mb-2 flex items-center gap-1">
+                                    <FaSearch /> Importar desde Web (IA)
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Pega el link del producto aquí..."
+                                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-purple-200 focus:ring-2 focus:ring-purple-400 outline-none"
+                                        id="importUrl"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            const urlInput = document.getElementById('importUrl');
+                                            const url = urlInput.value;
+                                            if (!url) return alert('Pega una URL primero');
+
+                                            const btn = document.getElementById('btnAnalyze');
+                                            btn.disabled = true;
+                                            btn.innerHTML = '<span class="animate-spin">↻</span>';
+
+                                            try {
+                                                const res = await axios.post(`${API_URL}/products/analyze-url`, { url });
+                                                if (res.data.success) {
+                                                    const data = res.data.product;
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        name: data.name || prev.name,
+                                                        description: data.description || prev.description,
+                                                        price: data.price || prev.price,
+                                                        image_url: data.image_url || prev.image_url,
+                                                        category: data.category_suggestion || prev.category
+                                                    }));
+                                                    alert('✅ Datos extraídos con éxito. Verifica la información.');
+                                                }
+                                            } catch (error) {
+                                                console.error(error);
+                                                alert('❌ No se pudo analizar la web (Bloqueo o Error). Intenta copiar a mano.');
+                                            } finally {
+                                                btn.disabled = false;
+                                                btn.innerHTML = 'Analizar';
+                                            }
+                                        }}
+                                        id="btnAnalyze"
+                                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                                    >
+                                        Analizar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>

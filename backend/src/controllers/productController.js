@@ -1,6 +1,26 @@
+
 import Product from '../models/Product.js';
+import scraperService from '../services/scraperService.js';
 
 class ProductController {
+    async analyzeUrl(req, res) {
+        try {
+            const { url } = req.body;
+            if (!url) {
+                return res.status(400).json({ success: false, error: 'URL es requerida' });
+            }
+
+            console.log('Analizando URL:', url);
+            const productData = await scraperService.scrapeProduct(url);
+
+            res.json({ success: true, product: productData });
+
+        } catch (error) {
+            console.error('Error analizando URL:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
     async getAll(req, res) {
         try {
             const products = await Product.findAll();
