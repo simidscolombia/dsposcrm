@@ -11,7 +11,7 @@ const AdminDashboard = () => {
         setMessage(null);
         try {
             const API_URL = '/api';
-            const res = await axios.post(`${API_URL}/api/admin/init-tables`);
+            const res = await axios.post(`${API_URL}/admin/init-tables`);
             setMessage({ type: 'success', text: res.data.message });
         } catch (error) {
             console.error(error);
