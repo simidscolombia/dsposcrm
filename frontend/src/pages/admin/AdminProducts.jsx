@@ -230,7 +230,8 @@ const AdminProducts = () => {
                                                 }
                                             } catch (error) {
                                                 console.error(error);
-                                                alert('❌ No se pudo analizar la web (Bloqueo o Error). Intenta copiar a mano.');
+                                                const errMsg = error.response?.data?.error || error.message;
+                                                alert(`❌ Error al analizar: ${errMsg}\n\nPosibles causas:\n- La web bloquea robots.\n- Timeout (la página es muy pesada).\n- Error de conexión.`);
                                             } finally {
                                                 btn.disabled = false;
                                                 btn.innerHTML = 'Analizar';
