@@ -7,6 +7,7 @@ import AdminLayout from './components/Admin/Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminProducts from './pages/admin/AdminProducts';
+import AdminPrizes from './pages/admin/AdminPrizes';
 
 function App() {
   // Global Click Sound Effect
@@ -67,6 +68,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="prizes" element={<AdminPrizes />} />
         </Route>
       </Routes>
     </HashRouter>
