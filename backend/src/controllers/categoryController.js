@@ -26,7 +26,13 @@ class CategoryController {
             res.status(201).json({ success: true, category: newCategory });
         } catch (error) {
             console.error('Error creando categoría:', error);
-            res.status(500).json({ success: false, error: error.message });
+            // Return detailed error for debugging
+            res.status(500).json({
+                success: false,
+                error: error.message,
+                details: error.toString(),
+                code: error.code // Postgres error code if available
+            });
         }
     }
 
