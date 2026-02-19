@@ -19,19 +19,33 @@ const AdminProducts = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
+            console.log('Fetching products from:', `${API_URL}/products`);
+
             const [resProducts, resCats] = await Promise.all([
-                axios.get(`${API_URL}/api/products`),
-                axios.get(`${API_URL}/api/categories`)
+                axios.get(`${API_URL}/products`).catch(err => {
+                    console.error('Error fetching products:', err);
+                    return { data: { success: false, products: [] } };
+                }),
+                axios.get(`${API_URL}/categories`).catch(err => {
+                    console.error('Error fetching categories:', err);
+                    return { data: { success: false, categories: [] } };
+                })
             ]);
 
-            if (resProducts.data.success) {
-                setProducts(resProducts.data.products);
+            console.log('Products API Response:', resProducts.data);
+
+            if (resProducts.data && (resProducts.data.success || Array.isArray(resProducts.data.products))) {
+                setProducts(resProducts.data.products || []);
+            } else {
+                setProducts([]);
             }
-            if (resCats.data.success) {
-                setCategories(resCats.data.categories);
+
+            if (resCats.data && resCats.data.success) {
+                setCategories(resCats.data.categories || []);
             }
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            console.error('Critical error loading data:', error);
+            setProducts([]);
         } finally {
             setLoading(false);
         }
