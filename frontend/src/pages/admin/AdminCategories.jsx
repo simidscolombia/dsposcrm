@@ -15,7 +15,7 @@ const AdminCategories = () => {
     const fetchCategories = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/api/categories`);
+            const res = await axios.get(`${API_URL}/categories`);
             if (res.data.success) {
                 setCategories(res.data.categories);
             }
@@ -39,9 +39,9 @@ const AdminCategories = () => {
             };
 
             if (editMode) {
-                await axios.put(`${API_URL}/api/categories/${currentId}`, payload);
+                await axios.put(`${API_URL}/categories/${currentId}`, payload);
             } else {
-                await axios.post(`${API_URL}/api/categories`, payload);
+                await axios.post(`${API_URL}/categories`, payload);
             }
             setShowModal(false);
             fetchCategories();
@@ -56,7 +56,7 @@ const AdminCategories = () => {
     const handleDelete = async (id) => {
         if (!confirm('¿Seguro que deseas eliminar esta categoría?')) return;
         try {
-            await axios.delete(`${API_URL}/api/categories/${id}`);
+            await axios.delete(`${API_URL}/categories/${id}`);
             fetchCategories();
         } catch (error) {
             console.error('Error eliminando:', error);

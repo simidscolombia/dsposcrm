@@ -65,9 +65,9 @@ const AdminProducts = () => {
             };
 
             if (editMode) {
-                await axios.put(`${API_URL}/api/products/${currentId}`, payload);
+                await axios.put(`${API_URL}/products/${currentId}`, payload);
             } else {
-                await axios.post(`${API_URL}/api/products`, payload);
+                await axios.post(`${API_URL}/products`, payload);
             }
             setShowModal(false);
             fetchData();
@@ -81,7 +81,7 @@ const AdminProducts = () => {
     const handleDelete = async (id) => {
         if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
         try {
-            await axios.delete(`${API_URL}/api/products/${id}`);
+            await axios.delete(`${API_URL}/products/${id}`);
             fetchData();
         } catch (error) {
             console.error('Error eliminando:', error);
