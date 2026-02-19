@@ -1,6 +1,7 @@
 ﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import debugRoutes from './routes/debugRoutes.js';
 import db from './config/database.js'; // Importar DB
 import aiRoutes from './routes/aiRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -19,6 +20,8 @@ app.use(cors({
 app.use(express.json());
 
 // Rutas
+app.use('/api', debugRoutes); // Debug: /api/debug-express
+app.use('/api/pdf', pdfRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/leads', leadRoutes);
