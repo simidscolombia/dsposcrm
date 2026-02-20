@@ -387,7 +387,7 @@ const SpinningWheel = ({ onSpinEnd }) => {
                         </p>
 
                         <button
-                            onClick={() => onSpinEnd(result.label)}
+                            onClick={() => onSpinEnd(result)}
                             className="w-full bg-green-500 hover:bg-green-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 px-6 rounded-xl shadow-xl hover:shadow-2xl active:translate-y-1 transition-all flex items-center justify-center gap-2 md:gap-3"
                         >
                             RECLAMAR PREMIO <FaGift />

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import QuotePage from './pages/QuotePage';
-import ActionScreen from './components/PostRoulette/ActionScreen';
 // Admin Imports
 import AdminLayout from './components/Admin/Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -51,7 +50,7 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v5.3 - HASH ROUTER FIX ⚓");
+    console.log("v6.0 - NEW QUOTE FLOW 🚀");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);
@@ -59,8 +58,8 @@ function App() {
   return (
     <HashRouter>
       <Routes>
+        {/* Wizard principal - todo el flujo inline */}
         <Route path="/" element={<QuotePage />} />
-        <Route path="/resultado" element={<ActionScreen />} />
 
         {/* Rutas Administrativas */}
         <Route path="/admin" element={<AdminLayout />}>

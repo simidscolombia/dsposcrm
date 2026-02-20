@@ -1,9 +1,46 @@
 # 📔 BITÁCORA DEL PROYECTO: DISCOVERY SYSTEMS POS / ECOSYSTEM
 
-**Fecha de Última Actualización:** 2026-02-16
-**Estado:** Fase 2 Completada (Infraestructura Cloud Operativa).
+**Fecha de Última Actualización:** 2026-02-19
+**Estado:** Fase 2 Completada (Infraestructura Cloud Operativa) + Fase 3 En Progreso (Gamificación e IA Scraping Beta).
 
 ---
+
+## 📅 SESIÓN: 19 de Febrero, 2026
+**Objetivo:** Implementación del Módulo de Gamificación (Ruleta de Premios) y Prototipo de Importador Inteligente de Productos.
+
+### 🚀 1. Módulo de Premios (Gamificación)
+Se completó la infraestructura Full-Stack para la gestión dinámica de premios de la ruleta:
+
+1.  **Backend (API & Base de Datos):**
+    *   **Tabla `crm_prizes`:** Creada en PostgreSQL con campos para `name`, `description`, `probability` (peso), `type`, `value`, `icon`, `is_active`.
+    *   **API CRUD (`/api/prizes`):** Endpoints para Listar, Crear, Editar y Eliminar premios.
+    *   **Lógica de Negocio:** Validación de datos y ordenamiento por probabilidad descendente.
+
+2.  **Frontend (Panel Administrativo):**
+    *   **Gestión Visual (`AdminPrizes.jsx`):** Interfaz limpia con tabla de premios, iconos, badges de tipo y botones de acción.
+    *   **Validaciones:** Alerta visual si la suma de probabilidades no es 100%.
+    *   **Modal Dinámico:** Formulario para añadir/editar premios con selector de iconos y tipos.
+
+3.  **Experiencia de Usuario (Ruleta):**
+    *   **Conexión Real (`SpinningWheel.jsx`):** La ruleta ahora consume `/api/prizes` al cargar.
+    *   **Algoritmo Ponderado:** La probabilidad de ganar cada premio respeta estrictamente los porcentajes definidos en el Admin.
+    *   **Fallback Robusto:** Si la API falla, carga premios por defecto para no romper la UI.
+
+### 🤖 2. Importador Inteligente de Productos (Web Scraper AI) - BETA
+Se inició el desarrollo de una funcionalidad premium para facilitar la carga de inventario:
+
+1.  **Arquitectura Híbrida:**
+    *   **`scraperService.js`:** Servicio de backend que combina `axios` + `cheerio` para obtener HTML, y **Google Gemini AI** para analizar y extraer datos estructurados.
+    *   **Prompt Engineering:** Se diseñó un prompt específico para extraer `name`, `price`, `description`, y `image_url` de cualquier e-commerce.
+
+2.  **Integración UI:**
+    *   Botón **"Importar desde Web (IA)"** en el modal de Nuevo Producto.
+    *   Auto-completado del formulario con los datos extraídos.
+
+3.  **Estado Actual (En Debug):**
+    *   El scraper funciona localmente con ciertas URLs.
+    *   En producción (Vercel), algunas webs (ej: `satpcs.com`) bloquean la petición o retornan estructuras vacías (JS Renderizado).
+    *   **Próximos Pasos:** Implementar Puppeteer para renderizado JS o mejorar headers para evitar bloqueos.
 
 ## 📅 SESIÓN: 16 de Febrero, 2026
 **Objetivo:** Despliegue a Producción (Vercel + Supabase) y Corrección de Errores Críticos.

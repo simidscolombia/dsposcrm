@@ -11,12 +11,21 @@ const scrapeProduct = async (url) => {
     try {
         console.log(`🔍 Iniciando análisis de URL: ${url}`);
 
-        // 1. Obtener HTML Crudo (Simulando un navegador simple)
+        // 1. Obtener HTML Crudo (Simulando un navegador Real - Chrome)
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'es-419,es;q=0.9,en;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1'
+        };
+
         const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            },
-            timeout: 10000 // 10s límite
+            headers,
+            timeout: 15000 // 15s límite para sitios lentos
         });
 
         const html = response.data;
