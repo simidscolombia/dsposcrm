@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
-const ChatbotWidget = ({ quoteContext, leadName }) => {
+const ChatbotWidget = ({ quoteContext, leadName, leadId }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -54,10 +54,11 @@ const ChatbotWidget = ({ quoteContext, leadName }) => {
     setIsLoading(true);
 
     try {
-      // Llamar al backend (Claude AI)
-      const response = await axios.post(`${API_URL}/api/ai/chatbot`, {
+      // Llamar al backend (Claude AI / Gemini)
+      const response = await axios.post(`${API_URL}/ai/chatbot`, {
         question: text,
         context: quoteContext,
+        leadId: leadId
       });
 
       // Simular delay de "escribiendo..."

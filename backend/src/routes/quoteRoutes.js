@@ -279,4 +279,90 @@ router.get('/', async (req, res) => {
     }
 });
 
+// ============================================
+// GET /api/quotes/:id
+// Obtener cotización por ID para Portal Cliente
+// ============================================
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const quoteResult = await db.query('SELECT * FROM crm_quotes WHERE id = $1', [id]);
+
+        if (quoteResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Cotización no encontrada' });
+        }
+
+        const quote = quoteResult.rows[0];
+        const items = await db.query('SELECT * FROM crm_quote_items WHERE quote_id = $1', [id]);
+        quote.items = items.rows;
+
+        res.json({ success: true, quote });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// PUT /api/quotes/:id/confirm
+// Confirmar pedido, agregar info de envío y pago
+// ============================================
+router.put('/:id/confirm', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { shipping, paymentMethod } = req.body;
+
+        // Auto-migrate schema dynamically inside the function
+        try {
+            await db.query(`
+                ALTER TABLE crm_quotes 
+                ADD COLUMN IF NOT EXISTS shipping_address VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS shipping_city VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS shipping_notes TEXT,
+                ADD COLUMN IF NOT EXISTS payment_preference VARCHAR(50);
+            `);
+        } catch (migErr) {
+            console.error('Migration non-critical error:', migErr);
+        }
+
+        const updateResult = await db.query(`
+            UPDATE crm_quotes 
+            SET status = 'accepted', 
+                shipping_address = $1, 
+                shipping_city = $2, 
+                shipping_notes = $3, 
+                payment_preference = $4 
+            WHERE id = $5 
+            RETURNING *
+        `, [
+            shipping?.address || null,
+            shipping?.city || null,
+            shipping?.notes || null,
+            paymentMethod || null,
+            id
+        ]);
+
+        if (updateResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Cotización no encontrada' });
+        }
+
+        // Marcar el lead como 'won' en el Pipeline o mover su estado
+        const leadId = updateResult.rows[0].lead_id;
+        if (leadId) {
+            await db.query(`
+                UPDATE leads SET pipeline_stage = 'won', status = 'contacted', updated_at = NOW() 
+                WHERE id = $1
+            `, [leadId]);
+
+            await db.query(`
+                INSERT INTO crm_activity_log (lead_id, activity_type, description, performed_by) 
+                VALUES ($1, 'quote_accepted', 'El cliente confirmó la cotización desde su Portal Web', 'system')
+            `, [leadId]);
+        }
+
+        res.json({ success: true, quote: updateResult.rows[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;

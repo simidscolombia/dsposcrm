@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import QuotePage from './pages/QuotePage';
+import ClientPortal from './pages/ClientPortal';
 // Admin Imports
 import AdminLayout from './components/Admin/Layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -65,6 +66,9 @@ function App() {
       <Routes>
         {/* Wizard principal - todo el flujo inline */}
         <Route path="/" element={<QuotePage />} />
+
+        {/* Client Portal */}
+        <Route path="/portal/:id" element={<ClientPortal />} />
 
         {/* Rutas Administrativas */}
         <Route path="/admin" element={<AdminLayout />}>

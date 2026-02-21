@@ -33,16 +33,16 @@ class PdfController {
                 </tr>
             `).join('');
 
-            // Logo placeholder (Using a text-based svg representation of their logo for now)
+            // Logo text representation clean for PDF
             const logoSvg = `
-                <svg width="180" height="60" viewBox="0 0 180 60" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10,25 Q15,5 30,10 L45,15 Q55,20 50,35 L45,50 Q40,65 20,55 L15,50 Q5,40 10,25 Z" fill="none" stroke="#1A202C" stroke-width="3"/>
-                    <text x="22" y="32" font-family="Arial" font-weight="bold" font-size="14" fill="#1A202C">S</text>
-                    <text x="18" y="48" font-family="Arial" font-weight="bold" font-size="14" fill="#1A202C">P</text>
-                    <text x="60" y="28" font-family="Arial" font-weight="bold" font-size="22" fill="#1A202C">Discovery</text>
-                    <rect x="60" y="35" width="100" height="18" rx="2" fill="#1A202C"/>
-                    <text x="65" y="48" font-family="Arial" font-weight="bold" font-size="12" fill="#FFFFFF">Systems Pos</text>
-                </svg>
+                <div style="text-align: right; color: #1A202C;">
+                    <div style="font-size: 26px; font-weight: 800; letter-spacing: -1px; margin-bottom: 2px;">
+                        <span style="color: #2B6CB0;">DISCOVERY</span> SYSTEMS
+                    </div>
+                    <div style="font-size: 11px; font-weight: 600; background: #1A202C; color: white; display: inline-block; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px;">
+                        SOLUCIONES POS
+                    </div>
+                </div>
             `;
 
             const subtotal = data.subtotal || 0;

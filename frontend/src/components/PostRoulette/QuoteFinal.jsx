@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay } from 'react-icons/fa';
+import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay, FaUserCheck, FaCopy } from 'react-icons/fa';
 import ChatbotWidget from './ChatbotWidget';
 
 const API_URL = '/api';
@@ -385,6 +385,31 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                     <FaFilePdf className="text-xl" />
                     <span>{pdfGenerated ? '✅ Descargar de Nuevo' : 'Descargar Cotización PDF'}</span>
                 </button>
+
+                {/* Go to Client Portal (Checkout / Review) */}
+                {quoteId && (
+                    <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mt-4">
+                        <h4 className="text-center text-indigo-800 font-bold text-lg mb-2">Paso Final 🚀</h4>
+                        <p className="text-center text-sm text-indigo-600 mb-4">Ingresa a tu panel para subir tus documentos o solicitar tu pago contra entrega.</p>
+                        <button
+                            onClick={() => window.open(`/#/portal/${quoteId}`, '_blank')}
+                            className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-3"
+                        >
+                            <FaUserCheck className="text-2xl" />
+                            <span>Ir a mi Panel Seguro</span>
+                        </button>
+
+                        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
+                            <span>Guarda tu enlace para luego:</span>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/#/portal/${quoteId}`)}
+                                className="flex items-center gap-1 text-indigo-500 hover:text-indigo-700 font-bold"
+                            >
+                                <FaCopy /> Copiar Enlace
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 🔍 More Options */}
@@ -428,8 +453,9 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                 {showChatbot && (
                     <div className="mt-4">
                         <ChatbotWidget
-                            quoteContext={{ modules: selectedProducts, total: finalTotal }}
+                            quoteContext={{ modules: selectedProducts, total: finalTotal, quoteId }}
                             leadName={clientName}
+                            leadId={quoteId}
                         />
                     </div>
                 )}
