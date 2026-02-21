@@ -4,8 +4,9 @@ import fs from 'fs';
 import csvParser from 'csv-parser';
 import db from '../config/database.js';
 
+import os from 'os';
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: os.tmpdir() + '/' });
 
 // ============================================
 // GET /api/clients
