@@ -78,12 +78,14 @@ router.post('/', async (req, res) => {
             }
         } else {
             // No phone - just create a minimal lead
+            const fallbackPhone = 'Sin Registro';
             const newLead = await db.query(`
-                INSERT INTO leads (name, city, business_type, system_type, prize_won, pipeline_stage, source, status, last_contact_at)
-                VALUES ($1, $2, $3, $4, $5, 'quoted', $6, 'new', NOW())
+                INSERT INTO leads (name, whatsapp, city, business_type, system_type, prize_won, pipeline_stage, source, status, last_contact_at)
+                VALUES ($1, $2, $3, $4, $5, $6, 'quoted', $7, 'new', NOW())
                 RETURNING id
             `, [
                 clientName || 'Cliente Web',
+                fallbackPhone,
                 city || null,
                 businessType || null,
                 systemType || null,
