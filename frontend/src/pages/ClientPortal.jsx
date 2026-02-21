@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaCheckCircle, FaTruck, FaFileContract, FaCreditCard, FaLock, FaWhatsapp, FaArrowRight, FaBoxOpen } from 'react-icons/fa';
+import { FaCheckCircle, FaTruck, FaFileContract, FaCreditCard, FaLock, FaWhatsapp, FaArrowRight, FaBoxOpen, FaPlay, FaCalendarAlt } from 'react-icons/fa';
+import ChatbotWidget from '../components/PostRoulette/ChatbotWidget';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -15,6 +16,7 @@ const ClientPortal = () => {
 
     // Tab state: 'resume', 'shipping', 'payment', 'success'
     const [currentStep, setCurrentStep] = useState('resume');
+    const [showChatbot, setShowChatbot] = useState(false);
 
     // Form state
     const [shippingData, setShippingData] = useState({
@@ -114,7 +116,7 @@ const ClientPortal = () => {
                         <h1 className="font-bold text-gray-800">Portal Seguro</h1>
                     </div>
                     <div className="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full">
-                        Tu ID: #{quote?.id?.substring(0, 8)}
+                        Tu ID: #{String(quote?.id).padStart(4, '0')}
                     </div>
                 </div>
             </header>
@@ -183,9 +185,58 @@ const ClientPortal = () => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3 mt-6">
                             <button onClick={() => window.location.href = '/'} className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Modificar Pedido</button>
                             <button onClick={handleConfirmStep1} className="flex-1 py-3 px-4 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">Confirmar y Seguir <FaArrowRight /></button>
+                        </div>
+
+                        {/* 🔍 More Options */}
+                        <div className="grid grid-cols-2 gap-3 mt-6 mb-6">
+                            <button
+                                onClick={() => window.open('https://www.youtube.com/watch?v=demo-video', '_blank')}
+                                className="bg-white border-2 border-purple-200 text-purple-700 p-4 rounded-xl hover:shadow-lg hover:border-purple-400 transition-all text-center"
+                            >
+                                <FaPlay className="text-2xl mx-auto mb-2" />
+                                <span className="text-sm font-bold block">Ver Demo</span>
+                                <span className="text-[10px] text-purple-400">Video 2 min</span>
+                            </button>
+
+                            <button
+                                onClick={() => window.open('https://calendly.com/discovery-systems/demo', '_blank')}
+                                className="bg-white border-2 border-orange-200 text-orange-700 p-4 rounded-xl hover:shadow-lg hover:border-orange-400 transition-all text-center"
+                            >
+                                <FaCalendarAlt className="text-2xl mx-auto mb-2" />
+                                <span className="text-sm font-bold block">Agendar Demo</span>
+                                <span className="text-[10px] text-orange-400">Elige horario</span>
+                            </button>
+                        </div>
+
+                        {/* 🤖 Chatbot */}
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl shadow-lg p-5 border border-indigo-200">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl">🤖</div>
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 text-sm">¿Tienes preguntas?</h3>
+                                        <p className="text-xs text-gray-500">Nuestro asistente IA está aquí</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowChatbot(!showChatbot)}
+                                    className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-semibold text-sm"
+                                >
+                                    {showChatbot ? 'Cerrar' : 'Abrir Chat'}
+                                </button>
+                            </div>
+                            {showChatbot && (
+                                <div className="mt-4">
+                                    <ChatbotWidget
+                                        quoteContext={{ modules: quote?.items, total: quote?.final_total, quoteId: quote?.id }}
+                                        leadName={quote?.client_name}
+                                        leadId={quote?.id}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -301,7 +352,7 @@ const ClientPortal = () => {
 
                         <h2 className="text-3xl font-black text-gray-800 mb-3">¡Pedido Confirmado! 🎉</h2>
                         <p className="text-lg text-gray-600 mb-6">
-                            Tu solicitud con ID <strong className="text-indigo-600">#{quote?.id?.substring(0, 8)}</strong> ha sido enviada a logística y despachos.
+                            Tu solicitud con ID <strong className="text-indigo-600">#{String(quote?.id).padStart(4, '0')}</strong> ha sido enviada a logística y despachos.
                         </p>
 
                         <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-left mb-8 inline-block max-w-md w-full">
@@ -314,7 +365,7 @@ const ClientPortal = () => {
                         </div>
 
                         <button
-                            onClick={() => window.open(`https://wa.me/573205792169?text=Hola,%20acabo%20de%20confirmar%20mi%20pedido%20con%20ID%20${quote?.id?.substring(0, 8)}%20en%20el%20Portal.%20¿Podemos%20coordinar?`, '_blank')}
+                            onClick={() => window.open(`https://wa.me/573205792169?text=Hola,%20acabo%20de%20confirmar%20mi%20pedido%20(ID%20${String(quote?.id).padStart(4, '0')})%20en%20el%20Portal.%20¿Podemos%20coordinar?`, '_blank')}
                             className="bg-green-500 text-white font-bold py-4 px-8 rounded-full text-lg shadow-lg hover:shadow-xl hover:scale-105 transition flex items-center justify-center gap-3 w-full sm:w-auto mx-auto"
                         >
                             <FaWhatsapp className="text-3xl" /> Escribir Ahora al Asesor

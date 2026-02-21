@@ -407,54 +407,6 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                 )}
             </div>
 
-            {/* 🔍 More Options */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-                <button
-                    onClick={() => window.open('https://www.youtube.com/watch?v=demo-video', '_blank')}
-                    className="bg-white border-2 border-purple-200 text-purple-700 p-4 rounded-xl hover:shadow-lg hover:border-purple-400 transition-all text-center"
-                >
-                    <FaPlay className="text-2xl mx-auto mb-2" />
-                    <span className="text-sm font-bold block">Ver Demo</span>
-                    <span className="text-[10px] text-purple-400">Video 2 min</span>
-                </button>
-
-                <button
-                    onClick={() => window.open('https://calendly.com/discovery-systems/demo', '_blank')}
-                    className="bg-white border-2 border-orange-200 text-orange-700 p-4 rounded-xl hover:shadow-lg hover:border-orange-400 transition-all text-center"
-                >
-                    <FaCalendarAlt className="text-2xl mx-auto mb-2" />
-                    <span className="text-sm font-bold block">Agendar Demo</span>
-                    <span className="text-[10px] text-orange-400">Elige horario</span>
-                </button>
-            </div>
-
-            {/* 🤖 Chatbot */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl shadow-lg p-5 mb-6 border border-indigo-200">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl">🤖</div>
-                        <div>
-                            <h3 className="font-bold text-gray-800 text-sm">¿Tienes preguntas?</h3>
-                            <p className="text-xs text-gray-500">Nuestro asistente IA está aquí</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setShowChatbot(!showChatbot)}
-                        className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-semibold text-sm"
-                    >
-                        {showChatbot ? 'Cerrar' : 'Abrir Chat'}
-                    </button>
-                </div>
-                {showChatbot && (
-                    <div className="mt-4">
-                        <ChatbotWidget
-                            quoteContext={{ modules: selectedProducts, total: finalTotal, quoteId }}
-                            leadName={clientName}
-                            leadId={quoteId}
-                        />
-                    </div>
-                )}
-            </div>
 
             {/* ⏰ Urgency Banner */}
             <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-orange-400 p-4 rounded-r-xl">
