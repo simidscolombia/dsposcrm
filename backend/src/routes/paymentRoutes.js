@@ -182,4 +182,62 @@ router.post('/:id/remind', async (req, res) => {
     }
 });
 
+// ============================================
+// POST /api/payments/enforce-overdue
+// Rutina automática: Marcar vencidos y suspender clientes
+// ============================================
+router.post('/enforce-overdue', async (req, res) => {
+    try {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        // Asumiendo que todos pagan a finales de mes para este modelo SaaS
+        // Si el periodo del cobro es menor al mes/año actual, ya está vencido
+
+        const overduePayments = await db.query(`
+            UPDATE crm_payments
+            SET status = 'overdue', updated_at = NOW()
+            WHERE status = 'pending' 
+              AND (period_year < $1 OR (period_year = $1 AND period_month < $2))
+            RETURNING id, client_id, period_month, period_year
+        `, [currentYear, currentMonth]);
+
+        let suspendedClients = 0;
+
+        if (overduePayments.rows.length > 0) {
+            // Obtener IDs únicos de clientes a suspender
+            const clientIdsToSuspend = [...new Set(overduePayments.rows.map(p => p.client_id))];
+
+            if (clientIdsToSuspend.length > 0) {
+                // Suspender clientes
+                await db.query(`
+                    UPDATE crm_clients
+                    SET payment_status = 'suspended'
+                    WHERE id = ANY($1::int[]) AND payment_status != 'suspended'
+                `, [clientIdsToSuspend]);
+                suspendedClients = clientIdsToSuspend.length;
+
+                // Log a nivel sistema
+                for (const clientId of clientIdsToSuspend) {
+                    await db.query(`
+                        INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
+                        VALUES ($1, 'system_suspension', 'Servicio suspendido automáticamente por falta de pago del mes anterior', 'system')
+                    `, [clientId]);
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Rutina ejecutada: ${overduePayments.rows.length} cobros marcados en mora. ${suspendedClients} clientes suspendidos.`,
+            overdue_marked: overduePayments.rows.length,
+            clients_suspended: suspendedClients
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;

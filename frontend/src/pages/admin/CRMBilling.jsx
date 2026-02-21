@@ -6,7 +6,8 @@ import {
     FaExclamationCircle as AlertCircle, FaCheckCircle as CheckCircle,
     FaClock as Clock, FaSearch as Search, FaFilter as Filter,
     FaSync as RefreshCw, FaCommentAlt as MessageSquare,
-    FaFileInvoice as FileInvoice, FaImage as ImageIcon, FaTimes as X
+    FaFileInvoice as FileInvoice, FaImage as ImageIcon, FaTimes as X,
+    FaBan as BanIcon
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -73,6 +74,21 @@ const CRMBilling = () => {
             alert('Error al generar cobros');
         } finally {
             setGenerating(false);
+        }
+    };
+
+    const handleEnforceOverdue = async () => {
+        if (!window.confirm('⚠️ ATENCIÓN: Esta acción revisará todos los cobros pendientes de meses ANTERIORES. Los marcará como EN MORA y Suspenderá automáticamente el servicio de esos clientes. ¿Proceder?')) return;
+
+        try {
+            const res = await axios.post(`${API_URL}/payments/enforce-overdue`);
+            if (res.data.success) {
+                alert(res.data.message);
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Error enforcing overdue:', error);
+            alert('Error procesando suspensiones');
         }
     };
 
@@ -153,14 +169,23 @@ const CRMBilling = () => {
                     </p>
                 </div>
 
-                <button
-                    onClick={generatePayments}
-                    disabled={generating}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium disabled:opacity-70"
-                >
-                    <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-                    {generating ? 'Generando...' : 'Generar Cobros del Mes'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                        onClick={handleEnforceOverdue}
+                        className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center gap-2 font-medium"
+                    >
+                        <BanIcon className="w-4 h-4" />
+                        Suspender Morosos
+                    </button>
+                    <button
+                        onClick={generatePayments}
+                        disabled={generating}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium disabled:opacity-70"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+                        {generating ? 'Generando...' : 'Generar Cobros del Mes'}
+                    </button>
+                </div>
             </div>
 
             {/* Dashboard Stats */}
