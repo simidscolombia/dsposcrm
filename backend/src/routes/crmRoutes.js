@@ -112,8 +112,10 @@ router.post('/migrate', async (req, res) => {
         results.push('✅ crm_quotes');
 
         // Quote items
+        // Force drop and recreate Quote items to fix missing column error
+        await db.query(`DROP TABLE IF EXISTS crm_quote_items CASCADE;`);
         await db.query(`
-            CREATE TABLE IF NOT EXISTS crm_quote_items (
+            CREATE TABLE crm_quote_items (
                 id SERIAL PRIMARY KEY,
                 quote_id INTEGER REFERENCES crm_quotes(id) ON DELETE CASCADE,
                 product_id INTEGER,
@@ -125,16 +127,7 @@ router.post('/migrate', async (req, res) => {
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
-        // Force add columns if table already existed from older schema
-        const quoteItemAlters = [
-            "ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS product_name VARCHAR(255) DEFAULT 'Producto'",
-            "ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS product_category VARCHAR(50)"
-        ];
-        for (const sql of quoteItemAlters) {
-            try { await db.query(sql); } catch (e) { /* column may exist */ }
-        }
-        results.push('✅ crm_quote_items');
-
+        results.push('✅ crm_quote_items recreada limpia');
         // 4. CLIENTES EXISTENTES
         await db.query(`
             CREATE TABLE IF NOT EXISTS crm_clients (
