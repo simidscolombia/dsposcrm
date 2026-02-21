@@ -47,7 +47,7 @@ const NewClientModal = ({ onClose, onCreated }) => {
         if (!form.business_name || !form.whatsapp) return alert('Nombre y WhatsApp son requeridos');
         setSaving(true);
         try {
-            const res = await axios.post(`${API_URL}/api/clients`, form);
+            const res = await axios.post(`${API_URL}/clients`, form);
             if (res.data.success) {
                 onCreated(res.data.client);
                 onClose();
@@ -171,7 +171,7 @@ const CRMClients = () => {
             if (search) params.append('search', search);
             if (filterPlan) params.append('plan_type', filterPlan);
             if (filterStatus) params.append('payment_status', filterStatus);
-            const res = await axios.get(`${API_URL}/api/clients?${params.toString()}`);
+            const res = await axios.get(`${API_URL}/clients?${params.toString()}`);
             if (res.data.success) {
                 setClients(res.data.clients);
                 setStats(res.data.stats);

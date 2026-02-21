@@ -182,7 +182,7 @@ const LeadDetailModal = ({ lead, onClose, onMoveStage }) => {
     useEffect(() => {
         const fetchDetail = async () => {
             try {
-                const res = await axios.get(`${API_URL}/api/pipeline/${lead.id}`);
+                const res = await axios.get(`${API_URL}/pipeline/${lead.id}`);
                 if (res.data.success) setDetail(res.data);
             } catch (e) { console.error(e); }
             setLoading(false);
@@ -192,7 +192,7 @@ const LeadDetailModal = ({ lead, onClose, onMoveStage }) => {
 
     const saveNotes = async () => {
         try {
-            await axios.put(`${API_URL}/api/pipeline/${lead.id}`, { notes });
+            await axios.put(`${API_URL}/pipeline/${lead.id}`, { notes });
         } catch (e) { console.error(e); }
     };
 
@@ -294,8 +294,8 @@ const LeadDetailModal = ({ lead, onClose, onMoveStage }) => {
                                                 )}
                                             </div>
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${q.status === 'accepted' ? 'bg-green-100 text-green-600' :
-                                                    q.status === 'expired' ? 'bg-red-100 text-red-600' :
-                                                        'bg-yellow-100 text-yellow-600'
+                                                q.status === 'expired' ? 'bg-red-100 text-red-600' :
+                                                    'bg-yellow-100 text-yellow-600'
                                                 }`}>
                                                 {q.status === 'accepted' ? 'Aceptada' : q.status === 'expired' ? 'Expirada' : q.status === 'sent' ? 'Enviada' : 'Borrador'}
                                             </span>
@@ -375,7 +375,7 @@ const CRMPipeline = () => {
         try {
             const params = new URLSearchParams();
             if (filterCity) params.append('city', filterCity);
-            const res = await axios.get(`${API_URL}/api/pipeline?${params.toString()}`);
+            const res = await axios.get(`${API_URL}/pipeline?${params.toString()}`);
             if (res.data.success) setData(res.data);
         } catch (e) {
             console.error('Error fetching pipeline:', e);
@@ -392,7 +392,7 @@ const CRMPipeline = () => {
 
     const handleMoveStage = async (leadId, newStage) => {
         try {
-            await axios.put(`${API_URL}/api/pipeline/${leadId}/stage`, { stage: newStage });
+            await axios.put(`${API_URL}/pipeline/${leadId}/stage`, { stage: newStage });
             fetchPipeline();
             // Close modal if open
             if (selectedLead?.id === leadId) {

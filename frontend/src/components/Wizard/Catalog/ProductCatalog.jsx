@@ -124,7 +124,7 @@ const ProductCatalog = ({ onContinue, systemType }) => {
     }
 
     return (
-        <div className="p-4 md:p-6 animate-fade-in-up pb-32">
+        <div className="p-4 md:p-6 animate-fade-in-up pb-40">
             <div className="flex justify-between items-center mb-4 md:mb-6">
                 <h2 className="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 truncate mr-2">
                     {getTitle()}
@@ -185,7 +185,7 @@ const ProductCatalog = ({ onContinue, systemType }) => {
                                 )}
 
                                 {/* IMAGEN (Estilo MercadoLibre / Amazon) */}
-                                <div className={`${viewMode === 'grid' ? 'w-full aspect-square border-b border-gray-50' : 'w-20 h-20 md:w-24 md:h-24 rounded-lg flex-shrink-0 border border-gray-100 mr-3'}`}>
+                                <div className={`${viewMode === 'grid' ? 'w-full h-28 md:h-36 border-b border-gray-50' : 'w-20 h-20 md:w-24 md:h-24 rounded-lg flex-shrink-0 border border-gray-100 mr-3'}`}>
                                     {renderImage(product.image_url, viewMode === 'list')}
                                 </div>
 

@@ -26,8 +26,8 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             try {
                 const cityParam = (city || 'Colombia').toLowerCase().replace(/\s+/g, '-');
                 const [waRes, companyRes] = await Promise.all([
-                    axios.get(`${API_URL}/api/config/whatsapp/${cityParam}`).catch(() => null),
-                    axios.get(`${API_URL}/api/config/company`).catch(() => null)
+                    axios.get(`${API_URL}/config/whatsapp/${cityParam}`).catch(() => null),
+                    axios.get(`${API_URL}/config/company`).catch(() => null)
                 ]);
                 if (waRes?.data?.success) {
                     setWhatsappNumber(waRes.data.number?.number || '573205792169');
@@ -58,7 +58,7 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             const sub = calculateSubtotal();
             const final_total = sub - discount.discountAmount;
 
-            const response = await axios.post(`${API_URL}/api/quotes`, {
+            const response = await axios.post(`${API_URL}/quotes`, {
                 clientName: clientName || 'Cliente Web',
                 clientPhone: clientPhone || null,
                 city: city || null,
