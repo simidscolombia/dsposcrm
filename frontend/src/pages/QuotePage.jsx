@@ -243,49 +243,59 @@ const QuotePage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            {showHeader && (
-                <header className="bg-white shadow-sm py-4 px-4 md:px-6 fixed w-full top-0 z-50">
-                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
-                            <div className="flex items-center gap-3">
-                                {canGoBack && (
-                                    <button
-                                        onClick={handleBack}
-                                        className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-                                        aria-label="Volver"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                        </svg>
-                                    </button>
-                                )}
-                                <h1 className="text-lg md:text-xl font-bold text-blue-600 flex items-center gap-2">
-                                    <span className="text-xl md:text-2xl">🚀</span>
-                                    <span>Discovery Systems</span>
-                                </h1>
-                            </div>
-                            <div className="md:hidden text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                                {step + 1} / {totalSteps}
+            <header className="bg-[#1c242e] shadow-lg py-3 md:py-4 px-4 md:px-6 fixed w-full top-0 z-50 border-b border-gray-800">
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-[#12181f]">
+                    <div
+                        className={`h-full transition-all duration-700 ease-out bg-[#A8E0F0]`}
+                        style={{ width: `${progressPercent}%`, boxShadow: '0 0 10px #A8E0F0' }}
+                    ></div>
+                </div>
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
+                        <div className="flex items-center gap-3">
+                            {canGoBack && (
+                                <button
+                                    onClick={handleBack}
+                                    className="text-gray-400 hover:text-[#A8E0F0] transition-colors p-2 rounded-full hover:bg-white/5"
+                                    aria-label="Volver"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                    </svg>
+                                </button>
+                            )}
+                            <div className="flex items-center gap-2">
+                                <svg viewBox="0 0 100 100" className="w-8 h-8 md:w-10 md:h-10 text-[#A8E0F0]" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M25 80 C10 60, 10 40, 25 20 C40 5, 60 5, 75 20 C90 40, 90 60, 75 80 C60 95, 40 95, 25 80 Z" />
+                                    <path d="M35 70 V35 C35 25, 55 25, 55 35 C55 45, 35 45, 35 55 C35 65, 55 65, 55 70" />
+                                </svg>
+                                <div className="flex flex-col">
+                                    <span className="text-white font-bold text-lg md:text-xl leading-none tracking-wide">Discovery</span>
+                                    <span className="text-gray-400 text-[10px] md:text-xs font-semibold leading-none tracking-widest uppercase mt-0.5">Systems Pos</span>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Middle Guided Text */}
-                        <div className="flex-1 text-center hidden md:block">
-                            <h2 className="text-sm font-bold text-gray-800">{STEP_GUIDES[step]?.title}</h2>
-                            <p className="text-xs text-gray-500">{STEP_GUIDES[step]?.subtitle}</p>
-                        </div>
-
-                        <div className="hidden md:flex items-center gap-3">
-                            <span className="text-sm font-medium text-gray-400">
-                                {STEP_LABELS[step] || ''}
-                            </span>
-                            <div className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                                {step + 1} / {totalSteps}
-                            </div>
+                        <div className="md:hidden text-xs font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
+                            {step + 1} / {totalSteps}
                         </div>
                     </div>
-                </header>
-            )}
+
+                    {/* Middle Guided Text */}
+                    <div className="flex-1 text-center hidden md:block">
+                        <h2 className="text-sm font-bold text-white">{STEP_GUIDES[step]?.title}</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">{STEP_GUIDES[step]?.subtitle}</p>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-400">
+                            {STEP_LABELS[step] || ''}
+                        </span>
+                        <div className="text-sm font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
+                            {step + 1} / {totalSteps}
+                        </div>
+                    </div>
+                </div>
+            </header>
 
             <main className={`flex-1 ${showHeader ? 'pt-28 md:pt-24' : 'pt-4'} px-2 md:px-4 pb-12 flex flex-col items-center justify-start md:justify-center`}>
 
@@ -301,18 +311,7 @@ const QuotePage = () => {
                 </div>
             </main>
 
-            {/* Progress Bar */}
-            {showHeader && (
-                <div className="fixed bottom-0 left-0 w-full h-1.5 md:h-2 bg-gray-200 z-50">
-                    <div
-                        className={`h-full transition-all duration-700 ease-out ${step >= ROULETTE_STEP
-                            ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                            : 'bg-gradient-to-r from-blue-500 to-green-500'
-                            }`}
-                        style={{ width: `${progressPercent}%` }}
-                    ></div>
-                </div>
-            )}
+            {/* Bottom Progress Bar Removed (Moved to header) */}
         </div>
     );
 };

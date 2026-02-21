@@ -287,34 +287,37 @@ const ClientPortal = () => {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col font-sans h-screen overflow-hidden">
             {/* COMPOSITE HEADER AND PROGRESS */}
-            <header className="bg-white border-b border-gray-200 shadow-sm z-10 sticky top-0">
+            <header className="bg-[#1c242e] border-b border-gray-800 shadow-md z-10 sticky top-0">
                 <div className="max-w-4xl mx-auto px-4 py-3">
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg shadow-md">
-                                <FaRobot />
+                            <div className="w-10 h-10 flex items-center justify-center">
+                                <svg viewBox="0 0 100 100" className="w-full h-full text-[#A8E0F0]" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M25 80 C10 60, 10 40, 25 20 C40 5, 60 5, 75 20 C90 40, 90 60, 75 80 C60 95, 40 95, 25 80 Z" />
+                                    <path d="M35 70 V35 C35 25, 55 25, 55 35 C55 45, 35 45, 35 55 C35 65, 55 65, 55 70" />
+                                </svg>
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-gray-800">{advisorName}</h1>
-                                <p className="text-xs text-green-500 font-medium flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En línea (Atención Personalizada)
+                                <h1 className="text-lg font-bold text-white">{advisorName}</h1>
+                                <p className="text-xs text-[#A8E0F0] font-medium flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-[#A8E0F0] shadow-[0_0_8px_#A8E0F0] rounded-full animate-pulse"></span> En línea (Atención Personalizada)
                                 </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 hidden sm:block">
-                                <span className="text-xs font-bold text-indigo-800">Cotización #{String(quote?.id).padStart(4, '0')}</span>
+                            <div className="bg-[#12181f] px-3 py-1 rounded-full border border-gray-700 hidden sm:block">
+                                <span className="text-xs font-bold text-[#A8E0F0]">Cotización #{String(quote?.id).padStart(4, '0')}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* PROGRESS BAR */}
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
+                    <div className="w-full bg-[#12181f] rounded-full h-2 mt-2">
+                        <div className="bg-[#A8E0F0] shadow-[0_0_10px_#A8E0F0] h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
                     </div>
                     <div className="flex justify-between mt-1 px-1">
                         <span className="text-[10px] text-gray-400 font-medium">Progreso del Pedido</span>
-                        <span className="text-[10px] text-indigo-600 font-bold">{progress}% completado</span>
+                        <span className="text-[10px] text-[#A8E0F0] font-bold">{progress}% completado</span>
                     </div>
                 </div>
             </header>
