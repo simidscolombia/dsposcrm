@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay } from 'react-icons/fa';
 import ChatbotWidget from './ChatbotWidget';
 
@@ -163,158 +162,68 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
     // ============================================
     // GENERAR PDF CON DESCUENTO APLICADO
     // ============================================
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
         try {
-            const doc = new jsPDF();
+            const originalBtnText = document.getElementById('btn-download-pdf')?.innerHTML;
+            const btn = document.getElementById('btn-download-pdf');
+            if (btn) btn.innerHTML = '<span class="animate-spin mr-2">↻</span> Generando PDF...';
 
-            // -- HEADER --
-            doc.setFillColor(37, 99, 235);
-            doc.rect(0, 0, 210, 45, 'F');
+            const payload = {
+                clientName,
+                clientPhone,
+                city,
+                businessType,
+                systemType,
+                products: selectedProducts,
+                prizeLabel: discount.label,
+                prizeDetail: discount.description,
+                discountPercent: discount.value,
+                discountAmount: discount.discountAmount,
+                subtotal: subtotal,
+                finalTotal: finalTotal
+            };
 
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(26);
-            doc.setFont('helvetica', 'bold');
-            doc.text("Discovery Systems", 20, 22);
-
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            doc.text("Cotización Personalizada", 20, 33);
-
-            // Fecha
-            const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
-            doc.setFontSize(10);
-            doc.text(fecha, 190, 22, { align: 'right' });
-
-            // -- DATOS CLIENTE --
-            doc.setTextColor(0, 0, 0);
-            let y = 58;
-
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Cliente: ${clientName || 'Estimado cliente'}`, 20, y);
-            y += 7;
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            if (clientPhone) {
-                doc.text(`WhatsApp: ${clientPhone}`, 20, y);
-                y += 6;
-            }
-            if (city) {
-                doc.text(`Ciudad: ${city}`, 20, y);
-                y += 6;
-            }
-            if (businessType) {
-                doc.text(`Tipo de negocio: ${businessType}`, 20, y);
-                y += 6;
-            }
-
-            y += 5;
-
-            // -- TABLA DE PRODUCTOS --
-            const tableBody = (selectedProducts || []).map(p => [
-                p.name || 'Producto',
-                p.category || '-',
-                (p.quantity || 1).toString(),
-                formatCurrency(parseFloat(p.price)),
-                formatCurrency(parseFloat(p.price) * (p.quantity || 1))
-            ]);
-
-            autoTable(doc, {
-                startY: y,
-                head: [['Producto', 'Categoría', 'Cant.', 'P. Unitario', 'Subtotal']],
-                body: tableBody,
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [37, 99, 235],
-                    textColor: 255,
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: { fontSize: 9, cellPadding: 4 },
-                alternateRowStyles: { fillColor: [240, 249, 255] },
-                columnStyles: {
-                    0: { cellWidth: 60 },
-                    2: { halign: 'center', cellWidth: 18 },
-                    3: { halign: 'right', cellWidth: 35 },
-                    4: { halign: 'right', cellWidth: 35 }
-                }
+            const res = await axios.post(`${API_URL}/pdf/generate`, payload, {
+                responseType: 'arraybuffer'
             });
 
-            let finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) || (y + 50);
-            finalY += 10;
+            const contentType = res.headers['content-type'];
 
-            // -- SUBTOTAL --
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(80, 80, 80);
-            doc.text('Subtotal:', 130, finalY);
-            doc.text(formatCurrency(subtotal), 190, finalY, { align: 'right' });
-            finalY += 8;
+            if (contentType && contentType.includes('application/json')) {
+                // If Vercel blocked PDF Puppeteer generation, we get a JSON fallback
+                const text = new TextDecoder().decode(res.data);
+                const json = JSON.parse(text);
 
-            // -- PREMIO / DESCUENTO --
-            if (discount.discountAmount > 0) {
-                doc.setFillColor(255, 251, 235);
-                doc.roundedRect(18, finalY - 5, 174, 14, 3, 3, 'F');
-                doc.setDrawColor(245, 158, 11);
-                doc.roundedRect(18, finalY - 5, 174, 14, 3, 3, 'S');
-
-                doc.setTextColor(180, 83, 9);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`🎁 Premio: ${discount.label}`, 22, finalY + 3);
-                doc.setTextColor(22, 163, 74);
-                doc.text(`- ${formatCurrency(discount.discountAmount)}`, 190, finalY + 3, { align: 'right' });
-                finalY += 18;
-            } else if (discount.type === 'bonus') {
-                doc.setFillColor(240, 253, 244);
-                doc.roundedRect(18, finalY - 5, 174, 14, 3, 3, 'F');
-                doc.setDrawColor(34, 197, 94);
-                doc.roundedRect(18, finalY - 5, 174, 14, 3, 3, 'S');
-
-                doc.setTextColor(22, 101, 52);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`🎁 Premio incluido: ${discount.label}`, 22, finalY + 3);
-                doc.setTextColor(22, 101, 52);
-                doc.text('GRATIS', 190, finalY + 3, { align: 'right' });
-                finalY += 18;
+                if (json.html) {
+                    const win = window.open('', '_blank');
+                    win.document.write(json.html);
+                    win.document.close();
+                    setTimeout(() => {
+                        win.print();
+                    }, 800);
+                } else {
+                    alert('Error al generar PDF: ' + json.error);
+                }
+            } else {
+                // Happy path: We received a PDF blob
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\\s+/g, '_')}_${Date.now()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
             }
 
-            // -- TOTAL FINAL --
-            doc.setDrawColor(37, 99, 235);
-            doc.setLineWidth(1);
-            doc.line(120, finalY - 2, 192, finalY - 2);
-
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(37, 99, 235);
-            doc.text('TOTAL:', 130, finalY + 8);
-            doc.text(formatCurrency(finalTotal), 190, finalY + 8, { align: 'right' });
-
-            finalY += 25;
-
-            // -- NOTA DE VALIDEZ --
-            doc.setFontSize(9);
-            doc.setTextColor(150, 150, 150);
-            doc.setFont('helvetica', 'italic');
-            doc.text('* Cotización válida por 48 horas. Precios sujetos a cambio sin previo aviso.', 20, finalY);
-            doc.text('* El premio aplicado es válido únicamente para esta cotización.', 20, finalY + 5);
-
-            // -- FOOTER --
-            doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.setFont('helvetica', 'normal');
-            const footerLine1 = companyConfig?.pdf_footer || 'Discovery Systems POS | NIT: 88243048 | Bucaramanga, Colombia';
-            const footerLine2 = companyConfig?.pdf_contact || 'Contacto: +57 320 579 2169 | www.discoverysystems.com';
-            doc.text(footerLine1, 105, 275, { align: 'center' });
-            doc.text(footerLine2, 105, 280, { align: 'center' });
-
-            // Guardar PDF
-            const fileName = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-            doc.save(fileName);
             setPdfGenerated(true);
+            if (btn) btn.innerHTML = originalBtnText;
 
         } catch (error) {
             console.error("Error generando PDF:", error);
+            const btn = document.getElementById('btn-download-pdf');
+            if (btn) btn.innerHTML = '<span class="mr-2">❌</span> Error. Intenta de nuevo';
             alert("Hubo un error generando el PDF. Por favor intenta nuevamente.");
         }
     };
@@ -469,6 +378,7 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
 
                 {/* Download PDF */}
                 <button
+                    id="btn-download-pdf"
                     onClick={handleDownloadPDF}
                     className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99] flex items-center justify-center gap-3"
                 >
