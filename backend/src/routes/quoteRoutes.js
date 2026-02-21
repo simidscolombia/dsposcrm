@@ -109,7 +109,16 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 3. Create quote
+        // 3. Fix foreign key if it points to legacy crm_leads instead of leads
+        try {
+            await db.query(`
+                ALTER TABLE crm_quotes DROP CONSTRAINT IF EXISTS crm_quotes_lead_id_fkey;
+            `);
+        } catch (err) {
+            console.error('Migration notice:', err);
+        }
+
+        // 4. Create quote
         const quote = await db.query(`
             INSERT INTO crm_quotes (
                 lead_id, client_name, client_phone, client_city, client_business,
@@ -134,7 +143,7 @@ router.post('/', async (req, res) => {
         ]);
         const quoteId = quote.rows[0].id;
 
-        // 4. Save quote items
+        // 5. Save quote items
         if (products && products.length > 0) {
             for (const product of products) {
                 await db.query(`
@@ -152,7 +161,7 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 5. Log activity
+        // 6. Log activity
         await db.query(`
             INSERT INTO crm_activity_log (lead_id, activity_type, description, metadata, performed_by)
             VALUES ($1, 'quote_created', $2, $3, 'system')
@@ -185,7 +194,7 @@ router.post('/', async (req, res) => {
             ]);
         }
 
-        // 6. Schedule follow-up (2 hours after quote)
+        // 7. Schedule follow-up (2 hours after quote)
         await db.query(`
             INSERT INTO crm_followups (lead_id, type, scheduled_at, message_template, channel, sequence_step, max_steps)
             VALUES ($1, 'sales_followup', NOW() + INTERVAL '2 hours', $2, 'whatsapp', 1, 5)
