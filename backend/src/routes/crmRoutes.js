@@ -125,6 +125,14 @@ router.post('/migrate', async (req, res) => {
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
+        // Force add columns if table already existed from older schema
+        const quoteItemAlters = [
+            "ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS product_name VARCHAR(255) DEFAULT 'Producto'",
+            "ALTER TABLE crm_quote_items ADD COLUMN IF NOT EXISTS product_category VARCHAR(50)"
+        ];
+        for (const sql of quoteItemAlters) {
+            try { await db.query(sql); } catch (e) { /* column may exist */ }
+        }
         results.push('✅ crm_quote_items');
 
         // 4. CLIENTES EXISTENTES
