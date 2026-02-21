@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 
 class PdfController {
     async generateQuotePdf(req, res) {
@@ -356,14 +355,13 @@ class PdfController {
             </html>
             `;
 
-            // Use Puppeteer to generate PDF
-            // Note: In Vercel serverless, standard puppeteer may throw error. We catch it and warn.
+            // Use Puppeteer to generate PDF dynamically if available
             try {
-                const browser = await puppeteer.launch({
+                const puppeteer = await import('puppeteer');
+                const browser = await puppeteer.default.launch({
                     headless: 'new',
                     args: ['--no-sandbox', '--disable-setuid-sandbox']
                 });
-
                 const page = await browser.newPage();
                 await page.setContent(html, { waitUntil: 'networkidle0' });
 
