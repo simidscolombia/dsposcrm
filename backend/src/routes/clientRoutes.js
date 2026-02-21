@@ -276,6 +276,46 @@ router.put('/:id', async (req, res) => {
 });
 
 // ============================================
+// POST /api/clients/:id/status-notify
+// Enviar mensajes estandarizados de estado (Nube a Local, Desconectado)
+// ============================================
+router.post('/:id/status-notify', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type } = req.body; // 'downgrade_to_local' or 'long_disconnected'
+
+        const clientReq = await db.query('SELECT business_name, whatsapp FROM crm_clients WHERE id = $1', [id]);
+        if (clientReq.rows.length === 0) return res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+
+        const client = clientReq.rows[0];
+        let messageLog = '';
+
+        if (type === 'downgrade_to_local') {
+            messageLog = `Mensaje enviado a ${client.whatsapp}: "Confirmamos tu solicitud de baja de la nube. Puedes continuar usando Discovery POS de manera local y gratuita. Si deseas volver a los beneficios en la nube, contáctanos."`;
+
+            // Si le damos de baja automáticamente lo bajamos a plan_type 'local' y monthly_amount 0
+            await db.query(`UPDATE crm_clients SET plan_type = 'local', monthly_amount = 0, cloud_url = NULL, updated_at = NOW() WHERE id = $1`, [id]);
+        }
+        else if (type === 'long_disconnected') {
+            messageLog = `Mensaje enviado a ${client.whatsapp}: "Notamos que llevas un tiempo sin utilizar nuestro sistema en la nube. Recuerda que puedes seguir utilizando Discovery POS en modo local sin mensualidades. ¡Estamos para ayudarte!"`;
+        }
+        else {
+            return res.status(400).json({ success: false, error: 'Tipo de notificación inválido' });
+        }
+
+        // Log the activity
+        await db.query(`
+            INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
+            VALUES ($1, 'status_notification_sent', $2, 'admin')
+        `, [id, messageLog]);
+
+        res.json({ success: true, message: messageLog });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
 // GET /api/clients/billing/summary
 // Resumen de facturación del mes actual
 // ============================================

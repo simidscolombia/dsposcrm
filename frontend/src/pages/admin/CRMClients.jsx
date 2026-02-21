@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
-    FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench
+    FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
+    FaArrowDown, FaBell
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -117,6 +118,25 @@ const CRMClients = () => {
         } catch (error) {
             console.error('Error saving client:', error);
             alert('Error al guardar el cliente');
+        }
+    };
+
+    const handleStatusNotify = async (id, type) => {
+        let confirmMsg = type === 'downgrade_to_local'
+            ? '¿Estás seguro de dar de baja la NUBE de este cliente y enviarle el mensaje de WhatsApp de que ahora es LOCAL (Gratis)?'
+            : '¿Enviar mensaje de WhatsApp notificando que lleva TIEMPO DESCONECTADO de la nube?';
+
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const res = await axios.post(`${API_URL}/clients/${id}/status-notify`, { type });
+            if (res.data.success) {
+                alert(res.data.message);
+                fetchClients(); // recarga para ver si cambió a local
+            }
+        } catch (error) {
+            console.error('Error sending notification:', error);
+            alert('Error al enviar notificación de estado');
         }
     };
 
@@ -279,13 +299,29 @@ const CRMClients = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleEditClick(c)}
-                                                className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition ml-auto"
-                                                title="Editar Ficha Técnica"
-                                            >
-                                                <FaEdit />
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleStatusNotify(c.id, 'long_disconnected')}
+                                                    className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center hover:bg-orange-100 transition"
+                                                    title="Aviso: Mucho tiempo Desconectado"
+                                                >
+                                                    <FaBell />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStatusNotify(c.id, 'downgrade_to_local')}
+                                                    className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 text-purple-600 flex items-center justify-center hover:bg-purple-100 transition"
+                                                    title="Dar de baja NUBE -> Pasar a LOCAL"
+                                                >
+                                                    <FaArrowDown />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEditClick(c)}
+                                                    className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition"
+                                                    title="Editar Ficha Técnica"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
