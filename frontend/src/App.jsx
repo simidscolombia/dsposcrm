@@ -7,6 +7,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminPrizes from './pages/admin/AdminPrizes';
+// CRM Imports
+import CRMPipeline from './pages/admin/CRMPipeline';
+import CRMClients from './pages/admin/CRMClients';
 
 function App() {
   // Global Click Sound Effect
@@ -68,6 +71,8 @@ function App() {
           <Route path="categories" element={<AdminCategories />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="prizes" element={<AdminPrizes />} />
+          <Route path="pipeline" element={<CRMPipeline />} />
+          <Route path="clients" element={<CRMClients />} />
         </Route>
       </Routes>
     </HashRouter>

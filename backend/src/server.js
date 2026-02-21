@@ -12,6 +12,8 @@ import prizeRoutes from './routes/prizeRoutes.js'; // Nueva ruta de premios
 import crmRoutes from './routes/crmRoutes.js'; // CRM completo
 import quoteRoutes from './routes/quoteRoutes.js'; // Cotizaciones
 import configRoutes from './routes/configRoutes.js'; // Configuración
+import pipelineRoutes from './routes/pipelineRoutes.js'; // Pipeline ventas
+import clientRoutes from './routes/clientRoutes.js'; // Clientes
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use('/api/prizes', prizeRoutes); // Ruta para Premios
 app.use('/api/admin/crm', crmRoutes); // CRM completo
 app.use('/api/quotes', quoteRoutes); // Cotizaciones
 app.use('/api/config', configRoutes); // Configuración
+app.use('/api/pipeline', pipelineRoutes); // Pipeline ventas
+app.use('/api/clients', clientRoutes); // Clientes
 
 app.get('/health', (req, res) => {
   res.json({
