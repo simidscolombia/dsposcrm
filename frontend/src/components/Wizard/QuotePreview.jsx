@@ -1,9 +1,42 @@
-import React, { useState } from 'react';
-import { FaPlus, FaMinus, FaTrash, FaArrowLeft, FaGift, FaShoppingCart, FaEdit } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { FaPlus, FaMinus, FaTrash, FaArrowLeft, FaGift, FaShoppingCart, FaEdit, FaExchangeAlt, FaTimes, FaSearch, FaCheck } from 'react-icons/fa';
 
 const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientName }) => {
     const [products, setProducts] = useState(selectedProducts || []);
+    const [allProducts, setAllProducts] = useState([]); // All products from DB
+    const [loadingProducts, setLoadingProducts] = useState(false);
 
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [modalMode, setModalMode] = useState('swap'); // 'swap' | 'add'
+    const [swapIndex, setSwapIndex] = useState(null); // Index of product being swapped
+    const [filterCategory, setFilterCategory] = useState(''); // Filter for modal
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // =============================================
+    // FETCH ALL PRODUCTS FROM DB
+    // =============================================
+    const fetchAllProducts = async () => {
+        if (allProducts.length > 0) return; // Already loaded
+        setLoadingProducts(true);
+        try {
+            const RAW_API_URL = import.meta.env.VITE_API_URL || '';
+            const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
+            const res = await axios.get(`${API_URL}/api/products`);
+            if (res.data.success) {
+                setAllProducts(res.data.products);
+            }
+        } catch (error) {
+            console.error("Error cargando productos:", error);
+        } finally {
+            setLoadingProducts(false);
+        }
+    };
+
+    // =============================================
+    // PRODUCT ACTIONS
+    // =============================================
     const updateQuantity = (index, delta) => {
         setProducts(prev => {
             const updated = [...prev];
@@ -18,6 +51,57 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
         setProducts(prev => prev.filter((_, i) => i !== index));
     };
 
+    // SWAP: Open modal with same-category products
+    const openSwapModal = (index) => {
+        const product = products[index];
+        setSwapIndex(index);
+        setFilterCategory(product.category || '');
+        setModalMode('swap');
+        setSearchTerm('');
+        setShowModal(true);
+        fetchAllProducts();
+    };
+
+    // ADD: Open modal with all products
+    const openAddModal = () => {
+        setSwapIndex(null);
+        setFilterCategory('');
+        setModalMode('add');
+        setSearchTerm('');
+        setShowModal(true);
+        fetchAllProducts();
+    };
+
+    // Select product from modal
+    const handleSelectProduct = (product) => {
+        if (modalMode === 'swap' && swapIndex !== null) {
+            // Replace the product at swapIndex, keep same quantity
+            setProducts(prev => {
+                const updated = [...prev];
+                updated[swapIndex] = { ...product, quantity: updated[swapIndex].quantity };
+                return updated;
+            });
+        } else if (modalMode === 'add') {
+            // Check if product already exists in cart
+            const existingIndex = products.findIndex(p => p.id === product.id);
+            if (existingIndex >= 0) {
+                // Increase quantity
+                setProducts(prev => {
+                    const updated = [...prev];
+                    updated[existingIndex] = { ...updated[existingIndex], quantity: updated[existingIndex].quantity + 1 };
+                    return updated;
+                });
+            } else {
+                // Add new product
+                setProducts(prev => [...prev, { ...product, quantity: 1 }]);
+            }
+        }
+        setShowModal(false);
+    };
+
+    // =============================================
+    // CALCULATIONS
+    // =============================================
     const calculateSubtotal = () => {
         return products.reduce((sum, p) => sum + (parseFloat(p.price) * p.quantity), 0);
     };
@@ -35,14 +119,48 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
         onConfirm(products);
     };
 
-    const renderImage = (img) => {
+    // =============================================
+    // MODAL: Filtered products
+    // =============================================
+    const getModalProducts = () => {
+        let filtered = allProducts;
+
+        // Filter by category (for swap mode)
+        if (filterCategory) {
+            filtered = filtered.filter(p =>
+                (p.category || '').toLowerCase() === filterCategory.toLowerCase()
+            );
+        }
+
+        // Filter by search term
+        if (searchTerm) {
+            filtered = filtered.filter(p =>
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (p.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        return filtered;
+    };
+
+    // Get unique categories from all products
+    const getCategories = () => {
+        const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+        return cats;
+    };
+
+    // =============================================
+    // RENDER HELPERS
+    // =============================================
+    const renderImage = (img, size = 'md') => {
         const isUrl = img && (img.startsWith('http') || img.startsWith('/'));
+        const sizeClasses = size === 'sm' ? 'w-10 h-10' : 'w-12 h-12 md:w-14 md:h-14';
         return (
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">
+            <div className={`${sizeClasses} rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100`}>
                 {isUrl ? (
                     <img src={img} alt="Product" className="w-full h-full object-contain rounded-lg p-1" />
                 ) : (
-                    <span className="text-2xl">{img || '📦'}</span>
+                    <span className={size === 'sm' ? 'text-xl' : 'text-2xl'}>{img || '📦'}</span>
                 )}
             </div>
         );
@@ -94,7 +212,7 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                         {/* Products Table */}
                         <div className="divide-y divide-gray-100">
                             {products.map((product, index) => (
-                                <div key={product.id || index} className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-4 hover:bg-gray-50 transition-colors group">
+                                <div key={`${product.id}-${index}`} className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-4 hover:bg-gray-50 transition-colors group">
                                     {/* Image */}
                                     {renderImage(product.image_url)}
 
@@ -106,9 +224,13 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                         <p className="text-xs text-gray-400 uppercase tracking-wider">
                                             {product.category}
                                         </p>
-                                        <p className="text-sm font-medium text-gray-600 md:hidden">
-                                            {formatCurrency(parseFloat(product.price))} c/u
-                                        </p>
+                                        {/* Swap Button */}
+                                        <button
+                                            onClick={() => openSwapModal(index)}
+                                            className="mt-1 text-[11px] text-blue-500 hover:text-blue-700 font-semibold flex items-center gap-1 transition-colors"
+                                        >
+                                            <FaExchangeAlt className="text-[9px]" /> Cambiar
+                                        </button>
                                     </div>
 
                                     {/* Unit Price (Desktop) */}
@@ -122,7 +244,7 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                     {/* Quantity Controls */}
                                     <div className="flex items-center bg-gray-100 rounded-lg p-1 flex-shrink-0">
                                         <button
-                                            onClick={() => updateQuantity(index, -1)}
+                                            onClick={() => product.quantity === 1 ? removeProduct(index) : updateQuantity(index, -1)}
                                             className="w-7 h-7 flex items-center justify-center bg-white text-gray-600 rounded shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors"
                                         >
                                             {product.quantity === 1 ? <FaTrash className="text-[9px]" /> : <FaMinus className="text-[9px]" />}
@@ -144,17 +266,18 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                             {formatCurrency(parseFloat(product.price) * product.quantity)}
                                         </p>
                                     </div>
-
-                                    {/* Remove Button */}
-                                    <button
-                                        onClick={() => removeProduct(index)}
-                                        className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 hidden md:block"
-                                        title="Eliminar"
-                                    >
-                                        <FaTrash className="text-xs" />
-                                    </button>
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Add Product Button - Inside Card */}
+                        <div className="px-6 py-3 border-t border-dashed border-gray-200">
+                            <button
+                                onClick={openAddModal}
+                                className="w-full py-3 border-2 border-dashed border-blue-200 rounded-xl text-blue-500 hover:text-blue-700 hover:border-blue-400 hover:bg-blue-50 transition-all font-semibold text-sm flex items-center justify-center gap-2"
+                            >
+                                <FaPlus className="text-xs" /> Agregar otro producto
+                            </button>
                         </div>
 
                         {/* Totals Footer */}
@@ -192,7 +315,7 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                             onClick={onGoBackToCatalog}
                             className="w-full bg-white text-gray-600 border-2 border-gray-200 py-3 px-6 rounded-xl font-semibold hover:border-blue-400 hover:text-blue-600 transition-all flex items-center justify-center gap-2"
                         >
-                            <FaEdit /> Agregar más productos
+                            <FaArrowLeft /> Volver al catálogo
                         </button>
                     </div>
 
@@ -204,6 +327,173 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                     </div>
                 </>
             )}
+
+            {/* =============================================
+                MODAL: Swap / Add Product
+               ============================================= */}
+            {showModal && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+                >
+                    <div className="bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
+                            <div>
+                                <h3 className="text-white font-bold text-lg">
+                                    {modalMode === 'swap' ? '🔄 Cambiar producto' : '➕ Agregar producto'}
+                                </h3>
+                                <p className="text-blue-200 text-sm">
+                                    {modalMode === 'swap'
+                                        ? `Categoría: ${filterCategory}`
+                                        : 'Selecciona un producto del catálogo'
+                                    }
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                            >
+                                <FaTimes className="text-sm" />
+                            </button>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                            <div className="relative">
+                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Buscar producto..."
+                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-all"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Category Tabs (only in Add mode) */}
+                            {modalMode === 'add' && allProducts.length > 0 && (
+                                <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1">
+                                    <button
+                                        onClick={() => setFilterCategory('')}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === ''
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        Todos
+                                    </button>
+                                    {getCategories().map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setFilterCategory(cat)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === cat
+                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Product List */}
+                        <div className="flex-1 overflow-y-auto">
+                            {loadingProducts ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-3"></div>
+                                    <p className="text-gray-400 text-sm">Cargando productos...</p>
+                                </div>
+                            ) : getModalProducts().length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="text-4xl mb-3">🔍</div>
+                                    <p className="text-gray-500 font-medium">No se encontraron productos</p>
+                                    <p className="text-gray-400 text-sm mt-1">Intenta con otro término de búsqueda</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-50">
+                                    {getModalProducts().map(product => {
+                                        const isInCart = products.some(p => p.id === product.id);
+                                        const isCurrentSwap = modalMode === 'swap' && swapIndex !== null && products[swapIndex]?.id === product.id;
+
+                                        return (
+                                            <button
+                                                key={product.id}
+                                                onClick={() => !isCurrentSwap && handleSelectProduct(product)}
+                                                disabled={isCurrentSwap}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${isCurrentSwap
+                                                        ? 'bg-blue-50 opacity-60 cursor-not-allowed'
+                                                        : 'hover:bg-blue-50 active:bg-blue-100 cursor-pointer'
+                                                    }`}
+                                            >
+                                                {renderImage(product.image_url, 'sm')}
+
+                                                <div className="flex-grow min-w-0">
+                                                    <h4 className="font-medium text-gray-800 text-sm truncate">
+                                                        {product.name}
+                                                    </h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                                            {product.category}
+                                                        </span>
+                                                        {isInCart && !isCurrentSwap && (
+                                                            <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                                                En carrito
+                                                            </span>
+                                                        )}
+                                                        {isCurrentSwap && (
+                                                            <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                                                Producto actual
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className="font-bold text-gray-800 text-sm">
+                                                        {formatCurrency(parseFloat(product.price))}
+                                                    </p>
+                                                </div>
+
+                                                {!isCurrentSwap && (
+                                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                                        {modalMode === 'swap' ? <FaExchangeAlt className="text-xs" /> : <FaPlus className="text-xs" />}
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="w-full py-2.5 bg-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:bg-gray-300 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Animation Styles */}
+            <style>{`
+                @keyframes slide-up {
+                    from { transform: translateY(100%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-slide-up {
+                    animation: slide-up 0.3s ease-out forwards;
+                }
+            `}</style>
         </div>
     );
 };
