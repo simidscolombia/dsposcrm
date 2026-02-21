@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaPlus, FaMinus, FaTrash, FaArrowLeft, FaGift, FaShoppingCart, FaEdit, FaExchangeAlt, FaTimes, FaSearch, FaCheck } from 'react-icons/fa';
 
-const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientName }) => {
+const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientName, clientPhone, onUpdateClient }) => {
     const [products, setProducts] = useState(selectedProducts || []);
+
+    // Auth info
+    const [nameInput, setNameInput] = useState(clientName || '');
+    const [phoneInput, setPhoneInput] = useState(clientPhone || '');
     const [allProducts, setAllProducts] = useState([]); // All products from DB
     const [loadingProducts, setLoadingProducts] = useState(false);
 
@@ -116,6 +120,16 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
 
     const handleConfirm = () => {
         if (products.length === 0) return;
+
+        if (!nameInput.trim() || !phoneInput.trim()) {
+            alert('Por favor ingresa tu nombre y número de WhatsApp para poder continuar a la Ruleta y recibir tu copia por ahí.');
+            return;
+        }
+
+        if (onUpdateClient) {
+            onUpdateClient(nameInput.trim(), phoneInput.trim());
+        }
+
         onConfirm(products);
     };
 
@@ -297,6 +311,43 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                         </div>
                     </div>
 
+                    {/* Captura de Datos de Contacto (Obligatorio) */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mt-6 rounded-2xl p-5 md:p-6 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">!</div>
+                            <div>
+                                <h3 className="font-bold text-blue-900">¿A dónde enviamos tu copia?</h3>
+                                <p className="text-xs text-blue-700">Necesitamos tus datos para continuar a la ruleta final.</p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-blue-900 mb-1 ml-1" htmlFor="clientNameInput">Tu Nombre *</label>
+                                <input
+                                    id="clientNameInput"
+                                    type="text"
+                                    placeholder="Ej: Laura Ramírez"
+                                    value={nameInput}
+                                    onChange={(e) => setNameInput(e.target.value)}
+                                    className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-blue-900 mb-1 ml-1" htmlFor="clientPhoneInput">Tu WhatsApp *</label>
+                                <input
+                                    id="clientPhoneInput"
+                                    type="tel"
+                                    placeholder="Ej: 300 123 4567"
+                                    value={phoneInput}
+                                    onChange={(e) => setPhoneInput(e.target.value)}
+                                    className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Action Buttons */}
                     <div className="mt-6 space-y-3">
                         {/* Main CTA - Go to Roulette */}
@@ -379,8 +430,8 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                     <button
                                         onClick={() => setFilterCategory('')}
                                         className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === ''
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                             }`}
                                     >
                                         Todos
@@ -390,8 +441,8 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                             key={cat}
                                             onClick={() => setFilterCategory(cat)}
                                             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === cat
-                                                    ? 'bg-blue-600 text-white shadow-md'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {cat}
@@ -426,8 +477,8 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                                 onClick={() => !isCurrentSwap && handleSelectProduct(product)}
                                                 disabled={isCurrentSwap}
                                                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${isCurrentSwap
-                                                        ? 'bg-blue-50 opacity-60 cursor-not-allowed'
-                                                        : 'hover:bg-blue-50 active:bg-blue-100 cursor-pointer'
+                                                    ? 'bg-blue-50 opacity-60 cursor-not-allowed'
+                                                    : 'hover:bg-blue-50 active:bg-blue-100 cursor-pointer'
                                                     }`}
                                             >
                                                 {renderImage(product.image_url, 'sm')}

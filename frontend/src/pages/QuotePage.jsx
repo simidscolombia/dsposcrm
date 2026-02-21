@@ -188,6 +188,8 @@ const QuotePage = () => {
                     <QuotePreview
                         selectedProducts={selections.selectedProducts}
                         clientName={clientData.name}
+                        clientPhone={clientData.phone}
+                        onUpdateClient={(name, phone) => setClientData({ name, phone })}
                         onConfirm={handleQuoteConfirm}
                         onGoBackToCatalog={handleGoBackToCatalog}
                     />

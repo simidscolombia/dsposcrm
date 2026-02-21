@@ -145,102 +145,72 @@ const ClientPortal = () => {
                     </div>
                 )}
 
-                {/* STEP 1: RESUMEN */}
+                {/* STEP 1: RESUMEN Y CHAT */}
                 {currentStep === 'resume' && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Hola, {quote?.client_name}! 👋</h2>
-                        <p className="text-gray-600 mb-6">Revisa tu cotización y continuamos para preparar tu pedido.</p>
+                    <div className="space-y-6 animate-fade-in">
 
-                        <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-                            <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><FaBoxOpen className="text-indigo-500" /> Productos Solicitados</h3>
-                            <div className="space-y-3">
-                                {(quote?.items || []).map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-200 pb-2 last:border-0 last:pb-0">
-                                        <div>
-                                            <p className="font-medium text-gray-800">{item.product_name || item.name}</p>
-                                            <p className="text-xs text-gray-500">Cantidad: {item.quantity}</p>
-                                        </div>
-                                        <div className="font-bold text-gray-800">
-                                            {formatCurrency((item.unit_price || item.price) * (item.quantity || 1))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <div className="flex justify-between items-center mb-1 text-sm text-gray-600">
-                                    <span>Subtotal</span>
-                                    <span>{formatCurrency(quote?.subtotal)}</span>
-                                </div>
-                                {quote?.discount_amount > 0 && (
-                                    <div className="flex justify-between items-center mb-1 text-sm text-green-600 font-medium">
-                                        <span>Descuento aplicado 🎉</span>
-                                        <span>-{formatCurrency(quote?.discount_amount)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-dashed border-gray-300 text-lg font-black text-indigo-900">
-                                    <span>Total a pagar</span>
-                                    <span>{formatCurrency(quote?.final_total)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                            <button onClick={() => window.location.href = '/'} className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Modificar Pedido</button>
-                            <button onClick={handleConfirmStep1} className="flex-1 py-3 px-4 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">Confirmar y Seguir <FaArrowRight /></button>
-                        </div>
-
-                        {/* 🔍 More Options */}
-                        <div className="grid grid-cols-2 gap-3 mt-6 mb-6">
-                            <button
-                                onClick={() => window.open('https://www.youtube.com/watch?v=demo-video', '_blank')}
-                                className="bg-white border-2 border-purple-200 text-purple-700 p-4 rounded-xl hover:shadow-lg hover:border-purple-400 transition-all text-center"
-                            >
-                                <FaPlay className="text-2xl mx-auto mb-2" />
-                                <span className="text-sm font-bold block">Ver Demo</span>
-                                <span className="text-[10px] text-purple-400">Video 2 min</span>
-                            </button>
-
-                            <button
-                                onClick={() => window.open('https://calendly.com/discovery-systems/demo', '_blank')}
-                                className="bg-white border-2 border-orange-200 text-orange-700 p-4 rounded-xl hover:shadow-lg hover:border-orange-400 transition-all text-center"
-                            >
-                                <FaCalendarAlt className="text-2xl mx-auto mb-2" />
-                                <span className="text-sm font-bold block">Agendar Demo</span>
-                                <span className="text-[10px] text-orange-400">Elige horario</span>
-                            </button>
-                        </div>
-
-                        {/* 🤖 Chatbot */}
+                        {/* 🤖 Chatbot siempre visible arriba */}
                         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl shadow-lg p-5 border border-indigo-200">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl">🤖</div>
-                                    <div>
-                                        <h3 className="font-bold text-gray-800 text-sm">¿Tienes preguntas?</h3>
-                                        <p className="text-xs text-gray-500">Nuestro asistente IA está aquí</p>
+                            <div className="flex items-center gap-3 mb-4 border-b border-indigo-100 pb-3">
+                                <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl shadow-md">🤖</div>
+                                <div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Tu Asesor IA</h3>
+                                    <p className="text-xs text-gray-500">Puedes preguntarme sobre tu cotización o pedir una demo.</p>
+                                </div>
+                            </div>
+                            <ChatbotWidget
+                                quoteContext={{ modules: quote?.items, total: quote?.final_total, quoteId: quote?.id }}
+                                leadName={quote?.client_name}
+                                leadId={quote?.id}
+                            />
+                        </div>
+
+                        {/* RESUMEN MODULE */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Resumen de tu Pedido</h2>
+                            <p className="text-gray-600 mb-6">Revisa tu cotización y continuamos para preparar el envío.</p>
+
+                            <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
+                                <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><FaBoxOpen className="text-indigo-500" /> Productos Solicitados</h3>
+                                <div className="space-y-3">
+                                    {(quote?.items || []).map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-200 pb-2 last:border-0 last:pb-0">
+                                            <div>
+                                                <p className="font-medium text-gray-800">{item.product_name || item.name}</p>
+                                                <p className="text-xs text-gray-500">Cantidad: {item.quantity}</p>
+                                            </div>
+                                            <div className="font-bold text-gray-800">
+                                                {formatCurrency((item.unit_price || item.price) * (item.quantity || 1))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <div className="flex justify-between items-center mb-1 text-sm text-gray-600">
+                                        <span>Subtotal</span>
+                                        <span>{formatCurrency(quote?.subtotal)}</span>
+                                    </div>
+                                    {quote?.discount_amount > 0 && (
+                                        <div className="flex justify-between items-center mb-1 text-sm text-green-600 font-medium">
+                                            <span>Descuento aplicado 🎉</span>
+                                            <span>-{formatCurrency(quote?.discount_amount)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-dashed border-gray-300 text-lg font-black text-indigo-900">
+                                        <span>Total a pagar</span>
+                                        <span>{formatCurrency(quote?.final_total)}</span>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setShowChatbot(!showChatbot)}
-                                    className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors font-semibold text-sm"
-                                >
-                                    {showChatbot ? 'Cerrar' : 'Abrir Chat'}
-                                </button>
                             </div>
-                            {showChatbot && (
-                                <div className="mt-4">
-                                    <ChatbotWidget
-                                        quoteContext={{ modules: quote?.items, total: quote?.final_total, quoteId: quote?.id }}
-                                        leadName={quote?.client_name}
-                                        leadId={quote?.id}
-                                    />
-                                </div>
-                            )}
+
+                            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                                <button onClick={() => window.location.href = '/'} className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Modificar Pedido</button>
+                                <button onClick={handleConfirmStep1} className="flex-1 py-3 px-4 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">Confirmar y Seguir <FaArrowRight /></button>
+                            </div>
                         </div>
                     </div>
                 )}
-
 
                 {/* STEP 2: SHIPPING */}
                 {currentStep === 'shipping' && (
@@ -296,30 +266,47 @@ const ClientPortal = () => {
 
                         <div className="space-y-4 mb-8">
                             {/* Option 1 */}
-                            <label className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'contra_entrega' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                            <div className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'contra_entrega' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`} onClick={() => setPaymentMethod('contra_entrega')}>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1">
-                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'contra_entrega'} onChange={() => setPaymentMethod('contra_entrega')} />
+                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'contra_entrega'} readOnly />
                                     </div>
-                                    <div>
+                                    <div className="w-full">
                                         <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">Pago Contra Entrega 🚚</h4>
-                                        <p className="text-sm text-gray-600 mt-1">Paga el total en efectivo o transferencia cuando recibas tus equipos en la puerta de tu local. (Aplica para ciudades principales).</p>
+                                        <p className="text-sm text-gray-600 mt-1 mb-3">Paga el total en efectivo o transferencia cuando recibas tus equipos en la puerta de tu local. (Aplica para ciudades principales).</p>
+
+                                        {paymentMethod === 'contra_entrega' && (
+                                            <div className="mt-4 p-4 bg-white rounded-lg border border-indigo-100 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                                                <p className="text-xs font-bold text-indigo-800 mb-1">Para aprobar el pago contra entrega requerimos 2 documentos:</p>
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 mb-1">1. RUT (PDF o Imagen)</label>
+                                                    <input type="file" accept=".pdf,image/*" className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 mb-1">2. Cámara de Comercio (Opcional)</label>
+                                                    <input type="file" accept=".pdf,image/*" className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                                </div>
+                                                <p className="text-[10px] text-gray-400 italic">Nota: Tus archivos se envían seguros a nuestro departamento contable.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            </label>
+                            </div>
 
                             {/* Option 2 */}
-                            <label className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'transferencia' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}>
+                            <div className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'transferencia' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`} onClick={() => setPaymentMethod('transferencia')}>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1">
-                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'transferencia'} onChange={() => setPaymentMethod('transferencia')} />
+                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'transferencia'} readOnly />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">Transferencia Bancaria 🏦</h4>
                                         <p className="text-sm text-gray-600 mt-1">Bancolombia, Nequi, Davivienda. Te enviaremos los datos de depósito al WhatsApp.</p>
                                     </div>
                                 </div>
-                            </label>
+                            </div>
 
                             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex gap-3 text-sm text-yellow-800 mt-4">
                                 <span className="text-lg">📄</span>
