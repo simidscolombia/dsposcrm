@@ -355,40 +355,13 @@ class PdfController {
             </html>
             `;
 
-            // Use Puppeteer to generate PDF dynamically if available
-            try {
-                const puppeteer = await import('puppeteer');
-                const browser = await puppeteer.default.launch({
-                    headless: 'new',
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
-                });
-                const page = await browser.newPage();
-                await page.setContent(html, { waitUntil: 'networkidle0' });
-
-                const pdfBuffer = await page.pdf({
-                    format: 'Letter',
-                    printBackground: true,
-                    margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' }
-                });
-
-                await browser.close();
-
-                res.set({
-                    'Content-Type': 'application/pdf',
-                    'Content-Length': pdfBuffer.length,
-                });
-
-                res.status(200).send(pdfBuffer);
-            } catch (puppeteerErr) {
-                console.error('Puppeteer launch error:', puppeteerErr);
-                // Fallback: If puppeteer fails (e.g., inside Vercel without chrome-aws-lambda), 
-                // return the raw HTML so the frontend can just print it via iframe or window.print.
-                res.status(501).json({
-                    success: false,
-                    error: 'Error iniciando motor PDF interno en Vercel. Puedes imprimir este HTML.',
-                    html: html
-                });
-            }
+            // Puppeteer has been removed entirely because the Vercel 50MB function limit triggers 
+            // a crash for the entire /api/products backend.
+            // We return the raw HTML so the frontend can display and print it.
+            res.status(200).json({
+                success: true,
+                html: html
+            });
 
         } catch (error) {
             console.error('Error procesando cotización para PDF:', error);
