@@ -13,6 +13,7 @@ const ClientPortal = () => {
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [advisorName, setAdvisorName] = useState('IA de Ventas');
 
     // Chat states
     const [messages, setMessages] = useState([]);
@@ -49,12 +50,25 @@ const ClientPortal = () => {
                 const q = res.data.quote;
                 setQuote(q);
 
+                // Try to get advisor name based on city
+                let advisor = 'IA de Ventas';
+                try {
+                    const cityParam = (q.city || 'colombia').toLowerCase().replace(/\s+/g, '-');
+                    const waRes = await axios.get(`${API_URL}/config/whatsapp/${cityParam}`);
+                    if (waRes.data?.success && waRes.data.number?.advisor) {
+                        advisor = waRes.data.number.advisor;
+                        setAdvisorName(advisor);
+                    }
+                } catch (e) {
+                    console.log('Error fetching advisor info', e);
+                }
+
                 // Initialize chat
                 setMessages([
                     {
                         id: 1,
                         sender: 'bot',
-                        text: `¡Hola ${q.client_name}! 👋 Soy el Asesor virtual de Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
+                        text: `¡Hola ${q.client_name}! 👋 Soy ${advisor}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     },
                     {
@@ -281,9 +295,9 @@ const ClientPortal = () => {
                                 <FaRobot />
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-gray-800">IA de Ventas</h1>
+                                <h1 className="text-lg font-bold text-gray-800">{advisorName}</h1>
                                 <p className="text-xs text-green-500 font-medium flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En línea
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En línea (Atención Personalizada)
                                 </p>
                             </div>
                         </div>

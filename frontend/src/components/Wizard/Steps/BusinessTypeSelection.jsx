@@ -159,17 +159,6 @@ const BusinessTypeSelection = ({ onSelect }) => {
 
     return (
         <div className="text-center p-6 animate-fade-in-up max-w-5xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-                <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                    {selectedCategory ? selectedCategory.name : '¿Cuál es tu industria?'}
-                </h2>
-                <p className="text-gray-500">
-                    {selectedCategory
-                        ? 'Selecciona tu tipo de negocio específico...'
-                        : 'Elige la categoría que mejor describe tu negocio'}
-                </p>
-            </div>
 
             {/* Main Categories View */}
             {!selectedCategory && !isCustom && (

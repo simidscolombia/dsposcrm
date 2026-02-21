@@ -27,12 +27,12 @@ const CitySelection = ({ onSelect }) => {
 
     return (
         <div className="text-center p-6 animate-fade-in-up">
-            <h2 className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent mb-2">
-                {selectedDept ? `Ciudades en ${selectedDept.department}` : 'Selecciona tu Departamento'}
-            </h2>
-            <p className="text-gray-500 mb-6">
-                {selectedDept ? 'Elige tu ciudad o municipio:' : '¿En qué región de Colombia te encuentras?'}
-            </p>
+            {selectedDept && (
+                <div className="mb-4">
+                    <h3 className="text-xl font-bold text-gray-700">📍 {selectedDept.department}</h3>
+                    <p className="text-sm text-gray-500">¿En qué municipio o ciudad te encuentras?</p>
+                </div>
+            )}
 
             {/* Buscador */}
             <div className="max-w-md mx-auto mb-6 relative">

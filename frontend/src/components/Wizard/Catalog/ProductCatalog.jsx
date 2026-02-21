@@ -124,12 +124,17 @@ const ProductCatalog = ({ onContinue, systemType }) => {
     }
 
     return (
-        <div className="p-4 md:p-6 animate-fade-in-up pb-40">
-            <div className="flex justify-between items-center mb-4 md:mb-6">
-                <h2 className="text-xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 truncate mr-2">
-                    {getTitle()}
-                </h2>
+        <div className="w-full max-w-6xl mx-auto px-4 py-8 animate-fade-in-up">
+            {/* Header / Subtitle Info Only */}
+            <div className="text-center mb-8">
+                <p className="text-gray-500 max-w-2xl mx-auto">
+                    {systemType === 'Software'
+                        ? 'Selecciona el plan que prefieras. Puedes elegir mensual o anual.'
+                        : 'Puedes subir o bajar las cantidades de los productos que ya incluimos por defecto para ti.'}
+                </p>
+            </div>
 
+            <div className="flex justify-end items-center mb-4 md:mb-6">
                 {/* Selector de Vista */}
                 <div className="flex bg-gray-100 p-1 rounded-lg flex-shrink-0">
                     <button

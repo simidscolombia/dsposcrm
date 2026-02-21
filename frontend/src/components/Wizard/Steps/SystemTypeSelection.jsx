@@ -28,10 +28,6 @@ const SystemTypeSelection = ({ onSelect }) => {
 
     return (
         <div className="text-center p-6">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-                ¿Qué necesitas para empezar?
-            </h2>
-            <p className="text-gray-500 mb-8">Selecciona la opción que se ajuste a tu situación actual.</p>
 
             <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {options.map((opt) => (

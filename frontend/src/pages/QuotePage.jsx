@@ -35,6 +35,16 @@ const STEP_LABELS = [
 const ROULETTE_STEP = 5;
 const FINAL_STEP = 6;
 
+const STEP_GUIDES = [
+    { title: 'Paso 1: ¿De dónde nos visitas?', subtitle: 'Seleccionemos primero tu departamento para ver disponibilidad.' },
+    { title: 'Paso 2: ¿Cuál es tu negocio?', subtitle: 'Cuéntanos un poco de ti para recomendarte lo mejor.' },
+    { title: 'Paso 3: ¿Qué necesitas hoy?', subtitle: 'Filtremos las opciones dependiendo si ocupas equipos o solo software.' },
+    { title: 'Paso 4: Tu Selección', subtitle: 'Revisa o agrega componentes y configura tu pedido a tu gusto.' },
+    { title: 'Paso 5: Resumen', subtitle: 'Valida las cantidades antes de ir por tu premio.' },
+    { title: '¡Gira y Gana!', subtitle: '¡Mucha suerte! Veamos qué beneficio adicional te llevas hoy.' },
+    { title: '¡Listo!', subtitle: 'Cotización finalizada con éxito.' }
+];
+
 const QuotePage = () => {
     const [step, setStep] = useState(0);
     const [selections, setSelections] = useState({
@@ -234,31 +244,42 @@ const QuotePage = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {showHeader && (
-                <header className="bg-white shadow-sm py-3 md:py-4 px-4 md:px-6 fixed w-full top-0 z-50">
-                    <div className="max-w-7xl mx-auto flex justify-between items-center">
-                        <div className="flex items-center gap-3 md:gap-4">
-                            {canGoBack && (
-                                <button
-                                    onClick={handleBack}
-                                    className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-                                    aria-label="Volver"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                </button>
-                            )}
-                            <h1 className="text-lg md:text-xl font-bold text-blue-600 flex items-center gap-2">
-                                <span className="text-xl md:text-2xl">🚀</span>
-                                <span className="hidden md:inline">Discovery Systems</span>
-                                <span className="md:hidden">Discovery</span>
-                            </h1>
+                <header className="bg-white shadow-sm py-4 px-4 md:px-6 fixed w-full top-0 z-50">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
+                            <div className="flex items-center gap-3">
+                                {canGoBack && (
+                                    <button
+                                        onClick={handleBack}
+                                        className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                                        aria-label="Volver"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                        </svg>
+                                    </button>
+                                )}
+                                <h1 className="text-lg md:text-xl font-bold text-blue-600 flex items-center gap-2">
+                                    <span className="text-xl md:text-2xl">🚀</span>
+                                    <span>Discovery Systems</span>
+                                </h1>
+                            </div>
+                            <div className="md:hidden text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                {step + 1} / {totalSteps}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs md:text-sm font-medium text-gray-400 hidden md:block">
+
+                        {/* Middle Guided Text */}
+                        <div className="flex-1 text-center hidden md:block">
+                            <h2 className="text-sm font-bold text-gray-800">{STEP_GUIDES[step]?.title}</h2>
+                            <p className="text-xs text-gray-500">{STEP_GUIDES[step]?.subtitle}</p>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-400">
                                 {STEP_LABELS[step] || ''}
                             </span>
-                            <div className="text-xs md:text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            <div className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                                 {step + 1} / {totalSteps}
                             </div>
                         </div>
@@ -266,7 +287,15 @@ const QuotePage = () => {
                 </header>
             )}
 
-            <main className={`flex-1 ${showHeader ? 'pt-20 md:pt-24' : 'pt-4'} px-2 md:px-4 pb-12 flex items-start md:items-center justify-center`}>
+            <main className={`flex-1 ${showHeader ? 'pt-28 md:pt-24' : 'pt-4'} px-2 md:px-4 pb-12 flex flex-col items-center justify-start md:justify-center`}>
+
+                {/* Mobile Guided Text (appears below header on mobile) */}
+                {showHeader && (
+                    <div className="md:hidden text-center w-full mb-6 mt-4 animate-fade-in-up">
+                        <h2 className="text-lg font-bold text-gray-800">{STEP_GUIDES[step]?.title}</h2>
+                        <p className="text-sm text-gray-500 mt-1 px-4">{STEP_GUIDES[step]?.subtitle}</p>
+                    </div>
+                )}
                 <div className="w-full max-w-4xl transition-all duration-500 ease-in-out transform">
                     {renderStep()}
                 </div>

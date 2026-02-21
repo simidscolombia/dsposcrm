@@ -177,12 +177,6 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                 <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
                     <FaShoppingCart /> Resumen de tu selección
                 </div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-800">
-                    {clientName ? `${clientName}, revisa tu cotización` : 'Revisa tu cotización'}
-                </h2>
-                <p className="text-gray-500 mt-2 text-sm md:text-base">
-                    Verifica los productos y cantidades. Puedes modificar antes de continuar.
-                </p>
             </div>
 
             {/* Products List */}
