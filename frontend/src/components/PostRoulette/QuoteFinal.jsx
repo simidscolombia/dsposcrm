@@ -388,26 +388,21 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
 
                 {/* Go to Client Portal (Checkout / Review) */}
                 {quoteId && (
-                    <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mt-4">
-                        <h4 className="text-center text-indigo-800 font-bold text-lg mb-2">Paso Final 🚀</h4>
-                        <p className="text-center text-sm text-indigo-600 mb-4">Ingresa a tu panel para subir tus documentos o solicitar tu pago contra entrega.</p>
+                    <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-xl mt-4 text-center animate-fade-in">
+                        <div className="w-12 h-12 bg-indigo-200 text-indigo-600 rounded-full flex items-center justify-center text-xl mx-auto mb-3">
+                            <FaCheckCircle />
+                        </div>
+                        <h4 className="text-indigo-900 font-bold text-lg mb-2">¡Tu cotización está guardada! 🚀</h4>
+                        <p className="text-sm text-indigo-700 mb-5 leading-relaxed">
+                            Tienes un <strong>acceso seguro y temporal</strong> a tu panel. Desde allí podrás dar seguimiento a tu pedido, modificar o agregar servicios, subir documentos y chatear directamente con nosotros.
+                        </p>
                         <button
-                            onClick={() => window.open(`/#/portal/${quoteId}`, '_blank')}
-                            className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all flex items-center justify-center gap-3"
+                            onClick={() => window.location.href = `/#/portal/${quoteId}`}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
                         >
                             <FaUserCheck className="text-2xl" />
-                            <span>Ir a mi Panel Seguro</span>
+                            <span>Dar seguimiento a mi propuesta</span>
                         </button>
-
-                        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500">
-                            <span>Guarda tu enlace para luego:</span>
-                            <button
-                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/#/portal/${quoteId}`)}
-                                className="flex items-center gap-1 text-indigo-500 hover:text-indigo-700 font-bold"
-                            >
-                                <FaCopy /> Copiar Enlace
-                            </button>
-                        </div>
                     </div>
                 )}
             </div>
