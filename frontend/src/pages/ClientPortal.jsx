@@ -1,42 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaCheckCircle, FaTruck, FaFileContract, FaCreditCard, FaLock, FaWhatsapp, FaArrowRight, FaBoxOpen, FaPlay, FaCalendarAlt } from 'react-icons/fa';
-import ChatbotWidget from '../components/PostRoulette/ChatbotWidget';
+import { FaCheckCircle, FaPaperclip, FaPaperPlane, FaRobot, FaPlay, FaCalendarAlt, FaFileAlt, FaCheck, FaBuilding, FaHandshake } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const ClientPortal = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const messagesEndRef = useRef(null);
 
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Tab state: 'resume', 'shipping', 'payment', 'success'
-    const [currentStep, setCurrentStep] = useState('resume');
-    const [showChatbot, setShowChatbot] = useState(false);
+    // Chat states
+    const [messages, setMessages] = useState([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
 
-    // Form state
-    const [shippingData, setShippingData] = useState({
-        address: '',
+    // Business flow states
+    // 'greet' -> 'shipping_address' -> 'payment_method' -> 'documents' -> 'completed'
+    const [flowState, setFlowState] = useState('greet');
+    const [progress, setProgress] = useState(20);
+    const [quickReplies, setQuickReplies] = useState([]);
+
+    // Data collection
+    const [collectedData, setCollectedData] = useState({
         city: '',
-        notes: ''
+        address: '',
+        paymentMethod: '',
+        rutFileUploaded: false,
+        rutFileName: ''
     });
-
-    const [paymentMethod, setPaymentMethod] = useState(''); // 'transferencia' o 'contra_entrega'
 
     useEffect(() => {
         fetchQuote();
     }, [id]);
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isTyping, quickReplies]);
+
     const fetchQuote = async () => {
         try {
-            // we will create an endpoint: GET /api/quotes/:id
             const res = await axios.get(`${API_URL}/quotes/${id}`);
             if (res.data?.success) {
-                setQuote(res.data.quote);
+                const q = res.data.quote;
+                setQuote(q);
+
+                // Initialize chat
+                setMessages([
+                    {
+                        id: 1,
+                        sender: 'bot',
+                        text: `¡Hola ${q.client_name}! 👋 Soy el Asesor virtual de Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    },
+                    {
+                        id: 2,
+                        sender: 'app', // special type for rendering a widget inside chat
+                        type: 'quote_summary',
+                        data: {
+                            total: q.final_total,
+                            itemsCount: q.items?.length || 0
+                        }
+                    }
+                ]);
+                setProgress(20);
+                setQuickReplies([
+                    { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
+                    { label: 'Ver Video Demo 🎬', action: 'view_demo' },
+                    { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
+                ]);
             } else {
                 setError('Cotización no encontrada');
             }
@@ -48,36 +84,164 @@ const ClientPortal = () => {
         }
     };
 
-    const handleConfirmStep1 = () => {
-        setCurrentStep('shipping');
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const handleConfirmShipping = () => {
-        if (!shippingData.address || !shippingData.city) {
-            alert('Por favor completa la dirección y ciudad');
-            return;
-        }
-        setCurrentStep('payment');
+    const appendMessage = (sender, text, type = 'text', data = null) => {
+        setMessages(prev => [...prev, {
+            id: Date.now(),
+            sender,
+            text,
+            type,
+            data,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
     };
 
-    const handleConfirmPayment = async () => {
-        if (!paymentMethod) {
-            alert('Debes seleccionar un método de pago');
+    const handleQuickReply = async (reply) => {
+        appendMessage('user', reply.label);
+        setQuickReplies([]); // hide replies while processing
+        setIsTyping(true);
+
+        await new Promise(r => setTimeout(r, 1000)); // simulate thinking
+
+        if (reply.action === 'view_demo') {
+            window.open('https://www.youtube.com/watch?v=demo-video', '_blank');
+            appendMessage('bot', '¡Genial! Disfruta el video. Cuando termines, dime si quieres empezar tu pedido o si tienes más dudas.');
+            setQuickReplies([
+                { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
+                { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
+            ]);
+            setIsTyping(false);
             return;
         }
+
+        if (reply.action === 'ask_questions') {
+            appendMessage('bot', '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto. Si prefieres hablar con un humano también te puedo conectar.');
+            setFlowState('questions');
+            setQuickReplies([
+                { label: 'Ya no tengo dudas, ¡Empezar pedido! 🚀', action: 'start_order', primary: true }
+            ]);
+            setIsTyping(false);
+            return;
+        }
+
+        if (reply.action === 'start_order') {
+            appendMessage('bot', '¡Excelente decisión! 🎉 Vamos a preparar todo para tu envío.');
+            await new Promise(r => setTimeout(r, 800));
+            appendMessage('bot', 'Para programar la logística, escríbeme aquí abajo a qué Ciudad y Dirección exacta enviamos el equipo. (Ej: Bogotá, Calle 1 # 2-3 Local 4)');
+            setFlowState('shipping_address');
+            setProgress(40);
+            setIsTyping(false);
+            return;
+        }
+
+        if (reply.action === 'pay_transfer') {
+            setCollectedData(prev => ({ ...prev, paymentMethod: 'transferencia' }));
+            appendMessage('bot', '¡Perfecto! Te enviaremos los datos de Bancolombia / Nequi a tu WhatsApp para que realices la transferencia de forma segura. 🏦');
+            await finishOrder('transferencia');
+            return;
+        }
+
+        if (reply.action === 'pay_contra_entrega') {
+            setCollectedData(prev => ({ ...prev, paymentMethod: 'contra_entrega' }));
+            appendMessage('bot', '¡Perfecto, te cobramos en la puerta de tu local! 🤝 (Aplica ciudades principales).');
+            setProgress(75);
+            await new Promise(r => setTimeout(r, 800));
+            appendMessage('bot', 'Para habilitar esta opción y generarte el documento de soporte (Garantía de 12 meses), por favor adjunta aquí una foto o PDF de tu RUT o Cédula.');
+            setFlowState('documents');
+            setIsTyping(false);
+            return;
+        }
+
+        setIsTyping(false);
+    };
+
+    const handleSendMessage = async (e) => {
+        if (e) e.preventDefault();
+        const text = inputValue.trim();
+        if (!text) return;
+
+        appendMessage('user', text);
+        setInputValue('');
+        setIsTyping(true);
+
+        await new Promise(r => setTimeout(r, 800));
+
+        if (flowState === 'shipping_address') {
+            // Assume the user typed their address
+            setCollectedData(prev => ({ ...prev, address: text, city: 'Pendiente' })); // We capture it as raw text
+            appendMessage('bot', '¡Anotado! 📍 Ya registré la dirección para el despacho.');
+            setProgress(60);
+            await new Promise(r => setTimeout(r, 800));
+            appendMessage('bot', 'Ahora, cuéntame cómo prefieres realizar el pago:');
+            setQuickReplies([
+                { label: 'Pago Contra Entrega 🚚', action: 'pay_contra_entrega', primary: true },
+                { label: 'Transferencia Bancaria 🏦', action: 'pay_transfer' }
+            ]);
+            setFlowState('payment_method');
+            setIsTyping(false);
+            return;
+        }
+
+        if (flowState === 'questions' || flowState === 'greet') {
+            // Send to AI for QA
+            try {
+                const aiRes = await axios.post(`${API_URL}/ai/chatbot`, {
+                    question: text,
+                    context: { modules: quote?.items, total: quote?.final_total, quoteId: quote?.id },
+                    leadId: quote?.id
+                });
+                appendMessage('bot', aiRes.data.answer);
+            } catch (err) {
+                appendMessage('bot', 'Tengo un pequeño inconveniente técnico consultando eso, pero un asesor experto lo revisará. ¿Qué te gustaría hacer mientras tanto?');
+            }
+            if (flowState !== 'questions') {
+                setQuickReplies([
+                    { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true }
+                ]);
+            }
+            setIsTyping(false);
+            return;
+        }
+
+        appendMessage('bot', '¡Entendido! Si quieres avanzar con el pedido no dudes en decírmelo.');
+        setIsTyping(false);
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        appendMessage('user', `📎 Archivo adjunto: ${file.name}`, 'file');
+        setIsTyping(true);
+
+        // Simulate upload
+        await new Promise(r => setTimeout(r, 1500));
+
+        setCollectedData(prev => ({ ...prev, rutFileUploaded: true, rutFileName: file.name }));
+        appendMessage('bot', '¡Documento recibido y validado con éxito! 🎉');
+
+        await finishOrder('contra_entrega');
+    };
+
+    const finishOrder = async (method) => {
+        setProgress(100);
+        setFlowState('completed');
 
         try {
-            setLoading(true);
-            // new endpoint logic
             await axios.put(`${API_URL}/quotes/${id}/confirm`, {
-                shipping: shippingData,
-                paymentMethod: paymentMethod
+                shipping: { address: collectedData.address, city: 'Definida en chat' },
+                paymentMethod: method
             });
-            setCurrentStep('success');
-        } catch (err) {
-            alert('Hubo un error al confirmar el pedido');
-        } finally {
-            setLoading(false);
+            await new Promise(r => setTimeout(r, 800));
+            appendMessage('bot', '¡Todo listo! Tu pedido ha sido confirmado y está en la cola de despacho. Nuestro equipo de logística te contactará directamente por WhatsApp en unos minutos.');
+            appendMessage('app', '', 'success_widget');
+            setIsTyping(false);
+        } catch (error) {
+            appendMessage('bot', 'Hubo un error guardando la confirmación, pero tenemos tus datos en el historial. Un agente te hablará enseguida.');
+            setIsTyping(false);
         }
     };
 
@@ -87,8 +251,9 @@ const ClientPortal = () => {
 
     if (loading && !quote) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center font-sans">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-sans">
+                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 font-medium">Abriendo sala de chat...</p>
             </div>
         );
     }
@@ -97,269 +262,201 @@ const ClientPortal = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
                 <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
-                    <div className="text-red-500 text-5xl mb-4">⚠️</div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Ups!</h2>
-                    <p className="text-gray-600 mb-6">{error}</p>
-                    <button onClick={() => navigate('/')} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Volver al inicio</button>
+                    <div className="text-red-500 text-6xl mb-4 text-center mx-auto w-fit">⚠️</div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{error}</h2>
+                    <p className="text-gray-600 mb-6">Asegúrate de haber ingresado desde el enlace correcto que te enviamos.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans pb-20">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-100 p-4 sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <FaLock className="text-indigo-600" />
-                        <h1 className="font-bold text-gray-800">Portal Seguro</h1>
+        <div className="min-h-screen bg-gray-100 flex flex-col font-sans h-screen overflow-hidden">
+            {/* COMPOSITE HEADER AND PROGRESS */}
+            <header className="bg-white border-b border-gray-200 shadow-sm z-10 sticky top-0">
+                <div className="max-w-4xl mx-auto px-4 py-3">
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-lg shadow-md">
+                                <FaRobot />
+                            </div>
+                            <div>
+                                <h1 className="text-lg font-bold text-gray-800">IA de Ventas</h1>
+                                <p className="text-xs text-green-500 font-medium flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En línea
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 hidden sm:block">
+                                <span className="text-xs font-bold text-indigo-800">Cotización #{String(quote?.id).padStart(4, '0')}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-xs text-gray-500 font-medium bg-gray-100 px-3 py-1 rounded-full">
-                        Tu ID: #{String(quote?.id).padStart(4, '0')}
+
+                    {/* PROGRESS BAR */}
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 px-1">
+                        <span className="text-[10px] text-gray-400 font-medium">Progreso del Pedido</span>
+                        <span className="text-[10px] text-indigo-600 font-bold">{progress}% completado</span>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto mt-8 px-4">
-
-                {/* Stepper indicator */}
-                {currentStep !== 'success' && (
-                    <div className="flex justify-between mb-8 relative">
-                        <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 translate-y-[-50%] rounded"></div>
-
-                        <div className={`flex flex-col items-center gap-1 ${currentStep === 'resume' || currentStep === 'shipping' || currentStep === 'payment' ? 'text-indigo-600' : 'text-gray-400'}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${currentStep === 'resume' || currentStep === 'shipping' || currentStep === 'payment' ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</div>
-                            <span className="text-[10px] font-bold">Resumen</span>
-                        </div>
-
-                        <div className={`flex flex-col items-center gap-1 ${currentStep === 'shipping' || currentStep === 'payment' ? 'text-indigo-600' : 'text-gray-400'}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${currentStep === 'shipping' || currentStep === 'payment' ? 'bg-indigo-600' : 'bg-gray-300'}`}>2</div>
-                            <span className="text-[10px] font-bold">Envío</span>
-                        </div>
-
-                        <div className={`flex flex-col items-center gap-1 ${currentStep === 'payment' ? 'text-indigo-600' : 'text-gray-400'}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${currentStep === 'payment' ? 'bg-indigo-600' : 'bg-gray-300'}`}>3</div>
-                            <span className="text-[10px] font-bold">Pago</span>
-                        </div>
+            {/* CHAT MESSAGES AREA */}
+            <main className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto bg-gray-100 pb-32 custom-scrollbar">
+                <div className="space-y-4">
+                    <div className="text-center text-xs text-gray-400 my-4 bg-gray-200 w-fit mx-auto px-3 py-1 rounded-full">
+                        Hoy - {new Date().toLocaleDateString()}
                     </div>
-                )}
 
-                {/* STEP 1: RESUMEN Y CHAT */}
-                {currentStep === 'resume' && (
-                    <div className="space-y-6 animate-fade-in">
+                    {messages.map((msg) => (
+                        <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
 
-                        {/* 🤖 Chatbot siempre visible arriba */}
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl shadow-lg p-5 border border-indigo-200">
-                            <div className="flex items-center gap-3 mb-4 border-b border-indigo-100 pb-3">
-                                <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl shadow-md">🤖</div>
-                                <div>
-                                    <h3 className="font-bold text-gray-800 text-sm">Tu Asesor IA</h3>
-                                    <p className="text-xs text-gray-500">Puedes preguntarme sobre tu cotización o pedir una demo.</p>
+                            {/* BOT MESSAGE */}
+                            {msg.sender === 'bot' && (
+                                <div className="flex gap-2 max-w-[85%] sm:max-w-[70%]">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-600 mt-auto ml-1">
+                                        🤖
+                                    </div>
+                                    <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-3 shadow-sm relative">
+                                        <p className="text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                                        <span className="text-[10px] text-gray-400 absolute bottom-1 right-2">{msg.time}</span>
+                                        <div className="pb-2"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <ChatbotWidget
-                                quoteContext={{ modules: quote?.items, total: quote?.final_total, quoteId: quote?.id }}
-                                leadName={quote?.client_name}
-                                leadId={quote?.id}
-                            />
-                        </div>
+                            )}
 
-                        {/* RESUMEN MODULE */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Resumen de tu Pedido</h2>
-                            <p className="text-gray-600 mb-6">Revisa tu cotización y continuamos para preparar el envío.</p>
-
-                            <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-                                <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><FaBoxOpen className="text-indigo-500" /> Productos Solicitados</h3>
-                                <div className="space-y-3">
-                                    {(quote?.items || []).map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-sm border-b border-gray-200 pb-2 last:border-0 last:pb-0">
-                                            <div>
-                                                <p className="font-medium text-gray-800">{item.product_name || item.name}</p>
-                                                <p className="text-xs text-gray-500">Cantidad: {item.quantity}</p>
-                                            </div>
-                                            <div className="font-bold text-gray-800">
-                                                {formatCurrency((item.unit_price || item.price) * (item.quantity || 1))}
-                                            </div>
+                            {/* SPECIAL WIDGET / APP CONTENT IN CHAT */}
+                            {msg.sender === 'app' && msg.type === 'quote_summary' && (
+                                <div className="w-full sm:max-w-[70%] ml-10 mb-2">
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+                                        <div className="flex items-center gap-2 text-indigo-800 font-bold mb-3 border-b border-blue-100 pb-2">
+                                            <FaFileAlt /> Tu Cotización Resumida
                                         </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                    <div className="flex justify-between items-center mb-1 text-sm text-gray-600">
-                                        <span>Subtotal</span>
-                                        <span>{formatCurrency(quote?.subtotal)}</span>
-                                    </div>
-                                    {quote?.discount_amount > 0 && (
-                                        <div className="flex justify-between items-center mb-1 text-sm text-green-600 font-medium">
-                                            <span>Descuento aplicado 🎉</span>
-                                            <span>-{formatCurrency(quote?.discount_amount)}</span>
+                                        <div className="space-y-2 mb-3">
+                                            {(quote?.items || []).slice(0, 3).map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-center text-xs text-gray-700">
+                                                    <span className="truncate pr-4">• {item.name || item.product_name}</span>
+                                                    <span className="font-medium whitespace-nowrap">x{item.quantity}</span>
+                                                </div>
+                                            ))}
+                                            {(quote?.items?.length > 3) && <div className="text-xs text-gray-400 italic">... y más artículos</div>}
                                         </div>
-                                    )}
-                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-dashed border-gray-300 text-lg font-black text-indigo-900">
-                                        <span>Total a pagar</span>
-                                        <span>{formatCurrency(quote?.final_total)}</span>
+                                        <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                                            <span className="text-sm font-bold text-gray-600">Total a Pagar:</span>
+                                            <span className="text-lg font-black text-indigo-900">{formatCurrency(msg.data.total)}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                                <button onClick={() => window.location.href = '/'} className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Modificar Pedido</button>
-                                <button onClick={handleConfirmStep1} className="flex-1 py-3 px-4 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">Confirmar y Seguir <FaArrowRight /></button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* STEP 2: SHIPPING */}
-                {currentStep === 'shipping' && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2"><FaTruck className="text-indigo-500" /> ¿A dónde enviamos el equipo?</h2>
-                        <p className="text-gray-600 mb-6 font-medium">Ingresa los datos para coordinar la logística o la instalación local.</p>
-
-                        <div className="space-y-4 mb-8">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Ciudad de Destino *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Bogotá, Medellín, etc"
-                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    value={shippingData.city}
-                                    onChange={(e) => setShippingData({ ...shippingData, city: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Dirección Exacta *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Calle, Carrera, Local, Barrio..."
-                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    value={shippingData.address}
-                                    onChange={(e) => setShippingData({ ...shippingData, address: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Notas / Instrucciones adicionales (Opcional)</label>
-                                <textarea
-                                    placeholder="Detalles del local, horarios de recepción, etc."
-                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
-                                    value={shippingData.notes}
-                                    onChange={(e) => setShippingData({ ...shippingData, notes: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={() => setCurrentStep('resume')} className="py-3 px-6 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Atrás</button>
-                            <button onClick={handleConfirmShipping} className="flex-1 py-3 px-4 bg-indigo-600 rounded-xl font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">Guardar Dirección <FaArrowRight /></button>
-                        </div>
-                    </div>
-                )}
-
-
-                {/* STEP 3: PAYMENT */}
-                {currentStep === 'payment' && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2"><FaCreditCard className="text-indigo-500" /> Método de Pago Preferido</h2>
-                        <p className="text-gray-600 mb-6 font-medium">No te cobraremos en este momento. Solo dinos cómo prefieres hacer el pago para que el asesor prepare todo.</p>
-
-                        <div className="space-y-4 mb-8">
-                            {/* Option 1 */}
-                            <div className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'contra_entrega' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`} onClick={() => setPaymentMethod('contra_entrega')}>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1">
-                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'contra_entrega'} readOnly />
+                            {msg.sender === 'app' && msg.type === 'success_widget' && (
+                                <div className="w-full sm:max-w-[70%] ml-10 mb-2">
+                                    <div className="bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm text-center">
+                                        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-3 shadow-lg shadow-green-200">
+                                            <FaCheck />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-green-800 mb-1">¡Todo Listo!</h3>
+                                        <p className="text-sm text-green-700 mb-4">Pedido #{String(quote?.id).padStart(4, '0')} en cola de despacho.</p>
+                                        <button
+                                            onClick={() => window.open(`https://wa.me/573205792169?text=Hola,%20acabo%20de%20confirmar%20mi%20pedido%20(ID%20${String(quote?.id).padStart(4, '0')})%20en%20el%20Portal.%20¿Podemos%20coordinar?`, '_blank')}
+                                            className="w-full py-3 bg-[#25D366] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-[#128C7E] transition"
+                                        >
+                                            <FaWhatsapp className="text-xl" /> Hablar con Asesor Humano
+                                        </button>
                                     </div>
-                                    <div className="w-full">
-                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">Pago Contra Entrega 🚚</h4>
-                                        <p className="text-sm text-gray-600 mt-1 mb-3">Paga el total en efectivo o transferencia cuando recibas tus equipos en la puerta de tu local. (Aplica para ciudades principales).</p>
+                                </div>
+                            )}
 
-                                        {paymentMethod === 'contra_entrega' && (
-                                            <div className="mt-4 p-4 bg-white rounded-lg border border-indigo-100 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-                                                <p className="text-xs font-bold text-indigo-800 mb-1">Para aprobar el pago contra entrega requerimos 2 documentos:</p>
-
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-700 mb-1">1. RUT (PDF o Imagen)</label>
-                                                    <input type="file" accept=".pdf,image/*" className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-700 mb-1">2. Cámara de Comercio (Opcional)</label>
-                                                    <input type="file" accept=".pdf,image/*" className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                                </div>
-                                                <p className="text-[10px] text-gray-400 italic">Nota: Tus archivos se envían seguros a nuestro departamento contable.</p>
+                            {/* USER MESSAGE */}
+                            {msg.sender === 'user' && (
+                                <div className="flex gap-2 max-w-[85%] sm:max-w-[70%]">
+                                    <div className="bg-indigo-600 text-white rounded-2xl rounded-br-none p-3 shadow-md relative">
+                                        {msg.type === 'file' ? (
+                                            <div className="text-[14px] flex items-center gap-2 bg-indigo-700 p-2 rounded-lg">
+                                                {msg.text}
                                             </div>
+                                        ) : (
+                                            <p className="text-[15px] leading-relaxed break-words">{msg.text}</p>
                                         )}
+                                        <div className="flex justify-end mt-1 items-center gap-1">
+                                            <span className="text-[10px] text-indigo-200">{msg.time}</span>
+                                            <FaCheck className="text-[8px] text-white opacity-80" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
+                        </div>
+                    ))}
 
-                            {/* Option 2 */}
-                            <div className={`block border-2 rounded-xl p-4 cursor-pointer transition-all ${paymentMethod === 'transferencia' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`} onClick={() => setPaymentMethod('transferencia')}>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1">
-                                        <input type="radio" name="payment" className="w-5 h-5 accent-indigo-600" checked={paymentMethod === 'transferencia'} readOnly />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">Transferencia Bancaria 🏦</h4>
-                                        <p className="text-sm text-gray-600 mt-1">Bancolombia, Nequi, Davivienda. Te enviaremos los datos de depósito al WhatsApp.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex gap-3 text-sm text-yellow-800 mt-4">
-                                <span className="text-lg">📄</span>
-                                <p><strong>Nota importante para facturación de equipos:</strong> Podremos solicitar tu Cédula o RUT por WhatsApp para formalizar la factura y las garantías de 12 meses.</p>
+                    {isTyping && (
+                        <div className="flex gap-2 max-w-[85%] sm:max-w-[70%] animate-fade-in">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-600 mt-auto ml-1 pb-1">🤖</div>
+                            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-4 shadow-sm flex gap-1 items-center">
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                             </div>
                         </div>
+                    )}
 
-                        <div className="flex gap-3">
-                            <button onClick={() => setCurrentStep('shipping')} className="py-3 px-6 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition">Atrás</button>
-                            <button
-                                onClick={handleConfirmPayment}
-                                disabled={loading}
-                                className="flex-1 py-3 px-4 bg-green-500 rounded-xl font-bold text-white hover:bg-green-600 transition shadow-lg shadow-green-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {loading ? 'Procesando...' : <><FaCheckCircle /> Completar Solicitud</>}
-                            </button>
+                    <div ref={messagesEndRef} className="h-4"></div>
+                </div>
+            </main>
+
+            {/* INPUT AREA */}
+            <footer className="bg-white border-t border-gray-200 p-3 pb-6 fixed bottom-0 w-full z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+                <div className="max-w-4xl mx-auto">
+
+                    {/* Quick Replies */}
+                    {quickReplies.length > 0 && !isTyping && (
+                        <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in-up">
+                            {quickReplies.map((reply, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => handleQuickReply(reply)}
+                                    className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${reply.primary ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transform' : 'bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
+                                >
+                                    {reply.label}
+                                </button>
+                            ))}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* STEP 4: SUCCESS */}
-                {currentStep === 'success' && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center animate-fade-in relative overflow-hidden">
-                        <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-green-100 rounded-full blur-3xl opacity-50"></div>
-                        <div className="absolute bottom-[-50px] left-[-50px] w-32 h-32 bg-indigo-100 rounded-full blur-3xl opacity-50"></div>
+                    <form onSubmit={handleSendMessage} className="flex gap-2 items-center bg-gray-100 rounded-full p-1 pl-4 mx-1 border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-300 focus-within:border-indigo-400 transition-all">
 
-                        <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
-                            <FaCheckCircle />
-                        </div>
+                        {flowState === 'documents' && (
+                            <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-2 transition-colors">
+                                <FaPaperclip className="text-xl" />
+                                <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,image/*" />
+                            </label>
+                        )}
 
-                        <h2 className="text-3xl font-black text-gray-800 mb-3">¡Pedido Confirmado! 🎉</h2>
-                        <p className="text-lg text-gray-600 mb-6">
-                            Tu solicitud con ID <strong className="text-indigo-600">#{String(quote?.id).padStart(4, '0')}</strong> ha sido enviada a logística y despachos.
-                        </p>
-
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-left mb-8 inline-block max-w-md w-full">
-                            <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2 mb-3">Siguientes Pasos:</h4>
-                            <ul className="space-y-3 text-sm text-gray-600">
-                                <li className="flex gap-2 items-start"><span className="text-indigo-500 mt-0.5">1.</span> Un especialista se contactará a tu WhatsApp en menos de 10 minutos.</li>
-                                <li className="flex gap-2 items-start"><span className="text-indigo-500 mt-0.5">2.</span> Revisaremos los datos de envío y facturación formal contigo.</li>
-                                <li className="flex gap-2 items-start"><span className="text-indigo-500 mt-0.5">3.</span> Realizaremos el despacho o programaremos la instalación del software.</li>
-                            </ul>
-                        </div>
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder={flowState === 'documents' ? 'Sube tu documento pulsando el clip 📎' : flowState === 'shipping_address' ? 'Escribe tu ciudad y dirección...' : 'Escribe tu mensaje...'}
+                            className="flex-1 bg-transparent border-none outline-none py-3 text-gray-800 placeholder-gray-400 text-[15px]"
+                            disabled={isTyping || flowState === 'completed' || (flowState === 'documents' && !inputValue)}
+                        />
 
                         <button
-                            onClick={() => window.open(`https://wa.me/573205792169?text=Hola,%20acabo%20de%20confirmar%20mi%20pedido%20(ID%20${String(quote?.id).padStart(4, '0')})%20en%20el%20Portal.%20¿Podemos%20coordinar?`, '_blank')}
-                            className="bg-green-500 text-white font-bold py-4 px-8 rounded-full text-lg shadow-lg hover:shadow-xl hover:scale-105 transition flex items-center justify-center gap-3 w-full sm:w-auto mx-auto"
+                            type="submit"
+                            disabled={!inputValue.trim() || isTyping || flowState === 'completed'}
+                            className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center disabled:opacity-50 disabled:bg-gray-400 transition-colors mr-1 shadow-md"
                         >
-                            <FaWhatsapp className="text-3xl" /> Escribir Ahora al Asesor
+                            <FaPaperPlane className="-ml-0.5" />
                         </button>
+                    </form>
+                    <div className="text-center mt-2">
+                        <span className="text-[10px] text-gray-400 font-medium">🔒 Todo nuestro chat es confidencial y seguro</span>
                     </div>
-                )}
-            </main>
+                </div>
+            </footer>
         </div>
     );
 };
