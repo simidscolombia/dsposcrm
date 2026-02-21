@@ -14,10 +14,12 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
     const [whatsappNumber, setWhatsappNumber] = useState('573205792169'); // Default Colombia
     const [advisorName, setAdvisorName] = useState('un asesor');
     const [companyConfig, setCompanyConfig] = useState(null);
-    const savedRef = useRef(false); // Prevent double save
+    const [isSaving, setIsSaving] = useState(false);
+    const [localName, setLocalName] = useState(clientName || '');
+    const [localPhone, setLocalPhone] = useState(clientPhone || '');
 
     // ============================================
-    // FETCH CONFIG + SAVE QUOTE ON MOUNT
+    // FETCH CONFIG ON MOUNT
     // ============================================
     useEffect(() => {
         // 1. Fetch WhatsApp number for this city
@@ -40,26 +42,26 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             }
         };
         fetchConfig();
-
-        // 2. Save the quote (only once)
-        if (!savedRef.current) {
-            savedRef.current = true;
-            saveQuote();
-        }
+        fetchConfig();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ============================================
     // SAVE QUOTE TO DATABASE
     // ============================================
-    const saveQuote = async () => {
+    const saveQuoteAndContinue = async () => {
+        if (!localName.trim() || !localPhone.trim()) {
+            alert('Por favor ingresa tu nombre y WhatsApp para poder enviarte los datos y la factura a tu número.');
+            return;
+        }
+        setIsSaving(true);
         try {
             const discount = calculateDiscount();
             const sub = calculateSubtotal();
             const final_total = sub - discount.discountAmount;
 
             const response = await axios.post(`${API_URL}/quotes`, {
-                clientName: clientName || 'Cliente Web',
-                clientPhone: clientPhone || null,
+                clientName: localName,
+                clientPhone: localPhone,
                 city: city || null,
                 businessType: businessType || null,
                 systemType: systemType || null,
@@ -80,12 +82,16 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             });
 
             if (response.data?.success) {
+                const newQuoteId = response.data.data?.quote_id;
                 setQuoteSaved(true);
-                setQuoteId(response.data.data?.quote_id);
-                console.log('✅ Cotización guardada en CRM:', response.data.data);
+                setQuoteId(newQuoteId);
+                // Redirect immediately to portal
+                window.location.href = `/#/portal/${newQuoteId}`;
             }
         } catch (err) {
-            console.error('Error guardando cotización (no crítico):', err);
+            console.error('Error guardando cotización:', err);
+            alert('Hubo un error al guardar. Por favor, intenta de nuevo.');
+            setIsSaving(false);
         }
     };
 
@@ -361,50 +367,58 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                 </div>
             </div>
 
-            {/* 🎯 Action Buttons */}
-            <div className="space-y-3 mb-6">
-                {/* WhatsApp - Primary CTA */}
-                <button
-                    onClick={handleWhatsAppContact}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-[0.98] flex items-center justify-center gap-3 relative overflow-hidden group"
-                >
-                    <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></span>
-                    <FaWhatsapp className="text-2xl" />
-                    <span>Hablar con {advisorName}</span>
-                    <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
-                        RECOMENDADO
-                    </span>
-                </button>
-
-                {/* Download PDF */}
-                <button
-                    id="btn-download-pdf"
-                    onClick={handleDownloadPDF}
-                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white text-lg font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all active:scale-[0.99] flex items-center justify-center gap-3"
-                >
-                    <FaFilePdf className="text-xl" />
-                    <span>{pdfGenerated ? '✅ Descargar de Nuevo' : 'Descargar Cotización PDF'}</span>
-                </button>
-
-                {/* Go to Client Portal (Checkout / Review) */}
-                {quoteId && (
-                    <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-xl mt-4 text-center animate-fade-in">
-                        <div className="w-12 h-12 bg-indigo-200 text-indigo-600 rounded-full flex items-center justify-center text-xl mx-auto mb-3">
-                            <FaCheckCircle />
-                        </div>
-                        <h4 className="text-indigo-900 font-bold text-lg mb-2">¡Tu cotización está guardada! 🚀</h4>
-                        <p className="text-sm text-indigo-700 mb-5 leading-relaxed">
-                            Tienes un <strong>acceso seguro y temporal</strong> a tu panel. Desde allí podrás dar seguimiento a tu pedido, modificar o agregar servicios, subir documentos y chatear directamente con nosotros.
-                        </p>
-                        <button
-                            onClick={() => window.location.href = `/#/portal/${quoteId}`}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
-                        >
-                            <FaUserCheck className="text-2xl" />
-                            <span>Dar seguimiento a mi propuesta</span>
-                        </button>
+            {/* 🎯 Contact Info Capture & Action Button */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mt-6 rounded-2xl p-5 md:p-6 shadow-sm mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✓</div>
+                    <div>
+                        <h3 className="font-bold text-blue-900">¿A dónde te enviamos el Obsequio y la Copia?</h3>
+                        <p className="text-xs text-blue-700">Por favor confirma tus datos para procesar el envío de información.</p>
                     </div>
-                )}
+                </div>
+                <div className="space-y-4 mb-5">
+                    <div>
+                        <label className="block text-xs font-bold text-blue-900 mb-1 ml-1">Tu Nombre / Empresa *</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Laura Ramírez"
+                            value={localName}
+                            onChange={(e) => setLocalName(e.target.value)}
+                            className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-blue-900 mb-1 ml-1">Tu WhatsApp *</label>
+                        <input
+                            type="tel"
+                            placeholder="Ej: 300 123 4567"
+                            value={localPhone}
+                            onChange={(e) => setLocalPhone(e.target.value)}
+                            className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                        />
+                    </div>
+                </div>
+
+                {/* Continue to Portal */}
+                <button
+                    onClick={saveQuoteAndContinue}
+                    disabled={isSaving}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                >
+                    {isSaving ? (
+                        <>
+                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Procesando...</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>Continuar</span>
+                            <FaCheckCircle className="text-xl" />
+                        </>
+                    )}
+                </button>
             </div>
 
 

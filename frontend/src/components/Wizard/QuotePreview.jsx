@@ -120,16 +120,6 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
 
     const handleConfirm = () => {
         if (products.length === 0) return;
-
-        if (!nameInput.trim() || !phoneInput.trim()) {
-            alert('Por favor ingresa tu nombre y número de WhatsApp para poder continuar a la Ruleta y recibir tu copia por ahí.');
-            return;
-        }
-
-        if (onUpdateClient) {
-            onUpdateClient(nameInput.trim(), phoneInput.trim());
-        }
-
         onConfirm(products);
     };
 
@@ -311,43 +301,6 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                         </div>
                     </div>
 
-                    {/* Captura de Datos de Contacto (Obligatorio) */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mt-6 rounded-2xl p-5 md:p-6 shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">!</div>
-                            <div>
-                                <h3 className="font-bold text-blue-900">¿A dónde enviamos tu copia?</h3>
-                                <p className="text-xs text-blue-700">Necesitamos tus datos para continuar a la ruleta final.</p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-blue-900 mb-1 ml-1" htmlFor="clientNameInput">Tu Nombre *</label>
-                                <input
-                                    id="clientNameInput"
-                                    type="text"
-                                    placeholder="Ej: Laura Ramírez"
-                                    value={nameInput}
-                                    onChange={(e) => setNameInput(e.target.value)}
-                                    className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-blue-900 mb-1 ml-1" htmlFor="clientPhoneInput">Tu WhatsApp *</label>
-                                <input
-                                    id="clientPhoneInput"
-                                    type="tel"
-                                    placeholder="Ej: 300 123 4567"
-                                    value={phoneInput}
-                                    onChange={(e) => setPhoneInput(e.target.value)}
-                                    className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Action Buttons */}
                     <div className="mt-6 space-y-3">
                         {/* Main CTA - Go to Roulette */}
@@ -382,169 +335,159 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
             {/* =============================================
                 MODAL: Swap / Add Product
                ============================================= */}
-            {showModal && (
-                <div
-                    className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
-                >
-                    <div className="bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up overflow-hidden">
-                        {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
-                            <div>
-                                <h3 className="text-white font-bold text-lg">
-                                    {modalMode === 'swap' ? '🔄 Cambiar producto' : '➕ Agregar producto'}
-                                </h3>
-                                <p className="text-blue-200 text-sm">
-                                    {modalMode === 'swap'
-                                        ? `Categoría: ${filterCategory}`
-                                        : 'Selecciona un producto del catálogo'
-                                    }
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                            >
-                                <FaTimes className="text-sm" />
-                            </button>
-                        </div>
-
-                        {/* Search Bar */}
-                        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-                            <div className="relative">
-                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Buscar producto..."
-                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-all"
-                                    autoFocus
-                                />
+            {
+                showModal && (
+                    <div
+                        className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center p-0 md:p-4"
+                        style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                        onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+                    >
+                        <div className="bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
+                                <div>
+                                    <h3 className="text-white font-bold text-lg">
+                                        {modalMode === 'swap' ? '🔄 Cambiar producto' : '➕ Agregar producto'}
+                                    </h3>
+                                    <p className="text-blue-200 text-sm">
+                                        {modalMode === 'swap'
+                                            ? `Categoría: ${filterCategory}`
+                                            : 'Selecciona un producto del catálogo'
+                                        }
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                >
+                                    <FaTimes className="text-sm" />
+                                </button>
                             </div>
 
-                            {/* Category Tabs (only in Add mode) */}
-                            {modalMode === 'add' && allProducts.length > 0 && (
-                                <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1">
-                                    <button
-                                        onClick={() => setFilterCategory('')}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === ''
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        Todos
-                                    </button>
-                                    {getCategories().map(cat => (
+                            {/* Search Bar */}
+                            <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                                <div className="relative">
+                                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="Buscar producto..."
+                                        className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition-all"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                {/* Category Tabs (only in Add mode) */}
+                                {modalMode === 'add' && allProducts.length > 0 && (
+                                    <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1">
                                         <button
-                                            key={cat}
-                                            onClick={() => setFilterCategory(cat)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === cat
+                                            onClick={() => setFilterCategory('')}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === ''
                                                 ? 'bg-blue-600 text-white shadow-md'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
-                                            {cat}
+                                            Todos
                                         </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Product List */}
-                        <div className="flex-1 overflow-y-auto">
-                            {loadingProducts ? (
-                                <div className="flex flex-col items-center justify-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-3"></div>
-                                    <p className="text-gray-400 text-sm">Cargando productos...</p>
-                                </div>
-                            ) : getModalProducts().length === 0 ? (
-                                <div className="text-center py-12">
-                                    <div className="text-4xl mb-3">🔍</div>
-                                    <p className="text-gray-500 font-medium">No se encontraron productos</p>
-                                    <p className="text-gray-400 text-sm mt-1">Intenta con otro término de búsqueda</p>
-                                </div>
-                            ) : (
-                                <div className="divide-y divide-gray-50">
-                                    {getModalProducts().map(product => {
-                                        const isInCart = products.some(p => p.id === product.id);
-                                        const isCurrentSwap = modalMode === 'swap' && swapIndex !== null && products[swapIndex]?.id === product.id;
-
-                                        return (
+                                        {getCategories().map(cat => (
                                             <button
-                                                key={product.id}
-                                                onClick={() => !isCurrentSwap && handleSelectProduct(product)}
-                                                disabled={isCurrentSwap}
-                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${isCurrentSwap
-                                                    ? 'bg-blue-50 opacity-60 cursor-not-allowed'
-                                                    : 'hover:bg-blue-50 active:bg-blue-100 cursor-pointer'
+                                                key={cat}
+                                                onClick={() => setFilterCategory(cat)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterCategory === cat
+                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                     }`}
                                             >
-                                                {renderImage(product.image_url, 'sm')}
-
-                                                <div className="flex-grow min-w-0">
-                                                    <h4 className="font-medium text-gray-800 text-sm truncate">
-                                                        {product.name}
-                                                    </h4>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                                                            {product.category}
-                                                        </span>
-                                                        {isInCart && !isCurrentSwap && (
-                                                            <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full font-semibold">
-                                                                En carrito
-                                                            </span>
-                                                        )}
-                                                        {isCurrentSwap && (
-                                                            <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
-                                                                Producto actual
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="text-right flex-shrink-0">
-                                                    <p className="font-bold text-gray-800 text-sm">
-                                                        {formatCurrency(parseFloat(product.price))}
-                                                    </p>
-                                                </div>
-
-                                                {!isCurrentSwap && (
-                                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                                        {modalMode === 'swap' ? <FaExchangeAlt className="text-xs" /> : <FaPlus className="text-xs" />}
-                                                    </div>
-                                                )}
+                                                {cat}
                                             </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Modal Footer */}
-                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="w-full py-2.5 bg-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:bg-gray-300 transition-colors"
-                            >
-                                Cancelar
-                            </button>
+                            {/* Product List */}
+                            <div className="flex-1 overflow-y-auto">
+                                {loadingProducts ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-3"></div>
+                                        <p className="text-gray-400 text-sm">Cargando productos...</p>
+                                    </div>
+                                ) : getModalProducts().length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="text-4xl mb-3">🔍</div>
+                                        <p className="text-gray-500 font-medium">No se encontraron productos</p>
+                                        <p className="text-gray-400 text-sm mt-1">Intenta con otro término de búsqueda</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-gray-50">
+                                        {getModalProducts().map(product => {
+                                            const isInCart = products.some(p => p.id === product.id);
+                                            const isCurrentSwap = modalMode === 'swap' && swapIndex !== null && products[swapIndex]?.id === product.id;
+
+                                            return (
+                                                <button
+                                                    key={product.id}
+                                                    onClick={() => !isCurrentSwap && handleSelectProduct(product)}
+                                                    disabled={isCurrentSwap}
+                                                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${isCurrentSwap
+                                                        ? 'bg-blue-50 opacity-60 cursor-not-allowed'
+                                                        : 'hover:bg-blue-50 active:bg-blue-100 cursor-pointer'
+                                                        }`}
+                                                >
+                                                    {renderImage(product.image_url, 'sm')}
+
+                                                    <div className="flex-grow min-w-0">
+                                                        <h4 className="font-medium text-gray-800 text-sm truncate">
+                                                            {product.name}
+                                                        </h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                                                {product.category}
+                                                            </span>
+                                                            {isInCart && !isCurrentSwap && (
+                                                                <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                                                    En carrito
+                                                                </span>
+                                                            )}
+                                                            {isCurrentSwap && (
+                                                                <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
+                                                                    Producto actual
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="font-bold text-gray-800 text-sm">
+                                                            {formatCurrency(parseFloat(product.price))}
+                                                        </p>
+                                                    </div>
+
+                                                    {!isCurrentSwap && (
+                                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                                            {modalMode === 'swap' ? <FaExchangeAlt className="text-xs" /> : <FaPlus className="text-xs" />}
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="w-full py-2.5 bg-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:bg-gray-300 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Animation Styles */}
-            <style>{`
-                @keyframes slide-up {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                .animate-slide-up {
-                    animation: slide-up 0.3s ease-out forwards;
-                }
-            `}</style>
+                )}
         </div>
     );
 };
