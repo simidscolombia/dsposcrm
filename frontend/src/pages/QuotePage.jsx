@@ -265,10 +265,7 @@ const QuotePage = () => {
                                 </button>
                             )}
                             <div className="flex items-center gap-2">
-                                <svg viewBox="0 0 100 100" className="w-8 h-8 md:w-10 md:h-10 text-[#A8E0F0]" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M25 80 C10 60, 10 40, 25 20 C40 5, 60 5, 75 20 C90 40, 90 60, 75 80 C60 95, 40 95, 25 80 Z" />
-                                    <path d="M35 70 V35 C35 25, 55 25, 55 35 C55 45, 35 45, 35 55 C35 65, 55 65, 55 70" />
-                                </svg>
+                                <img src="/logo.png" alt="Discovery Systems Pos" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                                 <div className="flex flex-col">
                                     <span className="text-white font-bold text-lg md:text-xl leading-none tracking-wide">Discovery</span>
                                     <span className="text-gray-400 text-[10px] md:text-xs font-semibold leading-none tracking-widest uppercase mt-0.5">Systems Pos</span>

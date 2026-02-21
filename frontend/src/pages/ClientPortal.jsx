@@ -292,10 +292,7 @@ const ClientPortal = () => {
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 flex items-center justify-center">
-                                <svg viewBox="0 0 100 100" className="w-full h-full text-[#A8E0F0]" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M25 80 C10 60, 10 40, 25 20 C40 5, 60 5, 75 20 C90 40, 90 60, 75 80 C60 95, 40 95, 25 80 Z" />
-                                    <path d="M35 70 V35 C35 25, 55 25, 55 35 C55 45, 35 45, 35 55 C35 65, 55 65, 55 70" />
-                                </svg>
+                                <img src="/logo.png" alt="Discovery Systems Pos" className="w-full h-full object-contain" />
                             </div>
                             <div>
                                 <h1 className="text-lg font-bold text-white">{advisorName}</h1>
