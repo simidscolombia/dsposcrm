@@ -96,14 +96,19 @@ router.post('/generate', async (req, res) => {
 router.put('/:id/status', async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, payment_method, notes } = req.body; // 'pending', 'paid', 'overdue', 'waived'
+        const { status, payment_method, notes, receipt_url } = req.body; // 'pending', 'paid', 'overdue', 'waived'
 
         const result = await db.query(`
             UPDATE crm_payments 
-            SET status = $1, payment_method = COALESCE($2, payment_method), notes = COALESCE($3, notes), payment_date = CASE WHEN $1 = 'paid' THEN NOW() ELSE payment_date END, updated_at = NOW()
-            WHERE id = $4 
+            SET status = $1, 
+                payment_method = COALESCE($2, payment_method), 
+                notes = COALESCE($3, notes), 
+                receipt_url = COALESCE($4, receipt_url),
+                payment_date = CASE WHEN $1 = 'paid' AND payment_date IS NULL THEN NOW() ELSE payment_date END, 
+                updated_at = NOW()
+            WHERE id = $5 
             RETURNING *
-        `, [status, payment_method || null, notes || null, id]);
+        `, [status, payment_method || null, notes || null, receipt_url || null, id]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Cobro no encontrado' });

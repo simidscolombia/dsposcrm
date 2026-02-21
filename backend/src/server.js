@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 4050; // Changed port to avoid conflicts
 app.use(cors({
   // ... (keep existing cors config)
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Rutas
 app.use('/api/pdf', pdfRoutes);

@@ -5,7 +5,8 @@ import {
     FaDollarSign as DollarSign, FaCalendarAlt as Calendar,
     FaExclamationCircle as AlertCircle, FaCheckCircle as CheckCircle,
     FaClock as Clock, FaSearch as Search, FaFilter as Filter,
-    FaSync as RefreshCw, FaCommentAlt as MessageSquare
+    FaSync as RefreshCw, FaCommentAlt as MessageSquare,
+    FaFileInvoice as FileInvoice, FaImage as ImageIcon, FaTimes as X
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -19,6 +20,9 @@ const CRMBilling = () => {
     // Filters
     const [filterStatus, setFilterStatus] = useState('');
     const [search, setSearch] = useState('');
+
+    // Payment Modal
+    const [payModal, setPayModal] = useState({ open: false, payment: null, receiptStr: '', notes: '', loading: false });
 
     useEffect(() => {
         fetchData();
@@ -72,18 +76,41 @@ const CRMBilling = () => {
         }
     };
 
-    const updateStatus = async (id, newStatus) => {
+    const updateStatus = async (id, newStatus, receiptStr = '', notes = '') => {
         try {
-            const res = await axios.put(`${API_URL}/payments/${id}/status`, { status: newStatus });
+            const res = await axios.put(`${API_URL}/payments/${id}/status`, {
+                status: newStatus,
+                receipt_url: receiptStr,
+                notes: notes
+            });
             if (res.data.success) {
-                setPayments(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
-                // Recargar summary si es necesario, o hacerlo completo:
+                alert('Estado actualizado');
+                setPayModal({ ...payModal, open: false, loading: false });
                 fetchData();
             }
         } catch (error) {
             console.error('Error updating status:', error);
             alert('Error actualizando estado');
+            setPayModal({ ...payModal, loading: false });
         }
+    };
+
+    const handleReceiptUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Base64 conversion (compress logic could be added here if needed)
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPayModal(prev => ({ ...prev, receiptStr: reader.result }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const submitPayment = (e) => {
+        e.preventDefault();
+        setPayModal(prev => ({ ...prev, loading: true }));
+        updateStatus(payModal.payment.id, 'paid', payModal.receiptStr, payModal.notes);
     };
 
     const sendReminder = async (id) => {
@@ -303,21 +330,32 @@ const CRMBilling = () => {
                                                 {/* Mark Paid Action */}
                                                 {(payment.status === 'pending' || payment.status === 'overdue') && (
                                                     <button
-                                                        onClick={() => updateStatus(payment.id, 'paid')}
+                                                        onClick={() => setPayModal({ open: true, payment, receiptStr: '', notes: '', loading: false })}
                                                         className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition"
                                                     >
-                                                        Marcar Pagado
+                                                        Registrar Pago
                                                     </button>
                                                 )}
 
                                                 {/* Undo Action */}
                                                 {payment.status === 'paid' && (
-                                                    <button
-                                                        onClick={() => updateStatus(payment.id, 'pending')}
-                                                        className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
-                                                    >
-                                                        Revertir
-                                                    </button>
+                                                    <>
+                                                        {payment.receipt_url && (
+                                                            <button
+                                                                onClick={() => window.open(payment.receipt_url.startsWith('data:') ? payment.receipt_url : `/${payment.receipt_url}`, '_blank')}
+                                                                className="px-2 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-sm font-medium hover:bg-emerald-100 transition flex items-center"
+                                                                title="Ver Comprobante"
+                                                            >
+                                                                <ImageIcon className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => updateStatus(payment.id, 'pending')}
+                                                            className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
+                                                        >
+                                                            Revertir
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </td>
@@ -328,6 +366,69 @@ const CRMBilling = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Payment Modal */}
+            {payModal.open && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <form onSubmit={submitPayment} className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-fade-in-up overflow-hidden">
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <FileInvoice className="text-blue-600" />
+                                Registrar Pago
+                            </h2>
+                            <button type="button" onClick={() => setPayModal({ open: false })} className="text-gray-400 hover:text-red-500">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            <div className="bg-blue-50 text-blue-800 p-3 rounded-xl text-sm mb-2">
+                                <p><strong>Cliente:</strong> {payModal.payment?.business_name}</p>
+                                <p><strong>Periodo:</strong> {payModal.payment?.period_month}/{payModal.payment?.period_year}</p>
+                                <p className="text-lg font-bold mt-1 text-blue-900 border-t border-blue-200 pt-1">
+                                    Monto: {formatMoney(payModal.payment?.amount)}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Comprobante (Foto/Captura)</label>
+                                <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center bg-gray-50">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleReceiptUpload}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                    {payModal.receiptStr && (
+                                        <div className="mt-2 flex flex-col items-center">
+                                            <span className="text-xs text-green-600 font-bold mb-1">✓ Imagen adjunta</span>
+                                            <img src={payModal.receiptStr} alt="Preview" className="h-20 w-auto rounded border border-gray-200 shadow-sm" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Notas Adicionales (Opcional)</label>
+                                <input
+                                    type="text"
+                                    value={payModal.notes}
+                                    onChange={(e) => setPayModal(prev => ({ ...prev, notes: e.target.value }))}
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                                    placeholder="Ej. Transferencia Nequi, etc."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                            <button type="button" onClick={() => setPayModal({ open: false })} className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-200 rounded-lg text-sm">Cancelar</button>
+                            <button type="submit" disabled={payModal.loading} className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm shadow disabled:opacity-50">
+                                {payModal.loading ? 'Guardando...' : 'Confirmar Pago'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
     );
 };
