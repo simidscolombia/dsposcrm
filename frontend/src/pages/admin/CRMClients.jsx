@@ -1,372 +1,395 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-    FaUsers, FaCloud, FaFileInvoiceDollar, FaSearch, FaPlus, FaSync,
-    FaWhatsapp, FaEye, FaEdit, FaMapMarkerAlt, FaCheckCircle,
-    FaExclamationTriangle, FaBan, FaDollarSign, FaFilter, FaFileUpload,
-    FaChevronDown, FaTimes, FaServer
+    FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
+    FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench
 } from 'react-icons/fa';
 
 const API_URL = '/api';
 
-const PLAN_LABELS = {
-    local: { label: 'Local', icon: '🖥️', color: '#6B7280', bg: '#F3F4F6' },
-    cloud: { label: 'Nube', icon: '☁️', color: '#3B82F6', bg: '#EFF6FF' },
-    cloud_fe: { label: 'Nube + FE', icon: '☁️📄', color: '#8B5CF6', bg: '#F5F3FF' },
-};
-
-const STATUS_LABELS = {
-    active: { label: 'Activo', icon: <FaCheckCircle />, color: '#10B981', bg: '#ECFDF5' },
-    grace: { label: 'En gracia', icon: <FaExclamationTriangle />, color: '#F59E0B', bg: '#FFFBEB' },
-    suspended: { label: 'Suspendido', icon: <FaBan />, color: '#EF4444', bg: '#FEF2F2' },
-    cancelled: { label: 'Cancelado', icon: <FaTimes />, color: '#6B7280', bg: '#F3F4F6' },
-};
-
-const formatCurrency = (v) => {
-    if (!v) return '$0';
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
-};
-
-// ============================================
-// NEW CLIENT MODAL
-// ============================================
-const NewClientModal = ({ onClose, onCreated }) => {
-    const [form, setForm] = useState({
-        business_name: '', contact_name: '', whatsapp: '', email: '',
-        city: 'Bucaramanga', plan_type: 'cloud', monthly_amount: 35000,
-        cloud_url: '', notes: '', server_name: '', anydesk_id: ''
-    });
-    const [saving, setSaving] = useState(false);
-
-    const handlePlanChange = (plan) => {
-        const amounts = { local: 0, cloud: 35000, cloud_fe: 55000 };
-        setForm(prev => ({ ...prev, plan_type: plan, monthly_amount: amounts[plan] || 0 }));
-    };
-
-    const handleSubmit = async () => {
-        if (!form.business_name || !form.whatsapp) return alert('Nombre y WhatsApp son requeridos');
-        setSaving(true);
-        try {
-            const res = await axios.post(`${API_URL}/clients`, form);
-            if (res.data.success) {
-                onCreated(res.data.client);
-                onClose();
-            }
-        } catch (e) {
-            alert('Error: ' + (e.response?.data?.error || e.message));
-        }
-        setSaving(false);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <FaPlus className="text-blue-500" /> Nuevo Cliente
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 block mb-1">Nombre del Negocio *</label>
-                            <input value={form.business_name} onChange={e => setForm({ ...form, business_name: e.target.value })}
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 block mb-1">Contacto</label>
-                            <input value={form.contact_name} onChange={e => setForm({ ...form, contact_name: e.target.value })}
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 block mb-1">WhatsApp *</label>
-                            <input value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })}
-                                placeholder="3001234567"
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 block mb-1">Ciudad</label>
-                            <select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}
-                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none">
-                                <option>Bucaramanga</option>
-                                <option>Bogotá</option>
-                                <option>Medellín</option>
-                                <option>Cali</option>
-                                <option>Barranquilla</option>
-                                <option>Otra</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Plan selector */}
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 block mb-2">Plan</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {Object.entries(PLAN_LABELS).map(([key, p]) => (
-                                <button key={key} onClick={() => handlePlanChange(key)}
-                                    className={`p-3 rounded-xl border-2 text-center transition-all ${form.plan_type === key
-                                        ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
-                                >
-                                    <div className="text-xl mb-1">{p.icon}</div>
-                                    <div className="text-xs font-bold" style={{ color: p.color }}>{p.label}</div>
-                                    {key !== 'local' && (
-                                        <div className="text-[10px] text-gray-400 mt-0.5">
-                                            {formatCurrency(key === 'cloud' ? 35000 : 55000)}/mes
-                                        </div>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {form.plan_type !== 'local' && (
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 block mb-1">URL de la Nube</label>
-                                <input value={form.cloud_url} onChange={e => setForm({ ...form, cloud_url: e.target.value })}
-                                    placeholder="cliente.poslatino.com"
-                                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 block mb-1">Servidor</label>
-                                <input value={form.server_name} onChange={e => setForm({ ...form, server_name: e.target.value })}
-                                    placeholder="gota-1"
-                                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                            </div>
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 block mb-1">Notas</label>
-                        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none h-16 focus:ring-2 focus:ring-blue-300 focus:outline-none" />
-                    </div>
-
-                    <button onClick={handleSubmit} disabled={saving}
-                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
-                        {saving ? 'Guardando...' : '✅ Crear Cliente'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ============================================
-// MAIN CLIENTS Page
-// ============================================
 const CRMClients = () => {
     const [clients, setClients] = useState([]);
-    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(null);
     const [search, setSearch] = useState('');
     const [filterPlan, setFilterPlan] = useState('');
-    const [filterStatus, setFilterStatus] = useState('');
-    const [showNewModal, setShowNewModal] = useState(false);
+    const [options, setOptions] = useState({ distributors: [], advisors: [] });
 
-    const fetchClients = useCallback(async () => {
+    // Manage edit modal state
+    const [editingClient, setEditingClient] = useState(null);
+    const [formData, setFormData] = useState({});
+
+    useEffect(() => {
+        fetchOptions();
+        fetchClients();
+        // eslint-disable-next-line
+    }, [filterPlan]);
+
+    const fetchOptions = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/admin/crm/options`);
+            if (res.data.success) {
+                setOptions({
+                    distributors: res.data.distributors || [],
+                    advisors: res.data.advisors || []
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching options:', error);
+        }
+    };
+
+    const fetchClients = async () => {
+        setLoading(true);
         try {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (filterPlan) params.append('plan_type', filterPlan);
-            if (filterStatus) params.append('payment_status', filterStatus);
+
             const res = await axios.get(`${API_URL}/clients?${params.toString()}`);
             if (res.data.success) {
                 setClients(res.data.clients);
                 setStats(res.data.stats);
             }
-        } catch (e) { console.error(e); }
-        setLoading(false);
-    }, [search, filterPlan, filterStatus]);
+        } catch (error) {
+            console.error('Error fetching clients:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    useEffect(() => {
+    const handleSearch = (e) => {
+        e.preventDefault();
         fetchClients();
-    }, [fetchClients]);
+    };
 
-    // Debounced search
-    const [searchDebounce, setSearchDebounce] = useState('');
-    useEffect(() => {
-        const timer = setTimeout(() => setSearch(searchDebounce), 300);
-        return () => clearTimeout(timer);
-    }, [searchDebounce]);
+    const handleCopy = (text, type) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        alert(`${type} copiado al portapapeles: ${text}`);
+    };
+
+    const getPlanBadge = (plan) => {
+        if (plan === 'cloud') return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">Nube</span>;
+        if (plan === 'cloud_fe') return <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">Nube + FE</span>;
+        if (plan === 'local') return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">Local</span>;
+        return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">{plan}</span>;
+    };
+
+    const getStatusIndicator = (isActive) => {
+        return isActive
+            ? <FaCheckCircle className="text-green-500 w-4 h-4" title="Activo" />
+            : <FaTimesCircle className="text-red-500 w-4 h-4" title="Inactivo" />;
+    };
+
+    const handleEditClick = (client) => {
+        setFormData({ ...client });
+        setEditingClient(client);
+    };
+
+    const handleUpdateChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const saveClient = async () => {
+        try {
+            const updateProps = {
+                business_name: formData.business_name,
+                whatsapp: formData.whatsapp,
+                plan_type: formData.plan_type,
+                monthly_amount: parseFloat(formData.monthly_amount) || 0,
+                pos_version: formData.pos_version,
+                server_name: formData.server_name,
+                cloud_url: formData.cloud_url,
+                anydesk_id: formData.anydesk_id,
+                distributor_id: formData.distributor_id || null,
+                technician_id: formData.technician_id || null,
+                is_active: formData.is_active === 'true' || formData.is_active === true
+            };
+
+            const res = await axios.put(`${API_URL}/clients/${editingClient.id}`, updateProps);
+            if (res.data.success) {
+                alert('Cliente actualizado correctamente');
+                setEditingClient(null);
+                fetchClients(); // recargar
+            }
+        } catch (error) {
+            console.error('Error saving client:', error);
+            alert('Error al guardar el cliente');
+        }
+    };
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="p-4 md:p-8 max-w-[1400px] mx-auto animate-fade-in-up">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <FaUsers className="text-blue-500" /> Clientes
+                        <FaUsers className="w-6 h-6 text-blue-600" />
+                        Control de Clientes
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        {stats?.total_clients || 0} clientes registrados
+                    <p className="text-gray-500 text-sm mt-1">
+                        Gestión técnica, soporte y asignación de distribuidores
                     </p>
                 </div>
+
                 <div className="flex gap-2">
-                    <button onClick={() => setShowNewModal(true)}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-lg transition-all flex items-center gap-2">
-                        <FaPlus /> Nuevo Cliente
+                    <button onClick={fetchClients} className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm shadow-sm transition">
+                        Actualizar
                     </button>
-                    <button onClick={() => { setLoading(true); fetchClients(); }}
-                        className="p-2 rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50">
-                        <FaSync className={loading ? 'animate-spin' : ''} />
-                    </button>
+                    {/* Botón de Importar Excel podría ir aquí en el futuro */}
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Metrics */}
             {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Total</p>
-                        <p className="text-2xl font-black text-gray-800">{stats.total_clients || 0}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex justify-center items-center">
+                            <FaUsers />
+                        </div>
+                        <div>
+                            <p className="text-gray-500 text-xs font-semibold uppercase">Total Clientes</p>
+                            <h3 className="text-xl font-bold text-gray-800">{stats.total_clients}</h3>
+                        </div>
                     </div>
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                        <p className="text-[10px] text-blue-500 font-bold uppercase">☁️ Nube</p>
-                        <p className="text-2xl font-black text-blue-600">{stats.cloud_clients || 0}</p>
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex justify-center items-center">
+                            <FaServer />
+                        </div>
+                        <div>
+                            <p className="text-gray-500 text-xs font-semibold uppercase">SaaS Activo</p>
+                            <h3 className="text-xl font-bold text-gray-800">{parseInt(stats.cloud_clients || 0) + parseInt(stats.cloud_fe_clients || 0)}</h3>
+                        </div>
                     </div>
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                        <p className="text-[10px] text-purple-500 font-bold uppercase">☁️📄 Nube+FE</p>
-                        <p className="text-2xl font-black text-purple-600">{stats.cloud_fe_clients || 0}</p>
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-green-50 text-green-600 flex justify-center items-center">
+                            <FaCheckCircle />
+                        </div>
+                        <div>
+                            <p className="text-gray-500 text-xs font-semibold uppercase">Cartera Sana</p>
+                            <h3 className="text-xl font-bold text-gray-800">{stats.active_clients}</h3>
+                        </div>
                     </div>
-                    <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-                        <p className="text-[10px] text-green-500 font-bold uppercase">✅ Activos</p>
-                        <p className="text-2xl font-black text-green-600">{stats.active_clients || 0}</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
-                        <p className="text-[10px] text-emerald-500 font-bold uppercase">💰 Ingreso mensual</p>
-                        <p className="text-xl font-black text-emerald-600">{formatCurrency(stats.expected_monthly)}</p>
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex justify-center items-center">
+                            <FaTimesCircle />
+                        </div>
+                        <div>
+                            <p className="text-gray-500 text-xs font-semibold uppercase">Suspendidos</p>
+                            <h3 className="text-xl font-bold text-gray-800">{stats.suspended_clients}</h3>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Search + Filters */}
-            <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                    <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        value={searchDebounce}
-                        onChange={e => setSearchDebounce(e.target.value)}
-                        placeholder="Buscar por nombre, teléfono..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                    />
-                </div>
-                <select value={filterPlan} onChange={e => setFilterPlan(e.target.value)}
-                    className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    <option value="">Todos los planes</option>
-                    <option value="cloud">☁️ Nube</option>
-                    <option value="cloud_fe">☁️📄 Nube+FE</option>
-                    <option value="local">🖥️ Local</option>
-                </select>
-                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                    className="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    <option value="">Todos los estados</option>
-                    <option value="active">✅ Activo</option>
-                    <option value="grace">⚠️ En gracia</option>
-                    <option value="suspended">🚫 Suspendido</option>
-                </select>
-            </div>
-
-            {/* Clients Table */}
+            {/* List & Filters */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-50/50">
+
+                    <form onSubmit={handleSearch} className="relative w-full md:w-96">
+                        <FaSearch className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Buscar negocio, url, o WhatsApp..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        />
+                    </form>
+
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <div className="relative w-full md:w-48">
+                            <FaFilter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <select
+                                value={filterPlan}
+                                onChange={(e) => setFilterPlan(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
+                            >
+                                <option value="">Todos los Planes</option>
+                                <option value="cloud">Nube (Básico)</option>
+                                <option value="cloud_fe">Nube + Elec.</option>
+                                <option value="local">P. Local</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
-                                <th className="text-left px-4 py-3 font-bold text-gray-500 text-xs uppercase">Negocio</th>
-                                <th className="text-left px-4 py-3 font-bold text-gray-500 text-xs uppercase">Ciudad</th>
-                                <th className="text-left px-4 py-3 font-bold text-gray-500 text-xs uppercase">Plan</th>
-                                <th className="text-right px-4 py-3 font-bold text-gray-500 text-xs uppercase">Mensual</th>
-                                <th className="text-center px-4 py-3 font-bold text-gray-500 text-xs uppercase">Estado</th>
-                                <th className="text-center px-4 py-3 font-bold text-gray-500 text-xs uppercase">Pagos</th>
-                                <th className="text-center px-4 py-3 font-bold text-gray-500 text-xs uppercase">Acciones</th>
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-white text-gray-500 border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 font-medium w-10">St</th>
+                                <th className="px-6 py-4 font-medium">Negocio / Cliente</th>
+                                <th className="px-6 py-4 font-medium">Plan</th>
+                                <th className="px-6 py-4 font-medium">Técnica (Rápidas)</th>
+                                <th className="px-6 py-4 font-medium">Distribuidor</th>
+                                <th className="px-6 py-4 font-medium text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {clients.map(client => {
-                                const plan = PLAN_LABELS[client.plan_type] || PLAN_LABELS.local;
-                                const status = STATUS_LABELS[client.payment_status] || STATUS_LABELS.active;
-                                return (
-                                    <tr key={client.id} className="hover:bg-blue-50/30 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div>
-                                                <p className="font-semibold text-gray-800">{client.business_name}</p>
-                                                {client.contact_name && (
-                                                    <p className="text-[11px] text-gray-400">{client.contact_name}</p>
-                                                )}
+                            {loading ? (
+                                <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">Cargando portafolio...</td></tr>
+                            ) : clients.length === 0 ? (
+                                <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500">No hay clientes con esos filtros.</td></tr>
+                            ) : (
+                                clients.map((c) => (
+                                    <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            {getStatusIndicator(c.is_active)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-gray-900">{c.business_name}</div>
+                                            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                                <span>{c.city || 'Sin Ciudad'}</span>
+                                                <a href={`https://wa.me/57${c.whatsapp?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-green-600 transition">
+                                                    <FaWhatsapp className="text-green-500" /> {c.whatsapp}
+                                                </a>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                                                <FaMapMarkerAlt className="text-[10px] text-blue-400" />
-                                                {client.city || '-'}
-                                            </span>
+                                        <td className="px-6 py-4">
+                                            {getPlanBadge(c.plan_type)}
+                                            <div className="text-xs text-gray-400 mt-1">V: {c.pos_version || 'N/A'}</div>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: plan.bg, color: plan.color }}>
-                                                {plan.icon} {plan.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-bold text-gray-700">
-                                            {formatCurrency(client.monthly_amount)}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="text-xs font-bold px-2 py-1 rounded-full inline-flex items-center gap-1" style={{ backgroundColor: status.bg, color: status.color }}>
-                                                {status.icon} {status.label}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span className="text-xs text-green-600 font-bold">{client.total_payments || 0}✓</span>
-                                                {(client.pending_payments || 0) > 0 && (
-                                                    <span className="text-xs text-red-500 font-bold">{client.pending_payments}⏳</span>
-                                                )}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                {/* Botón rápido Anydesk */}
+                                                <button
+                                                    onClick={() => handleCopy(c.anydesk_id, 'AnyDesk ID')}
+                                                    className={`px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 transition flex items-center gap-1 text-xs font-semibold ${!c.anydesk_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    title={c.anydesk_id ? `Intervenir AnyDesk: ${c.anydesk_id}` : 'No hay AnyDesk provisto'}
+                                                >
+                                                    <FaDesktop /> {c.anydesk_id || 'Sin AnyDesk'} <FaCopy className="opacity-50" />
+                                                </button>
+
+                                                {/* Botón rápido Nube */}
+                                                <button
+                                                    onClick={() => c.cloud_url ? window.open(c.cloud_url.startsWith('http') ? c.cloud_url : `https://${c.cloud_url}`, '_blank') : null}
+                                                    className={`px-2 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition flex items-center gap-1 text-xs font-semibold ${!c.cloud_url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    title={c.cloud_url ? `Abrir url: ${c.cloud_url}` : 'No opera en nube o url no configurada'}
+                                                >
+                                                    <FaServer /> WEB <FaExternalLinkAlt className="opacity-50" />
+                                                </button>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-1">
-                                                {client.whatsapp && (
-                                                    <a href={`https://wa.me/57${client.whatsapp.replace(/\D/g, '')}`}
-                                                        target="_blank" rel="noreferrer"
-                                                        className="p-1.5 rounded-lg text-green-500 hover:bg-green-50 transition-colors"
-                                                        title="WhatsApp">
-                                                        <FaWhatsapp />
-                                                    </a>
-                                                )}
-                                                {client.cloud_url && (
-                                                    <a href={`https://${client.cloud_url}`}
-                                                        target="_blank" rel="noreferrer"
-                                                        className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors"
-                                                        title="Abrir nube">
-                                                        <FaServer />
-                                                    </a>
-                                                )}
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <div className="text-sm font-medium text-gray-800 flex items-center gap-1"><FaBuilding className="text-gray-400 text-xs" /> {c.distributor_name || 'Discovery (Por defecto)'}</div>
+                                                <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><FaWrench className="text-gray-400 text-xs" /> Téc: {options.advisors?.find(a => a.id === c.technician_id)?.name || 'Sin asignar'}</div>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => handleEditClick(c)}
+                                                className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition ml-auto"
+                                                title="Editar Ficha Técnica"
+                                            >
+                                                <FaEdit />
+                                            </button>
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {clients.length === 0 && !loading && (
-                                <tr>
-                                    <td colSpan="7" className="text-center py-12 text-gray-400">
-                                        <FaUsers className="text-4xl mx-auto mb-3 text-gray-300" />
-                                        <p className="font-semibold">No hay clientes</p>
-                                        <p className="text-xs mt-1">Agrega tu primer cliente o importa desde Excel</p>
-                                    </td>
-                                </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* New Client Modal */}
-            {showNewModal && (
-                <NewClientModal
-                    onClose={() => setShowNewModal(false)}
-                    onCreated={() => fetchClients()}
-                />
+            {/* Edit Modal Minimalist */}
+            {editingClient && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in-up">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><FaEdit className="text-blue-600" /> Editar Cliente Técnico</h2>
+                            <button onClick={() => setEditingClient(null)} className="text-gray-400 hover:text-red-500"><FaTimesCircle className="w-6 h-6" /></button>
+                        </div>
+
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50">
+
+                            {/* Basics */}
+                            <div className="md:col-span-2"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Datos Básicos</h3></div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Negocio</label>
+                                <input name="business_name" value={formData.business_name || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
+                                <input name="whatsapp" value={formData.whatsapp || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+
+                            {/* Plans */}
+                            <div className="md:col-span-2 mt-4"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Facturación / Suscripción</h3></div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Plan</label>
+                                <select name="plan_type" value={formData.plan_type || 'local'} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm bg-white">
+                                    <option value="local">Local Fijo</option>
+                                    <option value="cloud">Nube Básico</option>
+                                    <option value="cloud_fe">Nube Frontend Ex.</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Mensualidad Pactada ($)</label>
+                                <input type="number" name="monthly_amount" value={formData.monthly_amount || 0} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+
+                            {/* Tech */}
+                            <div className="md:col-span-2 mt-4"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Parámetros Técnicos</h3></div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">AnyDesk ID</label>
+                                <input name="anydesk_id" value={formData.anydesk_id || ''} onChange={handleUpdateChange} placeholder="123 456 789" className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">URL Acceso Nube</label>
+                                <input name="cloud_url" value={formData.cloud_url || ''} onChange={handleUpdateChange} placeholder="empresa.poslatino.com" className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Servidor (Droplet)</label>
+                                <input name="server_name" value={formData.server_name || ''} onChange={handleUpdateChange} placeholder="App1, Nodo4..." className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Versión POS Instalada</label>
+                                <input name="pos_version" value={formData.pos_version || ''} onChange={handleUpdateChange} placeholder="v1.0.8" className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+
+                            {/* Ownership */}
+                            <div className="md:col-span-2 mt-4"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Asignación Directa</h3></div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Distribuidor / Propietario</label>
+                                <select name="distributor_id" value={formData.distributor_id || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm bg-white">
+                                    <option value="">Directo (Discovery)</option>
+                                    {options.distributors.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name} ({d.city})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Técnico A Cargo</label>
+                                <select name="technician_id" value={formData.technician_id || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm bg-white">
+                                    <option value="">Sin técnico asignado</option>
+                                    {options.advisors.map(a => (
+                                        <option key={a.id} value={a.id}>{a.name} ({a.role})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2 mt-2">
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer p-2 border border-gray-200 rounded bg-white mt-2">
+                                    <input type="checkbox" name="is_active" checked={formData.is_active === true || formData.is_active === 'true'} onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))} className="w-4 h-4 text-blue-600" />
+                                    Cliente Activo y Operando (Mostrar en verde)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+                            <button onClick={() => setEditingClient(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition">
+                                Cancelar
+                            </button>
+                            <button onClick={saveClient} className="px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium shadow-md transition">
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

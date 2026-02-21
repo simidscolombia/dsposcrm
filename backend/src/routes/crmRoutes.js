@@ -45,6 +45,28 @@ router.post('/migrate', async (req, res) => {
             results.push('✅ Asesores insertados');
         }
 
+        // 1.5. DISTRIBUIDORES
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS crm_distributors (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                contact_name VARCHAR(255),
+                whatsapp VARCHAR(20),
+                city VARCHAR(100),
+                commission_rate DECIMAL(5,2) DEFAULT 0,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        // Insert main distributor
+        const checkDist = await db.query('SELECT COUNT(*) FROM crm_distributors');
+        if (parseInt(checkDist.rows[0].count) === 0) {
+            await db.query(`
+                INSERT INTO crm_distributors (name, city, is_active) VALUES ('Discovery Systems (Directo)', 'Colombia', true);
+            `);
+        }
+        results.push('✅ crm_distributors');
+
         // 2. EXPANDIR LEADS
         const leadAlters = [
             "ALTER TABLE leads ADD COLUMN IF NOT EXISTS email VARCHAR(255)",
@@ -151,6 +173,8 @@ router.post('/migrate', async (req, res) => {
                 cloud_url TEXT,
                 anydesk_id VARCHAR(50),
                 advisor_id INTEGER,
+                distributor_id INTEGER,
+                technician_id INTEGER,
                 notes TEXT,
                 priority VARCHAR(20) DEFAULT 'normal',
                 is_active BOOLEAN DEFAULT true,
@@ -159,6 +183,15 @@ router.post('/migrate', async (req, res) => {
                 updated_at TIMESTAMP DEFAULT NOW()
             );
         `);
+
+        // Force addition of distributor/technician to existing table
+        const clientAlters = [
+            "ALTER TABLE crm_clients ADD COLUMN IF NOT EXISTS distributor_id INTEGER",
+            "ALTER TABLE crm_clients ADD COLUMN IF NOT EXISTS technician_id INTEGER"
+        ];
+        for (const sql of clientAlters) {
+            try { await db.query(sql); } catch (e) { /* column may exist */ }
+        }
         try {
             await db.query("CREATE INDEX IF NOT EXISTS idx_clients_whatsapp ON crm_clients(whatsapp)");
             await db.query("CREATE INDEX IF NOT EXISTS idx_clients_plan ON crm_clients(plan_type)");
@@ -396,6 +429,25 @@ router.get('/stats', async (req, res) => {
         }
 
         res.json({ success: true, stats });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// GET /admin/crm/options
+// Opciones para listas desplegables (Advisors, Distrib.)
+// ============================================
+router.get('/options', async (req, res) => {
+    try {
+        const advisors = await db.query('SELECT id, name, role, city FROM crm_advisors WHERE is_active = true ORDER BY name ASC');
+        const distributors = await db.query('SELECT id, name, city FROM crm_distributors WHERE is_active = true ORDER BY name ASC');
+
+        res.json({
+            success: true,
+            advisors: advisors.rows,
+            distributors: distributors.rows
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

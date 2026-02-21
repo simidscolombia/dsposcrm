@@ -14,12 +14,14 @@ router.get('/', async (req, res) => {
         let query = `
             SELECT c.*,
                    a.name as advisor_name,
+                   d.name as distributor_name,
                    (SELECT COUNT(*) FROM crm_payments p WHERE p.client_id = c.id AND p.status = 'paid') as total_payments,
                    (SELECT COUNT(*) FROM crm_payments p WHERE p.client_id = c.id AND p.status IN ('pending', 'overdue')) as pending_payments,
                    (SELECT SUM(amount) FROM crm_payments p WHERE p.client_id = c.id AND p.status = 'paid') as total_paid,
                    (SELECT COUNT(*) FROM crm_tickets t WHERE t.client_id = c.id AND t.status != 'closed') as open_tickets
             FROM crm_clients c
             LEFT JOIN crm_advisors a ON c.advisor_id = a.id
+            LEFT JOIN crm_distributors d ON c.distributor_id = d.id
         `;
         const conditions = [];
         const params = [];
@@ -237,7 +239,7 @@ router.put('/:id', async (req, res) => {
             'business_name', 'contact_name', 'whatsapp', 'email', 'city', 'address', 'nit',
             'plan_type', 'monthly_amount', 'billing_day', 'payment_status',
             'pos_version', 'server_name', 'cloud_url', 'anydesk_id',
-            'advisor_id', 'notes', 'priority', 'is_active'
+            'advisor_id', 'distributor_id', 'technician_id', 'notes', 'priority', 'is_active'
         ];
 
         const updates = [];
