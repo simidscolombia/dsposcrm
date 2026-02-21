@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
     FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
-    FaArrowDown, FaBell
+    FaArrowDown, FaBell, FaFileCsv, FaSpinner
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -28,7 +28,7 @@ const CRMClients = () => {
 
     const fetchOptions = async () => {
         try {
-            const res = await axios.get(`${API_URL}/admin/crm/options`);
+            const res = await axios.get(`${API_URL} /admin/crm / options`);
             if (res.data.success) {
                 setOptions({
                     distributors: res.data.distributors || [],
@@ -47,7 +47,7 @@ const CRMClients = () => {
             if (search) params.append('search', search);
             if (filterPlan) params.append('plan_type', filterPlan);
 
-            const res = await axios.get(`${API_URL}/clients?${params.toString()}`);
+            const res = await axios.get(`${API_URL} /clients?${params.toString()}`);
             if (res.data.success) {
                 setClients(res.data.clients);
                 setStats(res.data.stats);
@@ -140,6 +140,37 @@ const CRMClients = () => {
         }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.csv')) {
+            alert('Por favor selecciona un archivo con extensión .CSV (Puedes exportarlo desde Google Sheets / Excel)');
+            e.target.value = null;
+            return;
+        }
+
+        setLoading(true);
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+
+        try {
+            const res = await axios.post(`${API_URL}/clients/import`, formDataUpload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (res.data.success) {
+                alert(res.data.message);
+                fetchClients();
+            }
+        } catch (error) {
+            console.error('Error uploading:', error);
+            alert(error.response?.data?.error || 'Error subiendo el archivo. Asegúrate de que las columnas coincidan.');
+        } finally {
+            e.target.value = null;
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="p-4 md:p-8 max-w-[1400px] mx-auto animate-fade-in-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -157,7 +188,25 @@ const CRMClients = () => {
                     <button onClick={fetchClients} className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm shadow-sm transition">
                         Actualizar
                     </button>
-                    {/* Botón de Importar Excel podría ir aquí en el futuro */}
+
+                    {/* Botón Importar CSV */}
+                    <div className="relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            id="csv_upload"
+                            disabled={loading}
+                        />
+                        <label
+                            htmlFor="csv_upload"
+                            className={`px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-100 flex items-center gap-2 text-sm shadow-sm transition cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}
+                        >
+                            {loading ? <FaSpinner className="animate-spin" /> : <FaFileCsv size={16} />}
+                            Importar CSV Sheets
+                        </label>
+                    </div>
                 </div>
             </div>
 

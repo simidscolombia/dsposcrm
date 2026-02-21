@@ -1,7 +1,11 @@
 import express from 'express';
+import multer from 'multer';
+import fs from 'fs';
+import csvParser from 'csv-parser';
 import db from '../config/database.js';
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
 // ============================================
 // GET /api/clients
@@ -118,64 +122,94 @@ router.post('/', async (req, res) => {
 });
 
 // ============================================
-// POST /api/clients/bulk
-// Importar clientes masivamente (desde Excel/CSV)
+// POST /api/clients/import
+// Importar CRM Clientes desde un archivo CSV
 // ============================================
-router.post('/bulk', async (req, res) => {
+router.post('/import', upload.single('file'), async (req, res) => {
     try {
-        const { clients } = req.body;
-        if (!clients || !Array.isArray(clients)) {
-            return res.status(400).json({ success: false, error: 'Se requiere un array de clientes' });
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No se subió ningún archivo' });
         }
 
+        const results = [];
         let created = 0;
         let skipped = 0;
         const errors = [];
 
-        for (const c of clients) {
-            try {
-                // Check if already exists
-                const exists = await db.query('SELECT id FROM crm_clients WHERE whatsapp = $1 LIMIT 1', [c.whatsapp]);
-                if (exists.rows.length > 0) {
-                    skipped++;
-                    continue;
+        fs.createReadStream(req.file.path)
+            .pipe(csvParser())
+            .on('data', (data) => results.push(data))
+            .on('end', async () => {
+                // Remove the temp file
+                fs.unlinkSync(req.file.path);
+
+                for (const row of results) {
+                    try {
+                        // Extract based on likely Spanish headers from their Excel
+                        const rawName = row['NUBES'] || row['NEGOCIO'] || row['business_name'] || row['nombre'];
+                        if (!rawName) continue; // Skip empty rows
+
+                        // Check duplicates
+                        const duplicateCheck = await db.query(
+                            'SELECT id FROM crm_clients WHERE business_name ILIKE $1',
+                            [rawName.trim()]
+                        );
+                        if (duplicateCheck.rows.length > 0) {
+                            skipped++;
+                            continue;
+                        }
+
+                        // Determine Plan
+                        let plan = 'cloud';
+                        const rawFE = (row['F.E.'] || row['FE'] || '').toString().toUpperCase();
+                        if (rawFE === 'SI' || rawFE === 'SÍ') plan = 'cloud_fe';
+                        if (rawFE === 'NO' && row['ESTADO'] === 'INACTIVO') plan = 'local';
+
+                        // Parse amount
+                        let amount = 0;
+                        const rawAmount = row['MENSUALIDAD'] || row['Monto'] || '0';
+                        const cleanAmount = rawAmount.toString().replace(/[$.,\s]/g, '');
+                        if (!isNaN(cleanAmount) && cleanAmount !== '') amount = parseInt(cleanAmount);
+                        if (amount === 0 && plan !== 'local') amount = 50000; // Default if unclear
+
+                        await db.query(`
+                            INSERT INTO crm_clients (
+                                business_name, 
+                                contact_name, 
+                                whatsapp, 
+                                city, 
+                                plan_type, 
+                                monthly_amount, 
+                                cloud_url,
+                                is_active
+                            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                        `, [
+                            rawName.trim(),
+                            row['CONTACTO'] || row['contact_name'] || null,
+                            row['TELEFONO'] || row['whatsapp'] || null,
+                            row['CIUDAD'] || row['city'] || null,
+                            plan,
+                            amount,
+                            row['NUBES'] || null, // Assuming Nubes col holds the URL
+                            (row['ESTADO'] || '').toUpperCase() === 'ACTIVO' ? true : false
+                        ]);
+                        created++;
+                    } catch (e) {
+                        errors.push({ row: row['NUBES'] || 'fila', error: e.message });
+                    }
                 }
 
-                let amount = c.monthly_amount;
-                if (!amount) {
-                    if (c.plan_type === 'cloud') amount = 35000;
-                    else if (c.plan_type === 'cloud_fe') amount = 55000;
-                    else amount = 0;
-                }
+                res.json({
+                    success: true,
+                    message: `Importación completada: ${created} agregados, ${skipped} omitidos (ya existían).`,
+                    created,
+                    skipped,
+                    errors: errors.length > 0 ? errors : undefined
+                });
+            });
 
-                await db.query(`
-                    INSERT INTO crm_clients (business_name, contact_name, whatsapp, email, city, plan_type, monthly_amount, cloud_url, notes)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                `, [
-                    c.business_name || c.nombre || 'Sin nombre',
-                    c.contact_name || c.contacto || null,
-                    c.whatsapp || c.telefono || c.phone,
-                    c.email || null,
-                    c.city || c.ciudad || null,
-                    c.plan_type || c.plan || 'cloud',
-                    amount,
-                    c.cloud_url || c.url || null,
-                    c.notes || c.notas || null
-                ]);
-                created++;
-            } catch (e) {
-                errors.push({ client: c.business_name, error: e.message });
-            }
-        }
-
-        res.json({
-            success: true,
-            message: `Importación completada: ${created} creados, ${skipped} duplicados`,
-            created,
-            skipped,
-            errors: errors.length > 0 ? errors : undefined
-        });
     } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ success: false, error: error.message });
     }
 });
