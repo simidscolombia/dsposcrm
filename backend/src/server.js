@@ -9,6 +9,7 @@ import adminDbRoutes from './routes/adminDbRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js'; // Restore missing import
 import prizeRoutes from './routes/prizeRoutes.js'; // Nueva ruta de premios
+import crmRoutes from './routes/crmRoutes.js'; // CRM completo
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/admin', adminDbRoutes); // Ruta para DB Init
 app.use('/api/categories', categoryRoutes); // Ruta para Categorías
 app.use('/api/prizes', prizeRoutes); // Ruta para Premios
+app.use('/api/admin/crm', crmRoutes); // CRM completo
 
 app.get('/health', (req, res) => {
   res.json({
