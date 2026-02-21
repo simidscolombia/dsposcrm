@@ -1,12 +1,94 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay } from 'react-icons/fa';
 import ChatbotWidget from './ChatbotWidget';
 
+const API_URL = '/api';
+
 const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, businessType, systemType }) => {
     const [showChatbot, setShowChatbot] = useState(false);
     const [pdfGenerated, setPdfGenerated] = useState(false);
+    const [quoteSaved, setQuoteSaved] = useState(false);
+    const [quoteId, setQuoteId] = useState(null);
+    const [whatsappNumber, setWhatsappNumber] = useState('573205792169'); // Default Colombia
+    const [advisorName, setAdvisorName] = useState('un asesor');
+    const [companyConfig, setCompanyConfig] = useState(null);
+    const savedRef = useRef(false); // Prevent double save
+
+    // ============================================
+    // FETCH CONFIG + SAVE QUOTE ON MOUNT
+    // ============================================
+    useEffect(() => {
+        // 1. Fetch WhatsApp number for this city
+        const fetchConfig = async () => {
+            try {
+                const cityParam = (city || 'Colombia').toLowerCase().replace(/\s+/g, '-');
+                const [waRes, companyRes] = await Promise.all([
+                    axios.get(`${API_URL}/api/config/whatsapp/${cityParam}`).catch(() => null),
+                    axios.get(`${API_URL}/api/config/company`).catch(() => null)
+                ]);
+                if (waRes?.data?.success) {
+                    setWhatsappNumber(waRes.data.number?.number || '573205792169');
+                    setAdvisorName(waRes.data.number?.advisor || 'un asesor');
+                }
+                if (companyRes?.data?.success) {
+                    setCompanyConfig(companyRes.data.config);
+                }
+            } catch (e) {
+                console.log('Config fetch failed (using defaults):', e);
+            }
+        };
+        fetchConfig();
+
+        // 2. Save the quote (only once)
+        if (!savedRef.current) {
+            savedRef.current = true;
+            saveQuote();
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ============================================
+    // SAVE QUOTE TO DATABASE
+    // ============================================
+    const saveQuote = async () => {
+        try {
+            const discount = calculateDiscount();
+            const sub = calculateSubtotal();
+            const final_total = sub - discount.discountAmount;
+
+            const response = await axios.post(`${API_URL}/api/quotes`, {
+                clientName: clientName || 'Cliente Web',
+                clientPhone: clientPhone || null,
+                city: city || null,
+                businessType: businessType || null,
+                systemType: systemType || null,
+                source: 'web',
+                products: (selectedProducts || []).map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    category: p.category,
+                    price: p.price,
+                    quantity: p.quantity || 1
+                })),
+                prizeLabel: discount.label || null,
+                prizeDetail: discount.description || null,
+                discountPercent: discount.value || 0,
+                discountAmount: discount.discountAmount || 0,
+                subtotal: sub,
+                finalTotal: final_total
+            });
+
+            if (response.data?.success) {
+                setQuoteSaved(true);
+                setQuoteId(response.data.data?.quote_id);
+                console.log('✅ Cotización guardada en CRM:', response.data.data);
+            }
+        } catch (err) {
+            console.error('Error guardando cotización (no crítico):', err);
+        }
+    };
 
     // ============================================
     // CÁLCULO DEL DESCUENTO SEGÚN EL PREMIO
@@ -221,8 +303,10 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             doc.setFontSize(9);
             doc.setTextColor(100, 100, 100);
             doc.setFont('helvetica', 'normal');
-            doc.text("Discovery Systems SAS | Soluciones Tecnológicas POS", 105, 275, { align: 'center' });
-            doc.text("Contacto: +57 300 123 4567 | www.discoverysystems.com.co", 105, 280, { align: 'center' });
+            const footerLine1 = companyConfig?.pdf_footer || 'Discovery Systems POS | NIT: 88243048 | Bucaramanga, Colombia';
+            const footerLine2 = companyConfig?.pdf_contact || 'Contacto: +57 320 579 2169 | www.discoverysystems.com';
+            doc.text(footerLine1, 105, 275, { align: 'center' });
+            doc.text(footerLine2, 105, 280, { align: 'center' });
 
             // Guardar PDF
             const fileName = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
@@ -251,8 +335,7 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             `✅ *Total Final:* ${formatCurrency(finalTotal)}\n\n` +
             `Me gustaría hablar con un asesor para continuar.`
         );
-        const phone = '573001234567';
-        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
     };
 
     // ============================================
@@ -378,7 +461,7 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                 >
                     <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></span>
                     <FaWhatsapp className="text-2xl" />
-                    <span>Hablar con un Asesor</span>
+                    <span>Hablar con {advisorName}</span>
                     <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
                         RECOMENDADO
                     </span>
@@ -459,8 +542,9 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
 
             {/* Footer */}
             <div className="text-center mt-8 text-gray-400 text-xs space-y-1">
-                <p>Discovery Systems © 2026 | Soluciones Tecnológicas POS</p>
-                <p>Contacto: +57 300 123 4567 | www.discoverysystems.com.co</p>
+                <p>{companyConfig?.name || 'Discovery Systems POS'} © {new Date().getFullYear()} | {companyConfig?.slogan || 'Soluciones Tecnológicas POS'}</p>
+                <p>Contacto: +57 {companyConfig?.phone || '320 579 2169'} | {companyConfig?.website || 'www.discoverysystems.com'}</p>
+                {quoteId && <p className="text-gray-300">Ref: COT-{String(quoteId).padStart(4, '0')}</p>}
             </div>
         </div>
     );

@@ -154,30 +154,11 @@ const QuotePage = () => {
             console.error('Could not save to localStorage:', e);
         }
 
-        // Save lead to backend (best effort)
-        saveLead(prize);
+        // Quote saving is now handled by QuoteFinal component
+        // which saves the complete data (lead + quote + items)
 
         // Go to final step
         setStep(FINAL_STEP);
-    };
-
-    // =============================================
-    // SAVE LEAD TO BACKEND
-    // =============================================
-    const saveLead = async (prize) => {
-        try {
-            const API_URL = '/api';
-            await axios.post(`${API_URL}/api/leads`, {
-                name: clientData.name || 'Cliente Web',
-                whatsapp: clientData.phone || 'No proporcionado',
-                city: selections.city,
-                businessType: selections.businessType,
-                prize_won: prize?.label || prize || ''
-            });
-            console.log('✅ Lead guardado en BD');
-        } catch (err) {
-            console.error('Error guardando lead (no crítico):', err);
-        }
     };
 
     // =============================================
@@ -294,8 +275,8 @@ const QuotePage = () => {
                 <div className="fixed bottom-0 left-0 w-full h-1.5 md:h-2 bg-gray-200 z-50">
                     <div
                         className={`h-full transition-all duration-700 ease-out ${step >= ROULETTE_STEP
-                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
-                                : 'bg-gradient-to-r from-blue-500 to-green-500'
+                            ? 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                            : 'bg-gradient-to-r from-blue-500 to-green-500'
                             }`}
                         style={{ width: `${progressPercent}%` }}
                     ></div>
