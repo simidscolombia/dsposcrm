@@ -11,6 +11,7 @@ import AdminPrizes from './pages/admin/AdminPrizes';
 import CRMPipeline from './pages/admin/CRMPipeline';
 import CRMClients from './pages/admin/CRMClients';
 import CRMBilling from './pages/admin/CRMBilling';
+import CRMDistributors from './pages/admin/CRMDistributors';
 
 function App() {
   // Global Click Sound Effect
@@ -74,6 +75,7 @@ function App() {
           <Route path="prizes" element={<AdminPrizes />} />
           <Route path="pipeline" element={<CRMPipeline />} />
           <Route path="clients" element={<CRMClients />} />
+          <Route path="distributors" element={<CRMDistributors />} />
           <Route path="billing" element={<CRMBilling />} />
         </Route>
       </Routes>
