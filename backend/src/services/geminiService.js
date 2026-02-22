@@ -219,7 +219,8 @@ Responde SOLO en formato JSON válido:
   "phone": "Teléfono principal",
   "address": "Dirección completa",
   "city": "Ciudad o Municipio principal",
-  "ciiu": "Código CIIU de actividad principal (4 digitos)"
+  "ciiu": "Código CIIU de actividad principal (4 digitos)",
+  "legalRepresentative": "Nombre completo del representante legal o titular (si aplica)"
 }`;
 
         try {

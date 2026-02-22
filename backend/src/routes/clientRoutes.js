@@ -78,7 +78,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const {
-            business_name, contact_name, whatsapp, email, city, address, nit,
+            business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
             plan_type, monthly_amount, billing_day, pos_version, server_name,
             cloud_url, anydesk_id, advisor_id, notes, priority, started_at
         } = req.body;
@@ -97,14 +97,14 @@ router.post('/', async (req, res) => {
 
         const result = await db.query(`
             INSERT INTO crm_clients (
-                business_name, contact_name, whatsapp, email, city, address, nit,
+                business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
                 plan_type, monthly_amount, billing_day, pos_version, server_name,
                 cloud_url, anydesk_id, advisor_id, notes, priority, started_at, next_billing_date
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
                       DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '27 days')
             RETURNING *
         `, [
-            business_name, contact_name, whatsapp, email, city, address, nit,
+            business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
             plan_type || 'local', amount, billing_day || 28, pos_version,
             server_name, cloud_url, anydesk_id, advisor_id, notes, priority || 'normal',
             started_at || new Date()
@@ -271,7 +271,7 @@ router.put('/:id', async (req, res) => {
         const fields = req.body;
 
         const allowedFields = [
-            'business_name', 'contact_name', 'whatsapp', 'email', 'city', 'address', 'nit',
+            'business_name', 'contact_name', 'whatsapp', 'email', 'city', 'address', 'nit', 'legal_representative',
             'plan_type', 'monthly_amount', 'billing_day', 'payment_status',
             'pos_version', 'server_name', 'cloud_url', 'anydesk_id',
             'advisor_id', 'distributor_id', 'technician_id', 'notes', 'priority', 'is_active'

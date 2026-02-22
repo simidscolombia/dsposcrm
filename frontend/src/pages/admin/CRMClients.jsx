@@ -110,6 +110,7 @@ const CRMClients = () => {
             const updateProps = {
                 business_name: formData.business_name,
                 nit: formData.nit,
+                legal_representative: formData.legal_representative,
                 email: formData.email,
                 city: formData.city,
                 address: formData.address,
@@ -219,6 +220,7 @@ const CRMClients = () => {
                     ...prev,
                     business_name: aiData.businessName || prev.business_name || '',
                     nit: aiData.nit || prev.nit || '',
+                    legal_representative: aiData.legalRepresentative || prev.legal_representative || '',
                     whatsapp: aiData.phone || prev.whatsapp || '',
                     email: aiData.email || prev.email || '',
                     city: aiData.city || prev.city || '',
@@ -495,6 +497,10 @@ const CRMClients = () => {
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">NIT</label>
                                 <input name="nit" value={formData.nit || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Rep. Legal / Titular</label>
+                                <input name="legal_representative" value={formData.legal_representative || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp <span className="text-red-500">*</span></label>
