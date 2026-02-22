@@ -28,7 +28,7 @@ const CRMClients = () => {
 
     const fetchOptions = async () => {
         try {
-            const res = await axios.get(`${API_URL} /admin/crm / options`);
+            const res = await axios.get(`${API_URL}/admin/crm/options`);
             if (res.data.success) {
                 setOptions({
                     distributors: res.data.distributors || [],
@@ -47,7 +47,7 @@ const CRMClients = () => {
             if (search) params.append('search', search);
             if (filterPlan) params.append('plan_type', filterPlan);
 
-            const res = await axios.get(`${API_URL} /clients?${params.toString()}`);
+            const res = await axios.get(`${API_URL}/clients?${params.toString()}`);
             if (res.data.success) {
                 setClients(res.data.clients);
                 setStats(res.data.stats);

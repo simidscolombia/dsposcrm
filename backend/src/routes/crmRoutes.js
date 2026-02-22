@@ -435,6 +435,75 @@ router.get('/stats', async (req, res) => {
 });
 
 // ============================================
+// GET /admin/crm/dashboard-stats
+// Estadísticas detalladas para las gráficas del Dashboard
+// ============================================
+router.get('/dashboard-stats', async (req, res) => {
+    try {
+        const result = {
+            totalRevenue: 0,
+            pendingRevenue: 0,
+            leadsBySource: [],
+            quotesByStatus: [],
+            paymentMethods: []
+        };
+
+        // 1. Ingresos y pagos
+        try {
+            const revenueQ = await db.query(`
+                SELECT 
+                    SUM(CASE WHEN payment_method = 'transferencia' THEN last_quote_amount ELSE 0 END) as total_transferencias,
+                    SUM(CASE WHEN payment_method = 'contra_entrega' THEN last_quote_amount ELSE 0 END) as total_contra_entrega,
+                    SUM(last_quote_amount) as total_pipeline
+                FROM leads
+                WHERE pipeline_stage IN ('won', 'negotiating', 'demo', 'quoted')
+            `);
+            if (revenueQ.rows.length > 0) {
+                const r = revenueQ.rows[0];
+                result.totalRevenue = parseFloat(r.total_transferencias || 0) + parseFloat(r.total_contra_entrega || 0);
+                result.pendingRevenue = parseFloat(r.total_pipeline || 0);
+            }
+        } catch (e) { }
+
+        // 2. Fuentes de Leads (Ej: Web vs Campaña)
+        try {
+            const sourcesQ = await db.query(`
+                SELECT source, COUNT(*) as count 
+                FROM leads 
+                GROUP BY source
+                ORDER BY count DESC
+            `);
+            result.leadsBySource = sourcesQ.rows;
+        } catch (e) { }
+
+        // 3. Status de Cotizaciones
+        try {
+            const quotesQ = await db.query(`
+                SELECT status, COUNT(*) as count
+                FROM crm_quotes
+                GROUP BY status
+            `);
+            result.quotesByStatus = quotesQ.rows;
+        } catch (e) { }
+
+        // 4. Métodos de Pago Preferidos
+        try {
+            const pmQ = await db.query(`
+                SELECT payment_method, COUNT(*) as count
+                FROM leads
+                WHERE payment_method IS NOT NULL
+                GROUP BY payment_method
+            `);
+            result.paymentMethods = pmQ.rows;
+        } catch (e) { }
+
+        res.json({ success: true, stats: result });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
 // GET /admin/crm/options
 // Opciones para listas desplegables (Advisors, Distrib.)
 // ============================================
