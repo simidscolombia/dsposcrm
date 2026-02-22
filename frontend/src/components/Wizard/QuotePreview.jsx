@@ -197,14 +197,19 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                     {/* Quotation Card */}
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                         {/* Quotation Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-white font-bold text-lg">Cotización Discovery Systems</h3>
-                                <p className="text-blue-200 text-sm">
-                                    {new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                </p>
+                        <div className="bg-[#1c242e] border-b border-gray-800 px-6 py-4 flex items-center justify-between shadow-sm">
+                            <div className="flex gap-4 items-center">
+                                <img src="/logo.png" alt="Discovery Systems Logo" className="w-12 h-12 object-contain hidden md:block" />
+                                <div>
+                                    <h3 className="text-white font-bold text-lg md:text-xl tracking-wide flex items-center gap-2">
+                                        <img src="/logo.png" alt="Discovery Systems Logo" className="w-8 h-8 object-contain md:hidden" />
+                                        Cotización Discovery Systems
+                                    </h3>
+                                    <p className="text-[#A8E0F0] text-xs font-semibold uppercase tracking-wider mt-0.5">
+                                        {new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="text-white text-3xl">🚀</div>
                         </div>
 
                         {/* Products Table */}

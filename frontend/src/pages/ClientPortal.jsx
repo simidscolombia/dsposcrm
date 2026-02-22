@@ -63,37 +63,50 @@ const ClientPortal = () => {
                     console.log('Error fetching advisor info', e);
                 }
 
-                // Initialize chat
-                setMessages([
-                    {
-                        id: 1,
-                        sender: 'bot',
-                        text: `¡Hola ${q.client_name}! 👋 Soy ${advisor}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    },
-                    {
-                        id: 2,
-                        sender: 'app', // special type for rendering a widget inside chat
-                        type: 'quote_summary',
-                        data: {
-                            total: q.final_total,
-                            itemsCount: q.items?.length || 0
+                // Initialize chat with typing delay
+                setLoading(false); // drop the main loading screen first
+                setIsTyping(true);
+
+                setTimeout(() => {
+                    setMessages([
+                        {
+                            id: 1,
+                            sender: 'bot',
+                            text: `¡Hola ${q.client_name}! 👋 Soy ${advisor}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
+                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                         }
-                    }
-                ]);
-                setProgress(20);
-                setQuickReplies([
-                    { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
-                    { label: 'Ver Video Demo 🎬', action: 'view_demo' },
-                    { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
-                ]);
+                    ]);
+
+                    setTimeout(() => {
+                        setMessages(prev => [
+                            ...prev,
+                            {
+                                id: 2,
+                                sender: 'app', // special type for rendering a widget inside chat
+                                type: 'quote_summary',
+                                data: {
+                                    total: q.final_total,
+                                    itemsCount: q.items?.length || 0
+                                }
+                            }
+                        ]);
+                        setProgress(20);
+                        setIsTyping(false);
+                        setQuickReplies([
+                            { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
+                            { label: 'Ver Video Demo 🎬', action: 'view_demo' },
+                            { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
+                        ]);
+                    }, 1500);
+                }, 1800);
+
             } else {
                 setError('Cotización no encontrada');
+                setLoading(false);
             }
         } catch (err) {
             console.error('Error fetching quote:', err);
             setError('Error al cargar la cotización o enlace inválido.');
-        } finally {
             setLoading(false);
         }
     };
@@ -132,7 +145,7 @@ const ClientPortal = () => {
         }
 
         if (reply.action === 'ask_questions') {
-            appendMessage('bot', '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto. Si prefieres hablar con un humano también te puedo conectar.');
+            appendMessage('bot', '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto, y yo me encargaré de revisarlo contigo.');
             setFlowState('questions');
             setQuickReplies([
                 { label: 'Ya no tengo dudas, ¡Empezar pedido! 🚀', action: 'start_order', primary: true }
