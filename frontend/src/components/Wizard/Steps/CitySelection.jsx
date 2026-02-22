@@ -27,6 +27,15 @@ const CitySelection = ({ onSelect }) => {
 
     return (
         <div className="text-center p-6 animate-fade-in-up">
+            {!selectedDept && (
+                <div className="mb-8 max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-[#A8E0F0]/20 p-5 rounded-2xl border border-blue-100 shadow-sm animate-pulse-slow">
+                    <p className="text-gray-700 font-medium text-sm md:text-base leading-relaxed">
+                        👋 ¡Hola! Hemos creado este espacio exclusivo para que encuentres la mejor opción que se adapte a tu negocio.
+                        Completa estos sencillos pasos y, al finalizar, <strong className="text-blue-600">¡participa en la ruleta para ganarte un obsequio especial!</strong> 🎁
+                    </p>
+                </div>
+            )}
+
             {selectedDept && (
                 <div className="mb-4">
                     <h3 className="text-xl font-bold text-gray-700">📍 {selectedDept.department}</h3>

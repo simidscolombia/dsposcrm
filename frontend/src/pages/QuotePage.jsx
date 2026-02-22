@@ -243,56 +243,64 @@ const QuotePage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <header className="bg-[#1c242e] shadow-lg py-3 md:py-4 px-4 md:px-6 fixed w-full top-0 z-50 border-b border-gray-800">
-                <div className="absolute bottom-0 left-0 w-full h-1 bg-[#12181f]">
-                    <div
-                        className={`h-full transition-all duration-700 ease-out bg-[#A8E0F0]`}
-                        style={{ width: `${progressPercent}%`, boxShadow: '0 0 10px #A8E0F0' }}
-                    ></div>
-                </div>
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
-                        <div className="flex items-center gap-3">
-                            {canGoBack && (
-                                <button
-                                    onClick={handleBack}
-                                    className="text-gray-400 hover:text-[#A8E0F0] transition-colors p-2 rounded-full hover:bg-white/5"
-                                    aria-label="Volver"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                </button>
-                            )}
-                            <div className="flex items-center gap-2">
-                                <img src="/logo.png" alt="Discovery Systems Pos" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
-                                <div className="flex flex-col">
-                                    <span className="text-white font-bold text-lg md:text-xl leading-none tracking-wide">Discovery</span>
-                                    <span className="text-gray-400 text-[10px] md:text-xs font-semibold leading-none tracking-widest uppercase mt-0.5">Systems Pos</span>
+            {showHeader && (
+                <header className="bg-[#1c242e] shadow-lg pt-3 md:pt-4 px-4 md:px-6 fixed w-full top-0 z-50 border-b border-gray-800">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mb-2 md:mb-4">
+                        <div className="flex w-full md:w-auto items-center justify-between md:justify-start gap-4">
+                            <div className="flex items-center gap-3">
+                                {canGoBack && (
+                                    <button
+                                        onClick={handleBack}
+                                        className="text-gray-400 hover:text-[#A8E0F0] transition-colors p-2 rounded-full hover:bg-white/5"
+                                        aria-label="Volver"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                        </svg>
+                                    </button>
+                                )}
+                                <div className="flex items-center gap-2">
+                                    <img src="/logo.png" alt="Discovery Systems Pos" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                                    <div className="flex flex-col">
+                                        <span className="text-white font-bold text-lg md:text-xl leading-none tracking-wide">Discovery</span>
+                                        <span className="text-gray-400 text-[10px] md:text-xs font-semibold leading-none tracking-widest uppercase mt-0.5">Systems Pos</span>
+                                    </div>
                                 </div>
                             </div>
+                            <div className="md:hidden text-xs font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
+                                {step + 1} / {totalSteps}
+                            </div>
                         </div>
-                        <div className="md:hidden text-xs font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
-                            {step + 1} / {totalSteps}
+
+                        {/* Middle Guided Text */}
+                        <div className="flex-1 text-center hidden md:block">
+                            <h2 className="text-sm font-bold text-white">{STEP_GUIDES[step]?.title}</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">{STEP_GUIDES[step]?.subtitle}</p>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-400">
+                                {STEP_LABELS[step] || ''}
+                            </span>
+                            <div className="text-sm font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
+                                {step + 1} / {totalSteps}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Middle Guided Text */}
-                    <div className="flex-1 text-center hidden md:block">
-                        <h2 className="text-sm font-bold text-white">{STEP_GUIDES[step]?.title}</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">{STEP_GUIDES[step]?.subtitle}</p>
-                    </div>
-
-                    <div className="hidden md:flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-400">
-                            {STEP_LABELS[step] || ''}
-                        </span>
-                        <div className="text-sm font-bold text-[#1c242e] bg-[#A8E0F0] px-3 py-1 rounded-full shadow-[0_0_10px_rgba(168,224,240,0.3)]">
-                            {step + 1} / {totalSteps}
+                    {/* Thicker Progress Bar with Percentage */}
+                    <div className="absolute bottom-0 left-0 w-full h-3 md:h-4 bg-[#12181f] overflow-hidden">
+                        <div
+                            className={`h-full transition-all duration-700 ease-out bg-[#A8E0F0] relative flex items-center justify-center`}
+                            style={{ width: `${progressPercent}%`, boxShadow: '0 0 10px #A8E0F0' }}
+                        >
+                            <span className="text-[9px] md:text-[10px] font-black text-[#1c242e] whitespace-nowrap">
+                                {Math.round(progressPercent)}% COMPLETADO
+                            </span>
                         </div>
                     </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             <main className={`flex-1 ${showHeader ? 'pt-28 md:pt-24' : 'pt-4'} px-2 md:px-4 pb-12 flex flex-col items-center justify-start md:justify-center`}>
 
