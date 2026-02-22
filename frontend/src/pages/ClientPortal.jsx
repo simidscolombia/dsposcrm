@@ -366,7 +366,7 @@ const ClientPortal = () => {
             </header>
 
             {/* CHAT MESSAGES AREA */}
-            <main className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto bg-gray-100 pb-32 custom-scrollbar">
+            <main className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto bg-gray-100 pb-8 custom-scrollbar">
                 <div className="space-y-4">
                     <div className="text-center text-xs text-gray-400 my-4 bg-gray-200 w-fit mx-auto px-3 py-1 rounded-full">
                         Hoy - {new Date().toLocaleDateString()}
@@ -468,7 +468,7 @@ const ClientPortal = () => {
             </main>
 
             {/* INPUT AREA */}
-            <footer className="bg-white border-t border-gray-200 p-3 pb-6 fixed bottom-0 w-full z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+            <footer className="bg-white border-t border-gray-200 p-3 pb-6 w-full flex-shrink-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] relative">
                 <div className="max-w-4xl mx-auto">
 
                     {/* Quick Replies */}
