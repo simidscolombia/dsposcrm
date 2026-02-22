@@ -48,7 +48,16 @@ const LeadCard = ({ lead, onMoveStage, onViewDetail }) => {
 
     return (
         <div
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-2 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+            draggable
+            onDragStart={(e) => {
+                e.dataTransfer.setData('leadId', lead.id);
+                // Make the ghost image slightly transparent
+                e.currentTarget.style.opacity = '0.5';
+            }}
+            onDragEnd={(e) => {
+                e.currentTarget.style.opacity = '1';
+            }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-2 hover:shadow-md hover:border-blue-200 transition-all cursor-move group"
             onClick={() => onViewDetail(lead)}
         >
             {/* Header: Name + Time */}
@@ -92,15 +101,33 @@ const LeadCard = ({ lead, onMoveStage, onViewDetail }) => {
 
             {/* Quote info */}
             {lead.last_quote_amount && (
-                <div className="flex items-center gap-1 mb-2">
-                    <FaDollarSign className="text-green-500 text-xs" />
-                    <span className="text-xs font-bold text-green-600">
-                        {formatCurrency(lead.last_quote_amount)}
-                    </span>
-                    {lead.prize_won && (
-                        <span className="text-[10px] bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ml-auto">
-                            <FaGift className="text-[8px]" />
-                            {lead.prize_won}
+                <div className="flex flex-col gap-1 mb-2">
+                    <div className="flex items-center gap-1">
+                        <FaDollarSign className="text-green-500 text-xs" />
+                        <span className="text-xs font-bold text-green-600">
+                            {formatCurrency(lead.last_quote_amount)}
+                        </span>
+                        {lead.prize_won && (
+                            <span className="text-[10px] bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 ml-auto border border-yellow-200">
+                                <FaGift className="text-[8px]" />
+                                {lead.prize_won}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Method / Logistics Tags */}
+            {(lead.payment_method || lead.address) && (
+                <div className="flex flex-wrap items-center gap-1 mb-2 border-t border-gray-50 pt-1.5 mt-1">
+                    {lead.payment_method && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${lead.payment_method === 'transferencia' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {lead.payment_method === 'transferencia' ? '🏦 Transferencia' : '🚚 Contra Entr.'}
+                        </span>
+                    )}
+                    {(lead.rut_uploaded || lead.rutFileUploaded) && (
+                        <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-sm font-bold flex items-center gap-0.5" title="Documento adjuntado">
+                            📎 RUT
                         </span>
                     )}
                 </div>
@@ -263,98 +290,109 @@ const LeadDetailModal = ({ lead, onClose, onMoveStage }) => {
                             <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Sistema</p>
                             <span className="text-sm font-medium text-gray-700">{lead.system_type || '-'}</span>
                         </div>
-                        <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Fuente</p>
-                            <span className="text-sm font-medium text-gray-700">{lead.source || 'web'}</span>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Logística y Pago</p>
+                        <div className="text-sm font-medium text-gray-700 flex flex-col gap-1">
+                            {lead.payment_method ? (
+                                <span className={`px-2 py-0.5 text-[11px] rounded-full w-fit ${lead.payment_method === 'transferencia' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    {lead.payment_method === 'transferencia' ? '🏦 Trf. Bancaria' : '🚚 Contra Entrega'}
+                                </span>
+                            ) : <span className="text-xs text-gray-400">Pago pendiente</span>}
+                            {(lead.rut_uploaded || lead.rutFileUploaded) && (
+                                <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full w-fit flex items-center gap-1">
+                                    📎 RUT/Cédula adjunta
+                                </span>
+                            )}
                         </div>
                     </div>
-
-                    {/* Quotes */}
-                    {detail?.quotes?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <FaFileInvoiceDollar className="text-yellow-500" /> Cotizaciones ({detail.quotes.length})
-                            </h3>
-                            <div className="space-y-2">
-                                {detail.quotes.map(q => (
-                                    <div key={q.id} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-xs font-bold text-blue-600">COT-{String(q.id).padStart(4, '0')}</span>
-                                            <span className="text-[10px] text-gray-400">
-                                                {new Date(q.created_at).toLocaleDateString('es-CO')}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-lg font-bold text-gray-800">{formatCurrency(q.final_amount || q.total_amount)}</p>
-                                                {q.discount_amount > 0 && (
-                                                    <p className="text-xs text-green-600 flex items-center gap-1">
-                                                        <FaGift /> Premio: {q.prize_label} (-{formatCurrency(q.discount_amount)})
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${q.status === 'accepted' ? 'bg-green-100 text-green-600' :
-                                                q.status === 'expired' ? 'bg-red-100 text-red-600' :
-                                                    'bg-yellow-100 text-yellow-600'
-                                                }`}>
-                                                {q.status === 'accepted' ? 'Aceptada' : q.status === 'expired' ? 'Expirada' : q.status === 'sent' ? 'Enviada' : 'Borrador'}
-                                            </span>
-                                        </div>
-                                        {/* Items */}
-                                        {q.items && q.items.length > 0 && (
-                                            <div className="mt-2 pt-2 border-t border-blue-100">
-                                                {q.items.map((item, i) => (
-                                                    <p key={i} className="text-[11px] text-gray-500">
-                                                        {item.quantity}x {item.name} — {formatCurrency(item.subtotal)}
-                                                    </p>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Notes */}
-                    <div>
-                        <h3 className="font-bold text-gray-700 mb-2">📝 Notas</h3>
-                        <textarea
-                            value={notes}
-                            onChange={e => setNotes(e.target.value)}
-                            onBlur={saveNotes}
-                            placeholder="Escribe notas sobre este lead..."
-                            className="w-full bg-gray-50 rounded-xl p-3 border border-gray-200 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        />
-                    </div>
-
-                    {/* Activity Timeline */}
-                    {detail?.activities?.length > 0 && (
-                        <div>
-                            <h3 className="font-bold text-gray-700 mb-3">📅 Timeline</h3>
-                            <div className="space-y-2 max-h-48 overflow-auto">
-                                {detail.activities.map(act => (
-                                    <div key={act.id} className="flex items-start gap-3 text-xs">
-                                        <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-gray-700">{act.description}</p>
-                                            <p className="text-[10px] text-gray-400">
-                                                {new Date(act.created_at).toLocaleString('es-CO')} • {act.performed_by}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {loading && (
-                        <div className="text-center py-4">
-                            <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-                            <p className="text-xs text-gray-400 mt-2">Cargando detalles...</p>
-                        </div>
-                    )}
                 </div>
+
+                {/* Quotes */}
+                {detail?.quotes?.length > 0 && (
+                    <div>
+                        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <FaFileInvoiceDollar className="text-yellow-500" /> Cotizaciones ({detail.quotes.length})
+                        </h3>
+                        <div className="space-y-2">
+                            {detail.quotes.map(q => (
+                                <div key={q.id} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-bold text-blue-600">COT-{String(q.id).padStart(4, '0')}</span>
+                                        <span className="text-[10px] text-gray-400">
+                                            {new Date(q.created_at).toLocaleDateString('es-CO')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-lg font-bold text-gray-800">{formatCurrency(q.final_amount || q.total_amount)}</p>
+                                            {q.discount_amount > 0 && (
+                                                <p className="text-xs text-green-600 flex items-center gap-1">
+                                                    <FaGift /> Premio: {q.prize_label} (-{formatCurrency(q.discount_amount)})
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${q.status === 'accepted' ? 'bg-green-100 text-green-600' :
+                                            q.status === 'expired' ? 'bg-red-100 text-red-600' :
+                                                'bg-yellow-100 text-yellow-600'
+                                            }`}>
+                                            {q.status === 'accepted' ? 'Aceptada' : q.status === 'expired' ? 'Expirada' : q.status === 'sent' ? 'Enviada' : 'Borrador'}
+                                        </span>
+                                    </div>
+                                    {/* Items */}
+                                    {q.items && q.items.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-blue-100">
+                                            {q.items.map((item, i) => (
+                                                <p key={i} className="text-[11px] text-gray-500">
+                                                    {item.quantity}x {item.name} — {formatCurrency(item.subtotal)}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Notes */}
+                <div>
+                    <h3 className="font-bold text-gray-700 mb-2">📝 Notas</h3>
+                    <textarea
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        onBlur={saveNotes}
+                        placeholder="Escribe notas sobre este lead..."
+                        className="w-full bg-gray-50 rounded-xl p-3 border border-gray-200 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    />
+                </div>
+
+                {/* Activity Timeline */}
+                {detail?.activities?.length > 0 && (
+                    <div>
+                        <h3 className="font-bold text-gray-700 mb-3">📅 Timeline</h3>
+                        <div className="space-y-2 max-h-48 overflow-auto">
+                            {detail.activities.map(act => (
+                                <div key={act.id} className="flex items-start gap-3 text-xs">
+                                    <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-gray-700">{act.description}</p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {new Date(act.created_at).toLocaleString('es-CO')} • {act.performed_by}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="text-center py-4">
+                        <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+                        <p className="text-xs text-gray-400 mt-2">Cargando detalles...</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -522,8 +560,24 @@ const CRMPipeline = () => {
                                 </span>
                             </div>
 
-                            {/* Cards */}
-                            <div className="flex-1 overflow-auto p-2 space-y-0">
+                            <div
+                                className="flex-1 overflow-auto p-2 space-y-0 transition-colors duration-200"
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)';
+                                }}
+                                onDragLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    const leadId = e.dataTransfer.getData('leadId');
+                                    if (leadId) {
+                                        handleMoveStage(parseInt(leadId, 10) || leadId, stage.key);
+                                    }
+                                }}
+                            >
                                 {leads.length === 0 ? (
                                     <div className="text-center py-8 text-gray-400">
                                         <p className="text-3xl mb-2">📭</p>
