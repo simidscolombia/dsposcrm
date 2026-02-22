@@ -3,7 +3,15 @@
 
 import aiService from '../services/geminiService.js';
 import db from '../config/database.js';
-import pdfParse from 'pdf-parse';
+
+let pdfParse;
+async function getPdfParse() {
+  if (!pdfParse) {
+    const module = await import('pdf-parse');
+    pdfParse = module.default || module;
+  }
+  return pdfParse;
+}
 
 class AIController {
   /**
@@ -226,7 +234,8 @@ class AIController {
       // 1. Extraer texto del PDF usando pdf-parse
       let pdfText = '';
       try {
-        const pdfData = await pdfParse(req.file.buffer);
+        const parser = await getPdfParse();
+        const pdfData = await parser(req.file.buffer);
         pdfText = pdfData.text;
       } catch (e) {
         console.error('Error parseando PDF:', e);
