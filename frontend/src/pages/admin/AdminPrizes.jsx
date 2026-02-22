@@ -8,7 +8,7 @@ const AdminPrizes = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', description: '', probability: 0, type: 'discount', value: '', icon: '🎁'
+        name: '', description: '', probability: 0, type: 'discount', value: '', icon: '🎁', is_active: true
     });
     const [editMode, setEditMode] = useState(false);
     const [currentId, setCurrentId] = useState(null);
@@ -72,7 +72,8 @@ const AdminPrizes = () => {
             probability: prize.probability || 0,
             type: prize.type || 'discount',
             value: prize.value || '',
-            icon: prize.icon || '🎁'
+            icon: prize.icon || '🎁',
+            is_active: prize.is_active !== undefined ? prize.is_active : true
         });
         setCurrentId(prize.id);
         setEditMode(true);
@@ -80,7 +81,7 @@ const AdminPrizes = () => {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', description: '', probability: 0, type: 'discount', value: '', icon: '🎁' });
+        setFormData({ name: '', description: '', probability: 0, type: 'discount', value: '', icon: '🎁', is_active: true });
         setEditMode(false);
         setCurrentId(null);
     };
@@ -132,6 +133,7 @@ const AdminPrizes = () => {
                                 <th className="px-6 py-4">Tipo</th>
                                 <th className="px-6 py-4">Valor</th>
                                 <th className="px-6 py-4">Probabilidad</th>
+                                <th className="px-6 py-4 text-center">Estado</th>
                                 <th className="px-6 py-4 text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -150,6 +152,11 @@ const AdminPrizes = () => {
                                     </td>
                                     <td className="px-6 py-4 font-mono text-sm">{prize.value}</td>
                                     <td className="px-6 py-4 font-bold text-gray-700">{prize.probability}%</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-2 py-1 rounded text-xs uppercase font-bold ${prize.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {prize.is_active ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-4 text-right space-x-2">
                                         <button onClick={() => handleEdit(prize)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors">
                                             <FaEdit />
@@ -241,6 +248,19 @@ const AdminPrizes = () => {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none min-h-[60px]"
                                 />
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-2">
+                                <input
+                                    type="checkbox"
+                                    id="prize_active"
+                                    checked={formData.is_active}
+                                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                />
+                                <label htmlFor="prize_active" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                    Premio Activo (Aparece en la ruleta)
+                                </label>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

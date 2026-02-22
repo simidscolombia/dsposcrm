@@ -3,7 +3,8 @@ import db from '../config/database.js';
 
 class Prize {
     static async findAll() {
-        const result = await db.query('SELECT * FROM crm_prizes WHERE is_active = true ORDER BY probability DESC');
+        // Return all prizes so Admin can toggle them. The SpinningWheel filters by is_active = true on the frontend.
+        const result = await db.query('SELECT * FROM crm_prizes ORDER BY is_active DESC, probability DESC');
         return result.rows;
     }
 
