@@ -3,6 +3,7 @@
 
 import aiService from '../services/geminiService.js';
 import db from '../config/database.js';
+import pdfParse from 'pdf-parse';
 
 class AIController {
   /**
@@ -209,6 +210,49 @@ class AIController {
         error: 'Error procesando pregunta',
         answer: 'Disculpa, no pude procesar tu pregunta. ¿Quieres hablar con un asesor? 😊',
       });
+    }
+  }
+
+  /**
+   * POST /api/ai/extract-rut
+   * Lee un archivo PDF de RUT y extrae info estructurada
+   */
+  async extractRut(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No se subió ningún archivo' });
+      }
+
+      // 1. Extraer texto del PDF usando pdf-parse
+      let pdfText = '';
+      try {
+        const pdfData = await pdfParse(req.file.buffer);
+        pdfText = pdfData.text;
+      } catch (e) {
+        console.error('Error parseando PDF:', e);
+        return res.status(400).json({ success: false, error: 'El archivo no es un PDF válido o está corrupto.' });
+      }
+
+      if (!pdfText || pdfText.trim().length < 50) {
+        return res.status(400).json({ success: false, error: 'No se pudo leer texto del PDF.' });
+      }
+
+      // 2. Enviar texto a la IA
+      const result = await aiService.extractRutInfo(pdfText);
+
+      if (!result.success) {
+        return res.status(500).json({ success: false, error: 'Error de la IA al analizar el RUT.' });
+      }
+
+      // 3. Devolver datos estructurados
+      return res.json({
+        success: true,
+        data: result.data
+      });
+
+    } catch (error) {
+      console.error('Error procesando RUT:', error);
+      return res.status(500).json({ success: false, error: 'Error del servidor procesando el archivo.' });
     }
   }
 

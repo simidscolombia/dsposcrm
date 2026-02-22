@@ -12,7 +12,7 @@ const AdminLayout = () => {
             <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-2xl flex-shrink-0">
                 <div className="p-6 border-b border-slate-700">
                     <h1 className="text-xl font-bold flex items-center gap-2">
-                        <FaRocket className="text-yellow-400" />
+                        <img src="/logo.png" alt="Discovery Logo" className="w-8 h-8 object-contain" />
                         <span>DSPOS CRM</span>
                     </h1>
                     <p className="text-[10px] text-slate-500 mt-1">Discovery Systems Admin</p>

@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
     FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
-    FaArrowDown, FaBell, FaFileCsv, FaSpinner
+    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -19,6 +19,13 @@ const CRMClients = () => {
     // Manage edit modal state
     const [editingClient, setEditingClient] = useState(null);
     const [formData, setFormData] = useState({});
+    const [isExtractingRut, setIsExtractingRut] = useState(false);
+
+    // Creates new client UI
+    const handleNewClientClick = () => {
+        setFormData({ plan_type: 'local', is_active: true });
+        setEditingClient({ id: null }); // indicates new
+    };
 
     useEffect(() => {
         fetchOptions();
@@ -95,8 +102,17 @@ const CRMClients = () => {
 
     const saveClient = async () => {
         try {
+            if (!formData.business_name || !formData.whatsapp) {
+                alert('El nombre del negocio y el WhatsApp son obligatorios');
+                return;
+            }
+
             const updateProps = {
                 business_name: formData.business_name,
+                nit: formData.nit,
+                email: formData.email,
+                city: formData.city,
+                address: formData.address,
                 whatsapp: formData.whatsapp,
                 plan_type: formData.plan_type,
                 monthly_amount: parseFloat(formData.monthly_amount) || 0,
@@ -109,9 +125,15 @@ const CRMClients = () => {
                 is_active: formData.is_active === 'true' || formData.is_active === true
             };
 
-            const res = await axios.put(`${API_URL}/clients/${editingClient.id}`, updateProps);
+            let res;
+            if (editingClient.id) {
+                res = await axios.put(`${API_URL}/clients/${editingClient.id}`, updateProps);
+            } else {
+                res = await axios.post(`${API_URL}/clients`, updateProps);
+            }
+
             if (res.data.success) {
-                alert('Cliente actualizado correctamente');
+                alert(editingClient.id ? 'Cliente actualizado correctamente' : 'Nuevo cliente creado correctamente');
                 setEditingClient(null);
                 fetchClients(); // recargar
             }
@@ -171,6 +193,48 @@ const CRMClients = () => {
         }
     };
 
+    const handleRutUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            alert('Por favor selecciona un archivo PDF original del RUT.');
+            e.target.value = null;
+            return;
+        }
+
+        setIsExtractingRut(true);
+        const rutData = new FormData();
+        rutData.append('rutFile', file);
+
+        try {
+            const res = await axios.post(`${API_URL}/ai/extract-rut`, rutData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (res.data.success && res.data.data) {
+                const aiData = res.data.data;
+                // Patch the currently edited values
+                setFormData(prev => ({
+                    ...prev,
+                    business_name: aiData.businessName || prev.business_name || '',
+                    nit: aiData.nit || prev.nit || '',
+                    whatsapp: aiData.phone || prev.whatsapp || '',
+                    email: aiData.email || prev.email || '',
+                    city: aiData.city || prev.city || '',
+                    address: aiData.address || prev.address || '',
+                }));
+                alert('RUT procesado. Se han autocompletado los datos encontrados.');
+            }
+        } catch (error) {
+            console.error('Error procesando RUT:', error);
+            alert(error.response?.data?.error || 'No se pudo procesar el archivo. ¿Estás seguro de que es un PDF válido del RUT?');
+        } finally {
+            e.target.value = null;
+            setIsExtractingRut(false);
+        }
+    };
+
     return (
         <div className="p-4 md:p-8 max-w-[1400px] mx-auto animate-fade-in-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -184,7 +248,11 @@ const CRMClients = () => {
                     </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <button onClick={handleNewClientClick} className="px-3 py-2 bg-blue-600 border border-blue-700 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm transition">
+                        <FaPlus /> Nuevo Cliente
+                    </button>
+
                     <button onClick={fetchClients} className="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm shadow-sm transition">
                         Actualizar
                     </button>
@@ -384,9 +452,36 @@ const CRMClients = () => {
             {editingClient && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in-up">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><FaEdit className="text-blue-600" /> Editar Cliente Técnico</h2>
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <FaEdit className="text-blue-600" />
+                                {editingClient.id ? 'Editar Cliente Técnico' : 'Crear Nuevo Cliente'}
+                            </h2>
                             <button onClick={() => setEditingClient(null)} className="text-gray-400 hover:text-red-500"><FaTimesCircle className="w-6 h-6" /></button>
+                        </div>
+
+                        {/* RUT Magic Uploader */}
+                        <div className="px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-purple-800 flex items-center gap-1"><FaMagic /> Auto-completar con IA</h3>
+                                <p className="text-xs text-purple-600">Sube el PDF del RUT de tu cliente y ahorra tiempo digitando.</p>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleRutUpload}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    id="rut_upload"
+                                    disabled={isExtractingRut}
+                                />
+                                <label
+                                    htmlFor="rut_upload"
+                                    className={`px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 text-xs font-bold shadow-sm transition cursor-pointer ${isExtractingRut ? 'opacity-50 pointer-events-none' : ''}`}
+                                >
+                                    {isExtractingRut ? <><FaSpinner className="animate-spin" /> Leyendo RUT...</> : <><FaCloudUploadAlt size={16} /> Subir Archivo RUT</>}
+                                </label>
+                            </div>
                         </div>
 
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50">
@@ -394,12 +489,28 @@ const CRMClients = () => {
                             {/* Basics */}
                             <div className="md:col-span-2"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Datos Básicos</h3></div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Negocio</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Negocio / Razón Social <span className="text-red-500">*</span></label>
                                 <input name="business_name" value={formData.business_name || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">NIT</label>
+                                <input name="nit" value={formData.nit || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp <span className="text-red-500">*</span></label>
                                 <input name="whatsapp" value={formData.whatsapp || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                                <input name="email" value={formData.email || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Ciudad</label>
+                                <input name="city" value={formData.city || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Dirección</label>
+                                <input name="address" value={formData.address || ''} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm" />
                             </div>
 
                             {/* Plans */}

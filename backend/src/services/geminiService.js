@@ -204,6 +204,51 @@ Si no sabes la respuesta, sugiere hablar con un asesor.`;
     }
 
     /**
+     * Extrae información estructurada de un texto de RUT colombiano parsing
+     */
+    async extractRutInfo(pdfText) {
+        const systemPrompt = `Eres un asistente contador experto en Colombia.
+Tu tarea es leer el texto extraído de un RUT (Registro Único Tributario) de la DIAN y extraer los siguientes datos.
+Si un dato no existe o no se puede leer, devuelve null.
+
+Responde SOLO en formato JSON válido:
+{
+  "nit": "Número de NIT sin guiones ni digito de verificación, ej: 901234567",
+  "businessName": "Razón Social o Nombres y Apellidos completos",
+  "email": "Correo electrónico",
+  "phone": "Teléfono principal",
+  "address": "Dirección completa",
+  "city": "Ciudad o Municipio principal",
+  "ciiu": "Código CIIU de actividad principal (4 digitos)"
+}`;
+
+        try {
+            const model = this.genAI.getGenerativeModel({
+                model: this.modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `${systemPrompt}\n\nTEXTO DEL RUT:\n${pdfText.substring(0, 8000)}`;
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+
+            const data = JSON.parse(text);
+
+            return {
+                success: true,
+                data
+            };
+        } catch (error) {
+            console.error('Error extrayendo RUT con Gemini:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
      * Calcula el costo en USD de una request a Gemini Flash
      */
     calculateCost(usage) {
