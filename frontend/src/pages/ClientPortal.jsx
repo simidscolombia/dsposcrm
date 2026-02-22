@@ -5,6 +5,13 @@ import { FaCheckCircle, FaPaperclip, FaPaperPlane, FaRobot, FaPlay, FaCalendarAl
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Helper function to calculate a realistic typing delay globally
+const simulateTypingDelay = (messageLength) => {
+    const baseDelay = 1500; // minimum 1.5s thought process
+    const typingSpeedMsPerChar = 30; // 30ms per character
+    return Math.min(baseDelay + (messageLength * typingSpeedMsPerChar), 6000); // cap at 6 seconds
+};
+
 const ClientPortal = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -131,11 +138,11 @@ const ClientPortal = () => {
         setQuickReplies([]); // hide replies while processing
         setIsTyping(true);
 
-        await new Promise(r => setTimeout(r, 1000)); // simulate thinking
-
         if (reply.action === 'view_demo') {
+            const msg = '¡Genial! Disfruta el video. Cuando termines, dime si quieres empezar tu pedido o si tienes más dudas.';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
             window.open('https://www.youtube.com/watch?v=demo-video', '_blank');
-            appendMessage('bot', '¡Genial! Disfruta el video. Cuando termines, dime si quieres empezar tu pedido o si tienes más dudas.');
+            appendMessage('bot', msg);
             setQuickReplies([
                 { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
                 { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
@@ -145,7 +152,9 @@ const ClientPortal = () => {
         }
 
         if (reply.action === 'ask_questions') {
-            appendMessage('bot', '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto, y yo me encargaré de revisarlo contigo.');
+            const msg = '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto, y yo me encargaré de revisarlo contigo.';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
+            appendMessage('bot', msg);
             setFlowState('questions');
             setQuickReplies([
                 { label: 'Ya no tengo dudas, ¡Empezar pedido! 🚀', action: 'start_order', primary: true }
@@ -155,9 +164,14 @@ const ClientPortal = () => {
         }
 
         if (reply.action === 'start_order') {
-            appendMessage('bot', '¡Excelente decisión! 🎉 Vamos a preparar todo para tu envío.');
-            await new Promise(r => setTimeout(r, 800));
-            appendMessage('bot', 'Para programar la logística, escríbeme aquí abajo a qué Ciudad y Dirección exacta enviamos el equipo. (Ej: Bogotá, Calle 1 # 2-3 Local 4)');
+            const msg1 = '¡Excelente decisión! 🎉 Vamos a preparar todo para tu envío.';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
+            appendMessage('bot', msg1);
+
+            setIsTyping(true);
+            const msg2 = 'Para programar la logística, escríbeme aquí abajo a qué Ciudad y Dirección exacta enviamos el equipo. (Ej: Bogotá, Calle 1 # 2-3 Local 4)';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
+            appendMessage('bot', msg2);
             setFlowState('shipping_address');
             setProgress(40);
             setIsTyping(false);
@@ -165,18 +179,25 @@ const ClientPortal = () => {
         }
 
         if (reply.action === 'pay_transfer') {
+            const msg = '¡Perfecto! Te enviaremos los datos de Bancolombia / Nequi a tu WhatsApp para que realices la transferencia de forma segura. 🏦';
             setCollectedData(prev => ({ ...prev, paymentMethod: 'transferencia' }));
-            appendMessage('bot', '¡Perfecto! Te enviaremos los datos de Bancolombia / Nequi a tu WhatsApp para que realices la transferencia de forma segura. 🏦');
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
+            appendMessage('bot', msg);
             await finishOrder('transferencia');
             return;
         }
 
         if (reply.action === 'pay_contra_entrega') {
+            const msg1 = '¡Perfecto, te cobramos en la puerta de tu local! 🤝 (Aplica ciudades principales).';
             setCollectedData(prev => ({ ...prev, paymentMethod: 'contra_entrega' }));
-            appendMessage('bot', '¡Perfecto, te cobramos en la puerta de tu local! 🤝 (Aplica ciudades principales).');
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
+            appendMessage('bot', msg1);
             setProgress(75);
-            await new Promise(r => setTimeout(r, 800));
-            appendMessage('bot', 'Para habilitar esta opción y generarte el documento de soporte (Garantía de 12 meses), por favor adjunta aquí una foto o PDF de tu RUT o Cédula.');
+
+            setIsTyping(true);
+            const msg2 = 'Para habilitar esta opción y generarte el documento de soporte (Garantía de 12 meses), por favor adjunta aquí una foto o PDF de tu RUT o Cédula.';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
+            appendMessage('bot', msg2);
             setFlowState('documents');
             setIsTyping(false);
             return;
@@ -194,15 +215,19 @@ const ClientPortal = () => {
         setInputValue('');
         setIsTyping(true);
 
-        await new Promise(r => setTimeout(r, 800));
+        setIsTyping(true);
 
         if (flowState === 'shipping_address') {
-            // Assume the user typed their address
+            const msg1 = '¡Anotado! 📍 Ya registré la dirección para el despacho.';
             setCollectedData(prev => ({ ...prev, address: text, city: 'Pendiente' })); // We capture it as raw text
-            appendMessage('bot', '¡Anotado! 📍 Ya registré la dirección para el despacho.');
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
+            appendMessage('bot', msg1);
             setProgress(60);
-            await new Promise(r => setTimeout(r, 800));
-            appendMessage('bot', 'Ahora, cuéntame cómo prefieres realizar el pago:');
+
+            setIsTyping(true);
+            const msg2 = 'Ahora, cuéntame cómo prefieres realizar el pago:';
+            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
+            appendMessage('bot', msg2);
             setQuickReplies([
                 { label: 'Pago Contra Entrega 🚚', action: 'pay_contra_entrega', primary: true },
                 { label: 'Transferencia Bancaria 🏦', action: 'pay_transfer' }
@@ -220,20 +245,28 @@ const ClientPortal = () => {
                     context: { modules: quote?.items, total: quote?.final_total, quoteId: quote?.id },
                     leadId: quote?.id
                 });
-                appendMessage('bot', aiRes.data.answer);
+                const answer = aiRes.data.answer;
+                await new Promise(r => setTimeout(r, simulateTypingDelay(answer.length)));
+                appendMessage('bot', answer);
             } catch (err) {
-                appendMessage('bot', 'Tengo un pequeño inconveniente técnico consultando eso, pero un asesor experto lo revisará. ¿Qué te gustaría hacer mientras tanto?');
+                const fallbackMessage = "Claro, ya mismo te reviso esta información en el sistema. Mientras tanto... cuéntame, ¿tienes alguna urgencia específica con los tiempos de entrega?";
+                await new Promise(r => setTimeout(r, simulateTypingDelay(fallbackMessage.length)));
+                appendMessage('bot', fallbackMessage);
             }
             if (flowState !== 'questions') {
-                setQuickReplies([
-                    { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true }
-                ]);
+                setTimeout(() => {
+                    setQuickReplies([
+                        { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true }
+                    ]);
+                }, 1000);
             }
             setIsTyping(false);
             return;
         }
 
-        appendMessage('bot', '¡Entendido! Si quieres avanzar con el pedido no dudes en decírmelo.');
+        const defaultMessage = '¡Entendido! Si quieres avanzar con el pedido no dudes en decírmelo.';
+        await new Promise(r => setTimeout(r, simulateTypingDelay(defaultMessage.length)));
+        appendMessage('bot', defaultMessage);
         setIsTyping(false);
     };
 
