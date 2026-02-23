@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaEdit, FaTrash, FaSpinner, FaSearch, FaBoxOpen } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSpinner, FaSearch, FaBoxOpen, FaImage, FaCamera } from 'react-icons/fa';
 
 const AdminProducts = () => {
     const [products, setProducts] = useState([]);
@@ -152,11 +152,27 @@ const AdminProducts = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProducts.map((prod) => (
                         <div key={prod.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-                            <div className="h-40 bg-gray-100 flex items-center justify-center relative">
-                                <span className="text-4xl">{prod.image_url || '📦'}</span>
-                                <span className="absolute top-2 right-2 bg-slate-800 text-white text-xs px-2 py-1 rounded-full uppercase font-bold">
+                            <div className="h-44 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden group">
+                                {prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:')) ? (
+                                    <img
+                                        src={prod.image_url}
+                                        alt={prod.name}
+                                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                    />
+                                ) : null}
+                                <div className={`flex flex-col items-center justify-center text-gray-300 ${prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:')) ? 'hidden' : ''}`}>
+                                    <FaImage className="w-10 h-10 mb-1" />
+                                    <span className="text-xs">Sin imagen</span>
+                                </div>
+                                <span className="absolute top-2 right-2 bg-slate-800/90 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full uppercase font-bold tracking-wide">
                                     {prod.category}
                                 </span>
+                                {prod.stock !== undefined && (
+                                    <span className={`absolute bottom-2 left-2 text-xs px-2 py-0.5 rounded-full font-medium ${prod.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        Stock: {prod.stock}
+                                    </span>
+                                )}
                             </div>
                             <div className="p-4 flex-1 flex flex-col">
                                 <h3 className="font-bold text-lg text-gray-800 mb-1">{prod.name}</h3>
@@ -298,14 +314,52 @@ const AdminProducts = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Icono / Emoji</label>
-                                <input
-                                    type="text"
-                                    value={formData.image_url}
-                                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    placeholder="Ej. 💻"
-                                />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Imagen del Producto</label>
+
+                                {/* Preview */}
+                                {formData.image_url && (formData.image_url.startsWith('http') || formData.image_url.startsWith('data:')) && (
+                                    <div className="mb-3 relative w-full h-32 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden flex items-center justify-center">
+                                        <img src={formData.image_url} alt="Preview" className="max-h-full max-w-full object-contain p-2" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, image_url: '' })}
+                                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                        >✕</button>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.image_url}
+                                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                                        placeholder="URL de la imagen (https://...)"
+                                    />
+                                    <label className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer transition text-sm font-medium text-gray-600 border border-gray-200">
+                                        <FaCamera className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Subir</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (!file) return;
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    alert('La imagen debe ser menor a 2MB');
+                                                    return;
+                                                }
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setFormData(prev => ({ ...prev, image_url: reader.result }));
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">Pega una URL o sube una foto (máx 2MB)</p>
                             </div>
 
                             <div>

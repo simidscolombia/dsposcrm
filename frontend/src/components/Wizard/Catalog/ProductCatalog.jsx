@@ -98,17 +98,22 @@ const ProductCatalog = ({ onContinue, systemType }) => {
         return 'Arma tu Kit a Medida';
     };
 
-    // Renderizado de Imagen Seguro (Emoji o URL)
+    // Renderizado de Imagen Seguro (URL, base64, o fallback)
     const renderImage = (img, isList = false) => {
-        const isUrl = img && (img.startsWith('http') || img.startsWith('/'));
+        const isUrl = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'));
         const sizeClass = isList ? 'text-4xl' : 'text-6xl';
 
         return (
             <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${!isUrl && sizeClass}`}>
                 {isUrl ? (
-                    <img src={img} alt="Product" className="w-full h-full object-contain p-2" />
+                    <img
+                        src={img}
+                        alt="Product"
+                        className="w-full h-full object-contain p-2"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                    />
                 ) : (
-                    img || '📦'
+                    <span className="text-gray-300">📦</span>
                 )}
             </div>
         );
