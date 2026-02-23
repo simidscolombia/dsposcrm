@@ -4,14 +4,7 @@
 import aiService from '../services/geminiService.js';
 import db from '../config/database.js';
 
-let pdfParse;
-async function getPdfParse() {
-  if (!pdfParse) {
-    const module = await import('pdf-parse');
-    pdfParse = module.default || module;
-  }
-  return pdfParse;
-}
+
 
 class AIController {
   /**
@@ -231,26 +224,14 @@ class AIController {
         return res.status(400).json({ success: false, error: 'No se subió ningún archivo' });
       }
 
-      // 1. Extraer texto del PDF usando pdf-parse
-      let pdfText = '';
-      try {
-        const parser = await getPdfParse();
-        const pdfData = await parser(req.file.buffer);
-        pdfText = pdfData.text;
-      } catch (e) {
-        console.error('Error parseando PDF:', e);
-        return res.status(400).json({ success: false, error: 'El archivo no es un PDF válido o está corrupto.' });
-      }
+      const mimeType = req.file.mimetype || 'application/pdf';
+      const base64Data = req.file.buffer.toString('base64');
 
-      if (!pdfText || pdfText.trim().length < 50) {
-        return res.status(400).json({ success: false, error: 'No se pudo leer texto del PDF.' });
-      }
-
-      // 2. Enviar texto a la IA
-      const result = await aiService.extractRutInfo(pdfText);
+      // 2. Enviar datos a la IA
+      const result = await aiService.extractRutInfo(base64Data, mimeType);
 
       if (!result.success) {
-        return res.status(500).json({ success: false, error: 'Error de la IA al analizar el RUT.' });
+        return res.status(500).json({ success: false, error: 'Error de la IA al analizar el RUT. Detalles: ' + (result.error || '') });
       }
 
       // 3. Devolver datos estructurados

@@ -206,9 +206,9 @@ Si no sabes la respuesta, sugiere hablar con un asesor.`;
     /**
      * Extrae información estructurada de un texto de RUT colombiano parsing
      */
-    async extractRutInfo(pdfText) {
+    async extractRutInfo(base64Data, mimeType = 'application/pdf') {
         const systemPrompt = `Eres un asistente contador experto en Colombia.
-Tu tarea es leer el texto extraído de un RUT (Registro Único Tributario) de la DIAN y extraer los siguientes datos.
+Tu tarea es leer visualmente este PDF de RUT (Registro Único Tributario) de la DIAN y extraer los siguientes datos.
 Si un dato no existe o no se puede leer, devuelve null.
 
 Responde SOLO en formato JSON válido:
@@ -229,8 +229,16 @@ Responde SOLO en formato JSON válido:
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const prompt = `${systemPrompt}\n\nTEXTO DEL RUT:\n${pdfText.substring(0, 8000)}`;
-            const result = await model.generateContent(prompt);
+            const inlineDataPart = {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: mimeType
+                }
+            };
+
+            const textPart = { text: systemPrompt };
+
+            const result = await model.generateContent([textPart, inlineDataPart]);
             const response = await result.response;
             const text = response.text();
 
