@@ -17,6 +17,7 @@ import clientRoutes from './routes/clientRoutes.js'; // Clientes
 import paymentRoutes from './routes/paymentRoutes.js'; // Pagos y Cobros
 import distributorRoutes from './routes/distributorRoutes.js'; // Distribuidores
 import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
+import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use('/api/clients', clientRoutes); // Clientes
 app.use('/api/payments', paymentRoutes); // Pagos y Cobros mensuales
 app.use('/api/distributors', distributorRoutes); // Socios y Distribuidores
 app.use('/api/tickets', ticketRoutes); // Soporte y Tickets
+app.use('/api/whatsapp', whatsappRoutes); // WhatsApp WAHA Integration
 
 app.get('/health', (req, res) => {
   res.json({
