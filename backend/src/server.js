@@ -16,6 +16,7 @@ import pipelineRoutes from './routes/pipelineRoutes.js'; // Pipeline ventas
 import clientRoutes from './routes/clientRoutes.js'; // Clientes
 import paymentRoutes from './routes/paymentRoutes.js'; // Pagos y Cobros
 import distributorRoutes from './routes/distributorRoutes.js'; // Distribuidores
+import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use('/api/pipeline', pipelineRoutes); // Pipeline ventas
 app.use('/api/clients', clientRoutes); // Clientes
 app.use('/api/payments', paymentRoutes); // Pagos y Cobros mensuales
 app.use('/api/distributors', distributorRoutes); // Socios y Distribuidores
+app.use('/api/tickets', ticketRoutes); // Soporte y Tickets
 
 app.get('/health', (req, res) => {
   res.json({

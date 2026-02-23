@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaCog, FaHandshake } from 'react-icons/fa';
+import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaCog, FaHandshake, FaHeadset } from 'react-icons/fa';
 
 const AdminLayout = () => {
     const linkClass = ({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`;
@@ -35,6 +35,9 @@ const AdminLayout = () => {
                     </NavLink>
                     <NavLink to="/admin/billing" className={linkClass}>
                         <FaFileInvoiceDollar /> Cobros
+                    </NavLink>
+                    <NavLink to="/admin/support" className={linkClass}>
+                        <FaHeadset /> Soporte
                     </NavLink>
 
                     {/* Catalog Section */}

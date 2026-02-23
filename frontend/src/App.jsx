@@ -13,6 +13,7 @@ import CRMPipeline from './pages/admin/CRMPipeline';
 import CRMClients from './pages/admin/CRMClients';
 import CRMBilling from './pages/admin/CRMBilling';
 import CRMDistributors from './pages/admin/CRMDistributors';
+import CRMSupport from './pages/admin/CRMSupport';
 
 function App() {
   // Global Click Sound Effect
@@ -81,6 +82,7 @@ function App() {
           <Route path="clients" element={<CRMClients />} />
           <Route path="distributors" element={<CRMDistributors />} />
           <Route path="billing" element={<CRMBilling />} />
+          <Route path="support" element={<CRMSupport />} />
         </Route>
       </Routes>
     </HashRouter>
