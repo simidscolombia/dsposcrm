@@ -1,0 +1,24 @@
+﻿node : file:///C:/SIMIDS/discovery-systems-pos/backend/s
+rc/controllers/aiController.js:6
+En línea: 1 Carácter: 1
++ node src/server.js 2> error_log.txt
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (file:///C: 
+   /SIMI...Controller.js:6:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+import pdfParse from 'pdf-parse';
+       ^^^^^^^^
+SyntaxError: The requested module 'pdf-parse' does not 
+provide an export named 'default'
+    at ModuleJob._instantiate 
+(node:internal/modules/esm/module_job:124:21)
+    at async ModuleJob.run 
+(node:internal/modules/esm/module_job:181:5)
+    at async Promise.all (index 0)
+    at async ESMLoader.import 
+(node:internal/modules/esm/loader:281:24)
+    at async loadESM 
+(node:internal/process/esm_loader:88:5)
+    at async handleMainPromise 
+(node:internal/modules/run_main:65:12)

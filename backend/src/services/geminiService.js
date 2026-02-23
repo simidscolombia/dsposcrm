@@ -281,7 +281,7 @@ Responde SOLO en formato JSON válido:
         return (inputCost + outputCost).toFixed(8);
     }
 
-    // Fallback methods (mismos que Claude)
+    // Fallback methods
     getFallbackAnalysis() {
         return {
             businessType: 'negocio genérico',

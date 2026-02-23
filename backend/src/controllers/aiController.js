@@ -24,7 +24,7 @@ class AIController {
 
       const startTime = Date.now();
 
-      // Llamar a Claude AI
+      // Llamar a Gemini AI
       const result = await aiService.analyzeBusinessDescription(
         description,
         previousAnswers || []
@@ -44,7 +44,7 @@ class AIController {
             'wizard_analysis',
             description,
             JSON.stringify(result.analysis),
-            'claude-3-5-haiku-20241022',
+            'gemini-1.5-flash',
             result.tokensUsed || 0,
             result.cost || 0,
             responseTime,
@@ -90,9 +90,8 @@ class AIController {
 
       const startTime = Date.now();
 
-      // Llamar a Claude AI
-      const result = await aiService.generateQuote(
-        leadId,
+      // Llamar a Gemini AI
+      const result = await aiService.generatePersonalizedQuote(
         leadData,
         wizardAnswers
       );
@@ -119,7 +118,7 @@ class AIController {
             'quote_generation',
             JSON.stringify(wizardAnswers),
             JSON.stringify(result.quote),
-            'claude-3-5-haiku-20241022',
+            'gemini-1.5-flash',
             result.tokensUsed || 0,
             result.cost || 0,
             responseTime,
@@ -165,8 +164,8 @@ class AIController {
 
       const startTime = Date.now();
 
-      // Llamar a Claude AI
-      const result = await aiService.chatBot(
+      // Llamar a Gemini AI
+      const result = await aiService.chatbotResponse(
         question,
         context || {}
       );
@@ -185,7 +184,7 @@ class AIController {
             'chatbot_response',
             question,
             result.answer,
-            'claude-3-5-haiku-20241022',
+            'gemini-1.5-flash',
             result.tokensUsed || 0,
             result.cost || 0,
             responseTime,

@@ -2,6 +2,29 @@
 
 ## Registro de Cambios y Soluciones Técnicas
 
+### [2026-02-21] Refinamiento de UX/UI en Wizard de Cotización y Portal de Cliente
+
+#### 🎯 Objetivo
+Mejorar sustancialmente la experiencia del usuario (UX) mediante pasos guiados, eliminación de fricción prematura de captura de datos, simplificación de la vista de cotización y personalización dinámica del portal conversacional del cliente.
+
+#### ✅ Logros y Soluciones Implementadas
+1. **Rediseño del Flujo de Cotización (Anti-fricción)**:
+   - **Problema**: Solicitar nombre y teléfono antes de jugar la "Ruleta" generaba fricción innecesaria (la gente desconfía antes del premio).
+   - **Solución**: Se movió la solicitud de Nombre y Teléfono (WhatsApp) *después* del premio (al final del todo, preguntando "¿A dónde te enviamos el Obsequio y la Copia?"). Psicológicamente aumenta la conversión.
+
+2. **Pasos Guiados (Stepper) y Cabecera Global**:
+   - **Mejora**: Se eliminaron textos duplicados e innecesarios de las pantallas internas (Ej: `CitySelection`, `BusinessTypeSelection`). 
+   - **Solución**: Se implementó una cabecera global fija en la pantalla principal (`QuotePage`) con títulos guiados estilo paso a paso ("Paso 1: ¿De dónde nos visitas?") con subtítulos, llevando al cliente de la mano.
+
+3. **Portal Conversacional IA Contextual**:
+   - **Mejora**: En lugar de mostrar un saludo genérico de "IA de Ventas", ahora el bot se presenta como un Asesor Personal.
+   - **Solución**: Se integró la consulta del número y nombre del Asesor a partir de la Ciudad escogida por el cliente (`/api/config/whatsapp/:cityParam`). El chat final saluda usando el nombre de ese agente real, para una experiencia "humana".
+
+4. **Transición Transparente (Seamless Redirect)**:
+   - **Solución**: Tan pronto el cliente da clic en "Continuar" para reclamar su premio confirmando sus datos, la cotización se graba en CRM en segundo plano e inmediatamente se redirige al cliente a su Dashboard/Chat del Portal (`/#/portal/:id`) sin que lo note.
+
+---
+
 ### [2026-02-19] Implementación Exitosa en Vercel (Producción)
 
 #### 🎯 Objetivo

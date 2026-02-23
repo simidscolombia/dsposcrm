@@ -23,7 +23,6 @@
   "author": "SIMIDS Technology",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.95.3",
     "axios": "^1.6.5",

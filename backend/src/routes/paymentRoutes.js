@@ -90,6 +90,60 @@ router.post('/generate', async (req, res) => {
 });
 
 // ============================================
+// POST /api/payments/enforce-overdue
+// Revisa meses anteriores, cambia a 'overdue' y suspende servicio
+// ============================================
+router.post('/enforce-overdue', async (req, res) => {
+    try {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        // 1. Marcar como 'overdue' los 'pending' de meses anteriores
+        const overdueResult = await db.query(`
+            UPDATE crm_payments
+            SET status = 'overdue', updated_at = NOW()
+            WHERE status = 'pending' 
+            AND (period_year < $1 OR (period_year = $1 AND period_month < $2))
+            RETURNING client_id
+        `, [currentYear, currentMonth]);
+
+        const affectedClients = overdueResult.rows.map(r => r.client_id);
+
+        let suspended = 0;
+
+        // 2. Suspender a los clientes afectados
+        if (affectedClients.length > 0) {
+            const suspendResult = await db.query(`
+                UPDATE crm_clients 
+                SET payment_status = 'suspended'
+                WHERE id = ANY($1::int[]) AND is_active = true
+                RETURNING id
+            `, [affectedClients]);
+
+            suspended = suspendResult.rowCount;
+
+            // 3. Log activity
+            for (const row of suspendResult.rows) {
+                await db.query(`
+                    INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
+                    VALUES ($1, 'service_suspended', $2, 'system')
+                `, [row.id, 'Servicio en la nube suspendido automáticamente por mora financiera']);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Proceso completado: ${overdueResult.rowCount} pagos y ${suspended} clientes suspendidos.`,
+            overdue_payments: overdueResult.rowCount,
+            suspended_clients: suspended
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
 // PUT /api/payments/:id/status
 // Actualizar el estado de un pago (Marcar Pagado, Pendiente, etc)
 // ============================================

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay, FaUserCheck, FaCopy } from 'react-icons/fa';
 import ChatbotWidget from './ChatbotWidget';
 
@@ -168,69 +170,126 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
     // ============================================
     // GENERAR PDF CON DESCUENTO APLICADO
     // ============================================
+    // ============================================
     const handleDownloadPDF = async () => {
         try {
-            const originalBtnText = document.getElementById('btn-download-pdf')?.innerHTML;
             const btn = document.getElementById('btn-download-pdf');
+            const originalBtnText = btn?.innerHTML;
             if (btn) btn.innerHTML = '<span class="animate-spin mr-2">↻</span> Generando PDF...';
 
-            const payload = {
-                clientName,
-                clientPhone,
-                city,
-                businessType,
-                systemType,
-                products: selectedProducts,
-                prizeLabel: discount.label,
-                prizeDetail: discount.description,
-                discountPercent: discount.value,
-                discountAmount: discount.discountAmount,
-                subtotal: subtotal,
-                finalTotal: finalTotal
-            };
+            // 1. Crear documento PDF
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            let yPos = 20;
 
-            const res = await axios.post(`${API_URL}/pdf/generate`, payload, {
-                responseType: 'arraybuffer'
+            // Header - Logo y Empresa
+            doc.setFillColor(43, 108, 176); // Azul Discovery
+            doc.rect(0, 0, pageWidth, 25, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("DISCOVERY SYSTEMS", pageWidth / 2, 17, { align: "center" });
+
+            // Info del Cliente y Fecha
+            yPos = 40;
+            doc.setTextColor(40, 40, 40);
+            doc.setFontSize(10);
+            const today = new Date();
+            const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+
+            doc.text(`Fecha: ${dateStr}`, 15, yPos);
+            doc.text(`Cliente: ${clientName || 'N/A'}`, 15, yPos + 7);
+            doc.text(`Teléfono: ${clientPhone || 'N/A'}`, 15, yPos + 14);
+            doc.text(`Ciudad: ${city || 'N/A'}`, 15, yPos + 21);
+
+            // Validez y Asesor
+            doc.setFont("helvetica", "bold");
+            doc.text("PROPUESTA ECONÓMICA FORMAL", pageWidth - 15, yPos, { align: "right" });
+            doc.setFont("helvetica", "normal");
+            doc.text(`Doc Ref: #${String(Date.now()).slice(-6)}`, pageWidth - 15, yPos + 7, { align: "right" });
+            doc.text(`Válida por: 10 Días`, pageWidth - 15, yPos + 14, { align: "right" });
+            doc.text(`Asesor: ${advisorName || 'Comercial'}`, pageWidth - 15, yPos + 21, { align: "right" });
+
+            yPos += 35;
+
+            // Preparar items para la tabla
+            const tableData = (selectedProducts || []).map(p => [
+                p.name,
+                p.quantity?.toString() || '1',
+                formatCurrency(p.price),
+                formatCurrency((p.price || 0) * (p.quantity || 1))
+            ]);
+
+            // Dibujar Tabla de Productos
+            autoTable(doc, {
+                startY: yPos,
+                head: [['EQUIPO / SERVICIO', 'CANT.', 'V. UNITARIO', 'V. TOTAL']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [43, 108, 176], textColor: [255, 255, 255], fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 80 },
+                    1: { cellWidth: 20, halign: 'center' },
+                    2: { cellWidth: 40, halign: 'right' },
+                    3: { cellWidth: 40, halign: 'right' },
+                },
+                styles: { fontSize: 9 }
             });
 
-            const contentType = res.headers['content-type'];
+            yPos = doc.lastAutoTable.finalY + 15;
 
-            if (contentType && contentType.includes('application/json')) {
-                // If Vercel blocked PDF Puppeteer generation, we get a JSON fallback
-                const text = new TextDecoder().decode(res.data);
-                const json = JSON.parse(text);
+            // Resumen Financiero
+            doc.setFontSize(11);
+            doc.setTextColor(40, 40, 40);
 
-                if (json.html) {
-                    const win = window.open('', '_blank');
-                    win.document.write(json.html);
-                    win.document.close();
-                    setTimeout(() => {
-                        win.print();
-                    }, 800);
-                } else {
-                    alert('Error al generar PDF: ' + json.error);
-                }
-            } else {
-                // Happy path: We received a PDF blob
-                const blob = new Blob([res.data], { type: 'application/pdf' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\\s+/g, '_')}_${Date.now()}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            }
+            const resumenX = pageWidth - 90;
+            autoTable(doc, {
+                startY: yPos,
+                margin: { left: resumenX },
+                body: [
+                    [{ content: 'Subtotal:', styles: { fontStyle: 'bold' } }, { content: formatCurrency(subtotal), styles: { halign: 'right' } }],
+                    [{ content: `Premio (${discount.label}):`, styles: { fontStyle: 'bold', textColor: [220, 38, 38] } }, { content: `-${formatCurrency(discount.discountAmount)}`, styles: { halign: 'right', textColor: [220, 38, 38] } }],
+                    [{ content: 'TOTAL NETO COP:', styles: { fontStyle: 'bold', fontSize: 13, fillColor: [240, 240, 240] } }, { content: formatCurrency(finalTotal), styles: { halign: 'right', fontStyle: 'bold', fontSize: 13, fillColor: [240, 240, 240] } }]
+                ],
+                theme: 'plain',
+                styles: { fontSize: 10 }
+            });
+
+            // Footer / Términos
+            yPos = doc.lastAutoTable.finalY + 30;
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Términos y Condiciones:", 15, yPos);
+            doc.text("1. Esta cotización está sujeta a disponibilidad de inventario.", 15, yPos + 5);
+            doc.text("2. Los valores no incluyen costos de envío nacional a menos que se especifique expresamente.", 15, yPos + 10);
+            doc.text("3. Soporte técnico cubierto durante los primeros 12 meses de garantía de fábrica.", 15, yPos + 15);
+
+            doc.text("www.discovery-systems.com", pageWidth / 2, 285, { align: "center", fontStyle: "italic" });
+
+            // Guardar o mostrar documento
+            const fileName = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+
+            // Si el dispositivo es movil, a veces es mejor abrirlo o guardar limpio
+            doc.save(fileName);
 
             setPdfGenerated(true);
-            if (btn) btn.innerHTML = originalBtnText;
+
+            if (btn) btn.innerHTML = '<span class="mr-2 text-green-500">✓</span> ¡PDF Descargado!';
+            setTimeout(() => { if (btn) btn.innerHTML = originalBtnText; }, 3000);
+
+            // Adicionalmente marcamos a nivel backend si es necesario que alguien descargó el pdf
+            if (quoteId) {
+                axios.post(`${API_URL}/crm/quotes/${quoteId}/logs`, {
+                    action: 'PDF_DOWNLOADED',
+                    details: 'Cliente generó y descargó el PDF directamente'
+                }).catch(() => { });
+            }
 
         } catch (error) {
-            console.error("Error generando PDF:", error);
+            console.error("Error generando PDF nativo:", error);
             const btn = document.getElementById('btn-download-pdf');
-            if (btn) btn.innerHTML = '<span class="mr-2">❌</span> Error. Intenta de nuevo';
-            alert("Hubo un error generando el PDF. Por favor intenta nuevamente.");
+            if (btn) btn.innerHTML = '<span class="mr-2">❌</span> Error PDF. Intenta de nuevo';
+            alert("No se pudo generar el documento localmente. Reinicia la página.");
         }
     };
 

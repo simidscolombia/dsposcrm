@@ -24,6 +24,18 @@ router.post('/init-tables', async (req, res) => {
         `);
         console.log('✅ Tabla crm_categories verificada.');
 
+        // 1.5. MIGRACIONES AL VUELO: Nuevos campos para clientes y distribuidores
+        try {
+            await db.query(`ALTER TABLE crm_clients ADD COLUMN IF NOT EXISTS legal_representative VARCHAR(255)`);
+            await db.query(`ALTER TABLE crm_distributors ADD COLUMN IF NOT EXISTS legal_representative VARCHAR(255)`);
+            await db.query(`ALTER TABLE crm_distributors ADD COLUMN IF NOT EXISTS nit VARCHAR(50)`);
+            await db.query(`ALTER TABLE crm_distributors ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+            await db.query(`ALTER TABLE crm_distributors ADD COLUMN IF NOT EXISTS address VARCHAR(255)`);
+            console.log('✅ Migraciones de campos completadas.');
+        } catch (e) {
+            console.log('⏳ Nota de migración:', e.message);
+        }
+
         // 2. Crear Tabla Productos (Actualizada)
         // Nota: Si ya existe, esto no borrará datos, pero añadiremos columnas si faltan.
         await db.query(`
