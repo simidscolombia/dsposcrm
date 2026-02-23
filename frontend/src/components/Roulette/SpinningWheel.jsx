@@ -4,7 +4,7 @@ import axios from 'axios';
 import { FaPlay, FaGift, FaStar } from 'react-icons/fa';
 import Confetti from 'react-confetti';
 
-const SpinningWheel = ({ onSpinEnd }) => {
+const SpinningWheel = ({ onSpinEnd, cartCategories = [] }) => {
     const [isSpinning, setIsSpinning] = useState(false);
     const [result, setResult] = useState(null);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -34,8 +34,12 @@ const SpinningWheel = ({ onSpinEnd }) => {
             ];
 
             try {
-                const API_URL = '/api'; // Relative
-                const res = await axios.get(`${API_URL}/prizes`);
+                const API_URL = '/api';
+                // If cartCategories provided, fetch filtered prizes
+                const url = cartCategories.length > 0
+                    ? `${API_URL}/prizes/by-categories?categories=${cartCategories.join(',')}`
+                    : `${API_URL}/prizes`;
+                const res = await axios.get(url);
                 console.log('Roulette Prizes Response:', res.data); // Debug
 
                 if (res.data.success && res.data.prizes && res.data.prizes.length > 0) {

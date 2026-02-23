@@ -15,12 +15,21 @@ const TYPE_LABELS = {
     none: { label: 'Sin premio', color: 'bg-gray-100 text-gray-500', icon: '😢' }
 };
 
+const PRODUCT_CATEGORIES = [
+    { id: 'all', label: 'Todas las categorías', icon: '🌐' },
+    { id: 'Combos', label: 'Combos', icon: '📦' },
+    { id: 'Hardware', label: 'Hardware', icon: '🖥️' },
+    { id: 'Software', label: 'Software', icon: '💻' },
+    { id: 'Seguridad', label: 'Seguridad', icon: '📹' },
+    { id: 'Servicios', label: 'Servicios', icon: '🛠️' }
+];
+
 const AdminPrizes = () => {
     const [prizes, setPrizes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', description: '', probability: 10, type: 'discount', value: '', icon: '🎁', is_active: true
+        name: '', description: '', probability: 10, type: 'discount', value: '', icon: '🎁', is_active: true, applicable_categories: 'all'
     });
     const [editMode, setEditMode] = useState(false);
     const [currentId, setCurrentId] = useState(null);
@@ -121,7 +130,8 @@ const AdminPrizes = () => {
             type: prize.type || 'discount',
             value: prize.value || '',
             icon: prize.icon || '🎁',
-            is_active: prize.is_active !== undefined ? prize.is_active : true
+            is_active: prize.is_active !== undefined ? prize.is_active : true,
+            applicable_categories: prize.applicable_categories || 'all'
         });
         setCurrentId(prize.id);
         setEditMode(true);
@@ -129,7 +139,7 @@ const AdminPrizes = () => {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', description: '', probability: 10, type: 'discount', value: '', icon: '🎁', is_active: true });
+        setFormData({ name: '', description: '', probability: 10, type: 'discount', value: '', icon: '🎁', is_active: true, applicable_categories: 'all' });
         setEditMode(false);
         setCurrentId(null);
     };
@@ -229,6 +239,16 @@ const AdminPrizes = () => {
 
                                 {/* Card Body */}
                                 <div className="p-4">
+                                    {/* Category badges */}
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                        {(!prize.applicable_categories || prize.applicable_categories === 'all') ? (
+                                            <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">🌐 Todas</span>
+                                        ) : prize.applicable_categories.split(',').map(cat => (
+                                            <span key={cat} className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-medium">
+                                                {PRODUCT_CATEGORIES.find(c => c.id === cat.trim())?.icon} {cat.trim()}
+                                            </span>
+                                        ))}
+                                    </div>
                                     {prize.description && (
                                         <p className="text-sm text-gray-500 mb-3 line-clamp-2">{prize.description}</p>
                                     )}
@@ -372,6 +392,44 @@ const AdminPrizes = () => {
                                     <span>50% (Mitad)</span>
                                     <span>100% (Siempre)</span>
                                 </div>
+                            </div>
+
+                            {/* Applicable Categories */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-2">Aplica para categorías de producto</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {PRODUCT_CATEGORIES.map(cat => {
+                                        const selected = formData.applicable_categories === 'all'
+                                            ? cat.id === 'all'
+                                            : formData.applicable_categories?.split(',').includes(cat.id);
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (cat.id === 'all') {
+                                                        setFormData(p => ({ ...p, applicable_categories: 'all' }));
+                                                    } else {
+                                                        let current = formData.applicable_categories === 'all' ? [] : (formData.applicable_categories?.split(',').filter(Boolean) || []);
+                                                        if (current.includes(cat.id)) {
+                                                            current = current.filter(c => c !== cat.id);
+                                                        } else {
+                                                            current.push(cat.id);
+                                                        }
+                                                        setFormData(p => ({ ...p, applicable_categories: current.length === 0 ? 'all' : current.join(',') }));
+                                                    }
+                                                }}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${selected
+                                                        ? 'bg-purple-100 border-purple-400 text-purple-700 ring-1 ring-purple-300'
+                                                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                {cat.icon} {cat.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1">Selecciona en qué categorías de producto aplica este premio. "Todas" = aplica siempre.</p>
                             </div>
 
                             {/* Description */}

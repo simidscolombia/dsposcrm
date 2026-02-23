@@ -211,7 +211,10 @@ const QuotePage = () => {
                     setStep(FINAL_STEP);
                     return null;
                 }
-                return <SpinningWheel onSpinEnd={handleSpinEnd} />;
+                return <SpinningWheel
+                    onSpinEnd={handleSpinEnd}
+                    cartCategories={[...new Set((selections.selectedProducts || []).map(p => p.category).filter(Boolean))]}
+                />;
 
             case 6:
                 return (
