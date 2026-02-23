@@ -153,7 +153,7 @@ const AdminProducts = () => {
                     {filteredProducts.map((prod) => (
                         <div key={prod.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
                             <div className="h-44 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden group">
-                                {prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:')) ? (
+                                {prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:') || prod.image_url.startsWith('/')) ? (
                                     <img
                                         src={prod.image_url}
                                         alt={prod.name}
@@ -161,7 +161,7 @@ const AdminProducts = () => {
                                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                                     />
                                 ) : null}
-                                <div className={`flex flex-col items-center justify-center text-gray-300 ${prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:')) ? 'hidden' : ''}`}>
+                                <div className={`flex flex-col items-center justify-center text-gray-300 ${prod.image_url && (prod.image_url.startsWith('http') || prod.image_url.startsWith('data:') || prod.image_url.startsWith('/')) ? 'hidden' : ''}`}>
                                     <FaImage className="w-10 h-10 mb-1" />
                                     <span className="text-xs">Sin imagen</span>
                                 </div>
@@ -317,7 +317,7 @@ const AdminProducts = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Imagen del Producto</label>
 
                                 {/* Preview */}
-                                {formData.image_url && (formData.image_url.startsWith('http') || formData.image_url.startsWith('data:')) && (
+                                {formData.image_url && (formData.image_url.startsWith('http') || formData.image_url.startsWith('data:') || formData.image_url.startsWith('/')) && (
                                     <div className="mb-3 relative w-full h-32 bg-gray-50 rounded-xl border border-gray-200 overflow-hidden flex items-center justify-center">
                                         <img src={formData.image_url} alt="Preview" className="max-h-full max-w-full object-contain p-2" />
                                         <button
