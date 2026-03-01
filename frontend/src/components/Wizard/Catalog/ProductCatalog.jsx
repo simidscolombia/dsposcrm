@@ -87,7 +87,12 @@ const ProductCatalog = ({ onContinue, systemType }) => {
 
     // Filtrar productos según el tipo de sistema
     const filteredProducts = products.filter(p => {
-        if (systemType === 'Software') return p.category === 'Software';
+        if (systemType === 'Software') {
+            const cat = String(p.category || '').toLowerCase();
+            const catName = String(p.category_name || '').toLowerCase();
+            const catSlug = String(p.category_slug || '').toLowerCase();
+            return cat === 'software' || catName.includes('software') || catSlug === 'software';
+        }
         return true;
     });
 

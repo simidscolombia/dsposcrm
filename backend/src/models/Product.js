@@ -4,7 +4,7 @@ class Product {
     static async findAll() {
         // Unimos con categorías para obtener el nombre real de la categoría
         const result = await db.query(`
-            SELECT p.*, c.name as category_name 
+            SELECT p.*, c.name as category_name, c.slug as category_slug
             FROM crm_products p
             LEFT JOIN crm_categories c ON p.category_id = c.id
             WHERE p.is_active = true 

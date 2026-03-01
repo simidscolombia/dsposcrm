@@ -112,7 +112,21 @@ router.post('/init-tables', async (req, res) => {
             console.log('✅ Premios por defecto insertados.');
         }
 
-        res.json({ success: true, message: 'Todas las tablas administrativas (incluyendo premios) creadas correctamente.' });
+        // 6. Re-vincular productos a sus categorías por nombre/slug
+        // Esto corrige el problema de productos "huérfanos" (con category_id null) para que aparezcan en los filtros
+        await db.query(`
+            UPDATE crm_products p
+            SET category_id = c.id
+            FROM crm_categories c
+            WHERE (LOWER(p.category) = LOWER(c.name) OR p.category = c.slug OR (p.category ILIKE '%software%' AND c.slug = 'software'))
+            AND (p.category_id IS NULL OR p.category_id != c.id);
+        `);
+        console.log('✅ Re-vinculación de productos completada.');
+
+        // 7. Asegurar que la categoría 'Software' tenga el nombre corto oficial
+        await db.query(`UPDATE crm_categories SET name = 'Software' WHERE slug = 'software';`);
+
+        res.json({ success: true, message: 'Todas las tablas administrativas configuradas y productos vinculados correctamente.' });
 
     } catch (error) {
         console.error('Error inicializando DB:', error);
