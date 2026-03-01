@@ -13,50 +13,93 @@ const BusinessTypeSelection = ({ onSelect }) => {
     const categories = [
         {
             id: 'gastronomia',
-            name: 'Gastronomía y Vida Nocturna',
+            name: 'Restaurantes y Licorerías',
             icon: <FaUtensils />,
             color: 'text-orange-500',
             bg: 'bg-orange-50',
             types: [
-                'Restaurante de Mantel (Gourmet)',
-                'Gastrobar',
-                'Bar / Pub',
-                'Restaurante de Comida Rápida (Fast Food)',
+                'Restaurante de Comida Rápida',
+                'Restaurante Gourmet',
+                'Licorería / Estanco',
+                'Bar / Pub / Discoteca',
                 'Cafetería y Repostería',
-                'Food Truck (Gastronomía móvil)',
-                'Discoteca / Club Nocturno',
-                'Dark Kitchen (Cocinas ocultas)'
+                'Pizzería',
+                'Gastrobar',
+                'Dark Kitchen'
+            ]
+        },
+        {
+            id: 'mercados',
+            name: 'Micromercados y Fruvers',
+            icon: <FaStore />,
+            color: 'text-emerald-500',
+            bg: 'bg-emerald-50',
+            types: [
+                'Micromercado / Minisuper',
+                'Fruver (Frutas y Verduras)',
+                'Supermercado Independiente',
+                'Tienda de Barrio / Abarrotes',
+                'Carnicería y Charcutería',
+                'Panadería',
+                'Salsamentaria'
             ]
         },
         {
             id: 'salud',
-            name: 'Salud, Bienestar y Deporte',
+            name: 'Droguerías y Salud',
             icon: <FaHeartbeat />,
-            color: 'text-green-500',
-            bg: 'bg-green-50',
+            color: 'text-blue-600',
+            bg: 'bg-blue-50',
             types: [
                 'Droguería / Farmacia',
                 'Tienda Naturista',
-                'Gimnasio (Gym) / Centro de Crossfit',
-                'Estudio de Yoga y Pilates',
                 'Centro Odontológico',
-                'Óptica y Examen Visual',
-                'Centro de Fisioterapia'
+                'Centro de Estética',
+                'Laboratorio Clínico',
+                'Veterinaria'
+            ]
+        },
+        {
+            id: 'hogar',
+            name: 'Ferreterías y Hogar',
+            icon: <FaHome />,
+            color: 'text-amber-700',
+            bg: 'bg-amber-50',
+            types: [
+                'Ferretería',
+                'Almacén de Construcción',
+                'Tienda de Decoración y Muebles',
+                'Almacén de Pinturas',
+                'Iluminación y Eléctricos',
+                'Cerrajería'
+            ]
+        },
+        {
+            id: 'automotriz',
+            name: 'Car Wash y Automotriz',
+            icon: <FaCar />,
+            color: 'text-red-500',
+            bg: 'bg-red-50',
+            types: [
+                'Autolavado (Car Wash)',
+                'Taller Mecánico',
+                'Venta de Repuestos (Carros)',
+                'Venta de Repuestos (Motos)',
+                'Llantería',
+                'Centro de Lubricación'
             ]
         },
         {
             id: 'moda',
-            name: 'Moda y Complementos',
+            name: 'Moda y Calzado',
             icon: <FaTshirt />,
             color: 'text-pink-500',
             bg: 'bg-pink-50',
             types: [
                 'Almacén de Ropa (Boutique)',
                 'Almacén de Calzado',
-                'Tienda de Accesorios y Bisutería',
-                'Ropa Deportiva',
-                'Marroquinería (Artículos de cuero)',
-                'Tienda de Relojería y Joyas'
+                'Tienda de Accesorios',
+                'Ropa Deportiva / Joyería'
             ]
         },
         {
@@ -67,85 +110,23 @@ const BusinessTypeSelection = ({ onSelect }) => {
             bg: 'bg-purple-50',
             types: [
                 'Salón de Belleza / Peluquería',
-                'Barbería (Corte y barba)',
-                'Spa y Centro de Masajes',
-                'Nail Spa (Uñas y manicura)',
-                'Centro de Estética',
-                'Tienda de Maquillaje y Cosméticos'
+                'Barbería',
+                'Spa y Masajes',
+                'Tienda de Maquillaje'
             ]
         },
         {
             id: 'tecnologia',
-            name: 'Tecnología y Electrónica',
+            name: 'Tecnología y Otros',
             icon: <FaMobileAlt />,
-            color: 'text-blue-500',
-            bg: 'bg-blue-50',
-            types: [
-                'Tienda de Celulares y Accesorios',
-                'Centro de Computación',
-                'Almacén de Electrodomésticos',
-                'Servicio Técnico y Reparación',
-                'Tienda de Cámaras y Fotografía',
-                'Gadgets y Domótica'
-            ]
-        },
-        {
-            id: 'automotriz',
-            name: 'Automotriz y Movilidad',
-            icon: <FaCar />,
-            color: 'text-red-500',
-            bg: 'bg-red-50',
-            types: [
-                'Venta de Repuestos para Motos',
-                'Venta de Repuestos para Carros',
-                'Autolavado (Car Wash)',
-                'Taller Mecánico General',
-                'Llantería',
-                'Centro de Diagnóstico Automotriz',
-                'Compra y Venta de Vehículos'
-            ]
-        },
-        {
-            id: 'mascotas',
-            name: 'Mascotas y Veterinaria',
-            icon: <FaPaw />,
-            color: 'text-yellow-500',
-            bg: 'bg-yellow-50',
-            types: [
-                'Clínica Veterinaria',
-                'Pet Shop',
-                'Peluquería y Estética Canina',
-                'Guardería y Hotel para Mascotas',
-                'Acuarios y Peces'
-            ]
-        },
-        {
-            id: 'hogar',
-            name: 'Hogar, Construcción y Oficios',
-            icon: <FaHome />,
-            color: 'text-amber-600',
-            bg: 'bg-amber-50',
-            types: [
-                'Ferretería',
-                'Tienda de Decoración y Muebles',
-                'Vivero y Jardinería',
-                'Almacén de Pinturas',
-                'Lavandería y Tintorería',
-                'Cerrajería y Sastrería'
-            ]
-        },
-        {
-            id: 'educacion',
-            name: 'Educación, Papelería y Trámites',
-            icon: <FaGraduationCap />,
             color: 'text-indigo-500',
             bg: 'bg-indigo-50',
             types: [
+                'Tienda de Celulares',
+                'Servicio Técnico',
                 'Papelería y Miscelánea',
                 'Librería',
-                'Centro de Idiomas',
-                'Corresponsal Bancario y Giros',
-                'Agencia de Seguros'
+                'Centro de Computación'
             ]
         }
     ];
