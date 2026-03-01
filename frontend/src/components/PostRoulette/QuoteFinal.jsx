@@ -1,57 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift, FaCalendarAlt, FaPlay, FaUserCheck, FaCopy } from 'react-icons/fa';
-import ChatbotWidget from './ChatbotWidget';
+import {
+    FaWhatsapp, FaFilePdf, FaCheckCircle, FaGift,
+    FaCalendarAlt, FaPlay, FaUserCheck, FaCopy,
+    FaFileAlt, FaCheck, FaBuilding, FaArrowRight
+} from 'react-icons/fa';
 
 const API_URL = '/api';
 
 const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, businessType, systemType }) => {
-    const [showChatbot, setShowChatbot] = useState(false);
-    const [pdfGenerated, setPdfGenerated] = useState(false);
     const [quoteSaved, setQuoteSaved] = useState(false);
     const [quoteId, setQuoteId] = useState(null);
-    const [whatsappNumber, setWhatsappNumber] = useState('573205792169'); // Default Colombia
+    const [whatsappNumber, setWhatsappNumber] = useState('573205792169');
     const [advisorName, setAdvisorName] = useState('un asesor');
     const [companyConfig, setCompanyConfig] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [localName, setLocalName] = useState(clientName || '');
     const [localPhone, setLocalPhone] = useState(clientPhone || '');
 
-    // Helper to sanitize corrupted data (long hashes/base64)
+    // Helper to sanitize corrupted data
     const sanitizeText = (text, maxLength = 100) => {
         if (!text || typeof text !== 'string') return text;
         if (text.length > maxLength) return text.substring(0, Math.min(text.length, 50)) + '...';
         return text;
     };
 
-    const renderImage = (img, size = 'sm') => {
-        const isUrl = img && (typeof img === 'string') && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:image'));
-        const sizeClasses = size === 'sm' ? 'w-10 h-10' : 'w-14 h-14';
-
-        return (
-            <div className={`${sizeClasses} rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100 overflow-hidden shadow-inner`}>
-                {isUrl ? (
-                    <img
-                        src={img}
-                        alt="Product"
-                        className="w-full h-full object-contain p-1"
-                        onError={(e) => { e.target.src = ''; e.target.parentElement.innerHTML = '<span class="text-xl">📦</span>'; }}
-                    />
-                ) : (
-                    <span className={size === 'sm' ? 'text-xl' : 'text-3xl'}>📦</span>
-                )}
-            </div>
-        );
-    };
-
-    // ============================================
-    // FETCH CONFIG ON MOUNT
-    // ============================================
     useEffect(() => {
-        // 1. Fetch WhatsApp number for this city
         const fetchConfig = async () => {
             try {
                 const cityParam = (city || 'Colombia').toLowerCase().replace(/\s+/g, '-');
@@ -67,27 +43,64 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                     setCompanyConfig(companyRes.data.config);
                 }
             } catch (e) {
-                console.log('Config fetch failed (using defaults):', e);
+                console.log('Config fetch failed:', e);
             }
         };
         fetchConfig();
-        fetchConfig();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [city]);
 
     // ============================================
-    // SAVE QUOTE TO DATABASE
+    // CALCULATIONS
+    // ============================================
+    const calculateSubtotal = () => {
+        return (selectedProducts || []).reduce((sum, p) => sum + (parseFloat(p.price) * (p.quantity || 1)), 0);
+    };
+
+    const calculateDiscount = () => {
+        if (!prize) return { type: 'none', label: 'Sin premio', value: 0, discountAmount: 0 };
+        const label = (prize.label || prize || '').toString().toUpperCase();
+        const subtotal = calculateSubtotal();
+        const percentMatch = label.match(/(\d+)%/);
+
+        if (percentMatch) {
+            const percent = parseInt(percentMatch[1]);
+            return {
+                type: 'percentage',
+                label: prize.label || prize,
+                value: percent,
+                discountAmount: Math.round(subtotal * percent / 100),
+                description: `${percent}% de descuento aplicado`
+            };
+        }
+        return {
+            type: 'bonus',
+            label: prize.label || prize,
+            value: 0,
+            discountAmount: 0,
+            description: prize.detail || 'Beneficio especial incluido'
+        };
+    };
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency', currency: 'COP', maximumFractionDigits: 0
+        }).format(val || 0);
+    };
+
+    const disc = calculateDiscount();
+    const subtotal = calculateSubtotal();
+    const finalTotal = subtotal - disc.discountAmount;
+
+    // ============================================
+    // ACTIONS
     // ============================================
     const saveQuoteAndContinue = async () => {
         if (!localName.trim() || !localPhone.trim()) {
-            alert('Por favor ingresa tu nombre y WhatsApp para poder enviarte los datos y la factura a tu número.');
+            alert('Por favor ingresa tu nombre y WhatsApp para guardar tu cotización.');
             return;
         }
         setIsSaving(true);
         try {
-            const discount = calculateDiscount();
-            const sub = calculateSubtotal();
-            const final_total = sub - discount.discountAmount;
-
             const response = await axios.post(`${API_URL}/quotes`, {
                 clientName: localName,
                 clientPhone: localPhone,
@@ -97,440 +110,265 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                 source: 'web',
                 products: (selectedProducts || []).map(p => ({
                     id: p.id,
-                    name: p.name,
-                    category: p.category,
-                    price: p.price,
-                    quantity: p.quantity || 1
+                    name: String(p.name || p.product_name || 'Articulo'),
+                    category: String(p.category || p.category_name || 'General'),
+                    price: parseFloat(p.price || 0),
+                    quantity: parseInt(p.quantity || 1)
                 })),
-                prizeLabel: discount.label || null,
-                prizeDetail: discount.description || null,
-                discountPercent: discount.value || 0,
-                discountAmount: discount.discountAmount || 0,
-                subtotal: sub,
-                finalTotal: final_total
+                prizeLabel: disc.label || null,
+                prizeDetail: disc.description || null,
+                discountPercent: disc.value || 0,
+                discountAmount: disc.discountAmount || 0,
+                subtotal: subtotal,
+                finalTotal: finalTotal
             });
 
             if (response.data?.success) {
                 const newQuoteId = response.data.data?.quote_id;
-                setQuoteSaved(true);
-                setQuoteId(newQuoteId);
                 // Redirect immediately to portal
                 window.location.href = `/#/portal/${newQuoteId}`;
             }
         } catch (err) {
-            console.error('Error guardando cotización:', err);
-            alert('Hubo un error al guardar. Por favor, intenta de nuevo.');
+            console.error('Error saving quote:', err);
+            alert('Error al procesar. Intenta de nuevo.');
             setIsSaving(false);
         }
     };
 
-    // ============================================
-    // CÁLCULO DEL DESCUENTO SEGÚN EL PREMIO
-    // ============================================
-    const calculateDiscount = () => {
-        if (!prize) return { type: 'none', label: 'Sin premio', value: 0, discountAmount: 0 };
-
-        const prizeLabel = (prize.label || prize || '').toString().toUpperCase();
-        const prizeDetail = (prize.detail || '').toString();
-
-        // Detectar porcentaje de descuento
-        const percentMatch = prizeLabel.match(/(\d+)%/);
-        if (percentMatch) {
-            const percent = parseInt(percentMatch[1]);
-            const subtotal = calculateSubtotal();
-            return {
-                type: 'percentage',
-                label: prize.label || prize,
-                value: percent,
-                discountAmount: Math.round(subtotal * percent / 100),
-                description: `${percent}% de descuento aplicado`
-            };
-        }
-
-        // Otros tipos de premios (no afectan el precio directamente)
-        if (prizeLabel.includes('MES GRATIS') || prizeLabel.includes('FREE')) {
-            return {
-                type: 'bonus',
-                label: prize.label || prize,
-                value: 0,
-                discountAmount: 0,
-                description: prizeDetail || 'Beneficio adicional incluido en tu compra'
-            };
-        }
-
-        if (prizeLabel.includes('KIT') || prizeLabel.includes('LECTOR') || prizeLabel.includes('SETUP')) {
-            return {
-                type: 'bonus',
-                label: prize.label || prize,
-                value: 0,
-                discountAmount: 0,
-                description: prizeDetail || 'Producto/servicio adicional gratis'
-            };
-        }
-
-        // Default: premio sin descuento monetario
-        return {
-            type: 'bonus',
-            label: prize.label || prize,
-            value: 0,
-            discountAmount: 0,
-            description: prizeDetail || 'Beneficio especial incluido'
-        };
-    };
-
-    const calculateSubtotal = () => {
-        return (selectedProducts || []).reduce((sum, p) => sum + (parseFloat(p.price) * (p.quantity || 1)), 0);
-    };
-
-    const formatCurrency = (value) => {
-        return new Intl.NumberFormat('es-CO', {
-            style: 'currency',
-            currency: 'COP',
-            minimumFractionDigits: 0,
-        }).format(value);
-    };
-
-    const discount = calculateDiscount();
-    const subtotal = calculateSubtotal();
-    const finalTotal = subtotal - discount.discountAmount;
-
-    // ============================================
-    // GENERAR PDF CON DESCUENTO APLICADO
-    // ============================================
-    // ============================================
     const handleDownloadPDF = async () => {
-        try {
-            const btn = document.getElementById('btn-download-pdf');
-            const originalBtnText = btn?.innerHTML;
-            if (btn) btn.innerHTML = '<span class="animate-spin mr-2">↻</span> Generando PDF...';
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        doc.setFillColor(28, 36, 46);
+        doc.rect(0, 0, pageWidth, 30, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("DISCOVERY SYSTEMS", pageWidth / 2, 20, { align: "center" });
 
-            // 1. Crear documento PDF
-            const doc = new jsPDF();
-            const pageWidth = doc.internal.pageSize.getWidth();
-            let yPos = 20;
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 15, 45);
+        doc.text(`Cliente: ${localName}`, 15, 52);
+        doc.text(`Propuesta: #${String(Date.now()).slice(-6)}`, pageWidth - 15, 45, { align: "right" });
 
-            // Header - Logo y Empresa
-            doc.setFillColor(43, 108, 176); // Azul Discovery
-            doc.rect(0, 0, pageWidth, 25, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.setFont("helvetica", "bold");
-            doc.text("DISCOVERY SYSTEMS", pageWidth / 2, 17, { align: "center" });
+        const tableData = (selectedProducts || []).map(p => [
+            p.name, p.quantity || 1, formatCurrency(p.price), formatCurrency(p.price * (p.quantity || 1))
+        ]);
 
-            // Info del Cliente y Fecha
-            yPos = 40;
-            doc.setTextColor(40, 40, 40);
-            doc.setFontSize(10);
-            const today = new Date();
-            const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+        autoTable(doc, {
+            startY: 65,
+            head: [['Descripción', 'Cant', 'V. Unit', 'Subtotal']],
+            body: tableData,
+            headStyles: { fillColor: [28, 36, 46] },
+            styles: { fontSize: 9 }
+        });
 
-            doc.text(`Fecha: ${dateStr}`, 15, yPos);
-            doc.text(`Cliente: ${clientName || 'N/A'}`, 15, yPos + 7);
-            doc.text(`Teléfono: ${clientPhone || 'N/A'}`, 15, yPos + 14);
-            doc.text(`Ciudad: ${city || 'N/A'}`, 15, yPos + 21);
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.text(`Subtotal: ${formatCurrency(subtotal)}`, pageWidth - 15, finalY, { align: "right" });
+        doc.setTextColor(220, 38, 38);
+        doc.text(`Premio (${disc.label}): -${formatCurrency(disc.discountAmount)}`, pageWidth - 15, finalY + 7, { align: "right" });
+        doc.setTextColor(28, 36, 46);
+        doc.setFontSize(14);
+        doc.text(`TOTAL FINAL: ${formatCurrency(finalTotal)}`, pageWidth - 15, finalY + 18, { align: "right" });
 
-            // Validez y Asesor
-            doc.setFont("helvetica", "bold");
-            doc.text("PROPUESTA ECONÓMICA FORMAL", pageWidth - 15, yPos, { align: "right" });
-            doc.setFont("helvetica", "normal");
-            doc.text(`Doc Ref: #${String(Date.now()).slice(-6)}`, pageWidth - 15, yPos + 7, { align: "right" });
-            doc.text(`Válida por: 10 Días`, pageWidth - 15, yPos + 14, { align: "right" });
-            doc.text(`Asesor: ${advisorName || 'Comercial'}`, pageWidth - 15, yPos + 21, { align: "right" });
-
-            yPos += 35;
-
-            // Preparar items para la tabla
-            const tableData = (selectedProducts || []).map(p => [
-                p.name,
-                p.quantity?.toString() || '1',
-                formatCurrency(p.price),
-                formatCurrency((p.price || 0) * (p.quantity || 1))
-            ]);
-
-            // Dibujar Tabla de Productos
-            autoTable(doc, {
-                startY: yPos,
-                head: [['EQUIPO / SERVICIO', 'CANT.', 'V. UNITARIO', 'V. TOTAL']],
-                body: tableData,
-                theme: 'grid',
-                headStyles: { fillColor: [43, 108, 176], textColor: [255, 255, 255], fontStyle: 'bold' },
-                columnStyles: {
-                    0: { cellWidth: 80 },
-                    1: { cellWidth: 20, halign: 'center' },
-                    2: { cellWidth: 40, halign: 'right' },
-                    3: { cellWidth: 40, halign: 'right' },
-                },
-                styles: { fontSize: 9 }
-            });
-
-            yPos = doc.lastAutoTable.finalY + 15;
-
-            // Resumen Financiero
-            doc.setFontSize(11);
-            doc.setTextColor(40, 40, 40);
-
-            const resumenX = pageWidth - 90;
-            autoTable(doc, {
-                startY: yPos,
-                margin: { left: resumenX },
-                body: [
-                    [{ content: 'Subtotal:', styles: { fontStyle: 'bold' } }, { content: formatCurrency(subtotal), styles: { halign: 'right' } }],
-                    [{ content: `Premio (${discount.label}):`, styles: { fontStyle: 'bold', textColor: [220, 38, 38] } }, { content: `-${formatCurrency(discount.discountAmount)}`, styles: { halign: 'right', textColor: [220, 38, 38] } }],
-                    [{ content: 'TOTAL NETO COP:', styles: { fontStyle: 'bold', fontSize: 13, fillColor: [240, 240, 240] } }, { content: formatCurrency(finalTotal), styles: { halign: 'right', fontStyle: 'bold', fontSize: 13, fillColor: [240, 240, 240] } }]
-                ],
-                theme: 'plain',
-                styles: { fontSize: 10 }
-            });
-
-            // Footer / Términos
-            yPos = doc.lastAutoTable.finalY + 30;
-            doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            doc.text("Términos y Condiciones:", 15, yPos);
-            doc.text("1. Esta cotización está sujeta a disponibilidad de inventario.", 15, yPos + 5);
-            doc.text("2. Los valores no incluyen costos de envío nacional a menos que se especifique expresamente.", 15, yPos + 10);
-            doc.text("3. Soporte técnico cubierto durante los primeros 12 meses de garantía de fábrica.", 15, yPos + 15);
-
-            doc.text("www.discovery-systems.com", pageWidth / 2, 285, { align: "center", fontStyle: "italic" });
-
-            // Guardar o mostrar documento
-            const fileName = `Cotizacion_Discovery_${(clientName || 'Cliente').replace(/\s+/g, '_')}_${Date.now()}.pdf`;
-
-            // Si el dispositivo es movil, a veces es mejor abrirlo o guardar limpio
-            doc.save(fileName);
-
-            setPdfGenerated(true);
-
-            if (btn) btn.innerHTML = '<span class="mr-2 text-green-500">✓</span> ¡PDF Descargado!';
-            setTimeout(() => { if (btn) btn.innerHTML = originalBtnText; }, 3000);
-
-            // Adicionalmente marcamos a nivel backend si es necesario que alguien descargó el pdf
-            if (quoteId) {
-                axios.post(`${API_URL}/crm/quotes/${quoteId}/logs`, {
-                    action: 'PDF_DOWNLOADED',
-                    details: 'Cliente generó y descargó el PDF directamente'
-                }).catch(() => { });
-            }
-
-        } catch (error) {
-            console.error("Error generando PDF nativo:", error);
-            const btn = document.getElementById('btn-download-pdf');
-            if (btn) btn.innerHTML = '<span class="mr-2">❌</span> Error PDF. Intenta de nuevo';
-            alert("No se pudo generar el documento localmente. Reinicia la página.");
-        }
+        doc.save(`Cotizacion_Discovery_${localName}.pdf`);
     };
 
-    // ============================================
-    // WHATSAPP
-    // ============================================
-    const handleWhatsAppContact = () => {
-        const productList = (selectedProducts || []).map(p =>
-            `• ${p.quantity || 1}x ${p.name} — ${formatCurrency(parseFloat(p.price) * (p.quantity || 1))}`
-        ).join('\n');
-
-        const message = encodeURIComponent(
-            `¡Hola! Soy *${clientName || 'un cliente interesado'}* y acabo de generar mi cotización en Discovery Systems.\n\n` +
-            `📋 *Mi cotización:*\n${productList}\n\n` +
-            `💰 *Subtotal:* ${formatCurrency(subtotal)}\n` +
-            (discount.discountAmount > 0 ? `🎁 *Premio:* ${discount.label} (-${formatCurrency(discount.discountAmount)})\n` : `🎁 *Premio:* ${discount.label}\n`) +
-            `✅ *Total Final:* ${formatCurrency(finalTotal)}\n\n` +
-            `Me gustaría hablar con un asesor para continuar.`
+    const handleWhatsApp = () => {
+        const text = encodeURIComponent(
+            `¡Hola! Soy *${localName}* y generé mi cotización.\n` +
+            `✅ Total: *${formatCurrency(finalTotal)}*\n` +
+            `🎁 Premio: *${disc.label}*\n` +
+            `Me gustaría hablar con ${advisorName} para coordinar el pedido.`
         );
-        window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+        window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
     };
 
     // ============================================
     // RENDER
     // ============================================
     return (
-        <div className="p-4 md:p-6 animate-fade-in-up max-w-3xl mx-auto pb-12">
-            {/* 🎉 Prize Banner */}
-            <div className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-2xl p-6 md:p-8 mb-6 text-center shadow-2xl relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className="p-4 md:p-8 animate-fade-in-up max-w-4xl mx-auto pb-24">
+
+            {/* 🏆 CONGRATS BANNER */}
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-[2.5rem] p-8 md:p-12 mb-10 text-center shadow-2xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                {/* Floating particles (CSS) */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                    <div className="absolute top-1/4 left-10 w-4 h-4 bg-yellow-400 rounded-full animate-pulse opacity-40"></div>
+                    <div className="absolute bottom-1/4 right-10 w-6 h-6 bg-blue-400 rounded-full animate-bounce opacity-30"></div>
+                </div>
+
                 <div className="relative z-10">
-                    <div className="text-5xl md:text-6xl mb-3">🎉</div>
-                    <h1 className="text-2xl md:text-3xl font-black text-white mb-2">
-                        ¡Felicidades{clientName ? `, ${clientName}` : ''}!
-                    </h1>
-                    <p className="text-white/80 text-sm mb-3">Tu premio ha sido aplicado a la cotización</p>
-                    <div className="inline-block bg-white/95 backdrop-blur-sm text-orange-600 text-xl md:text-2xl font-black py-2 px-6 rounded-xl shadow-lg">
-                        🎁 {discount.label}
+                    <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
+                        <FaGift className="animate-bounce" /> Beneficio Activado Correctamente
                     </div>
-                    {discount.description && (
-                        <p className="text-white/90 text-sm mt-3 font-medium">{discount.description}</p>
-                    )}
+                    <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+                        ¡Felicidades, {localName.split(' ')[0]}! 🎉
+                    </h1>
+                    <p className="text-blue-100/80 text-lg mb-8 max-w-xl mx-auto font-medium">
+                        Tu premio exclusivo ha sido aplicado al total de tu cotización. ¡Estás a un paso de revolucionar tu negocio!
+                    </p>
+                    <div className="inline-flex flex-col md:flex-row items-center gap-4">
+                        <div className="bg-white text-blue-700 text-2xl font-black px-10 py-4 rounded-3xl shadow-2xl transform transition-transform hover:scale-105">
+                            🎁 {disc.label}
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* 📋 Quotation Card */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-6">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                                <FaCheckCircle /> Cotización Final
-                            </h3>
-                            <p className="text-blue-200 text-sm">
-                                {new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
+            {/* 📄 FINAL DOCUMENT (PREMIUM PAPER) */}
+            <div className="bg-white rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden relative">
+
+                {/* Header Formal */}
+                <div className="bg-[#1c242e] p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-blue-600">
+                    <div className="flex items-center gap-5">
+                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center p-3">
+                            <img src="/logo.png" alt="Discovery" className="w-full h-full object-contain" />
                         </div>
-                        <div className="text-white text-3xl">🚀</div>
+                        <div className="text-left">
+                            <h3 className="text-white font-black text-xl tracking-tight uppercase">Discovery Systems</h3>
+                            <p className="text-blue-300 text-xs font-bold tracking-widest uppercase opacity-80">Cotización Final Confirmada</p>
+                        </div>
+                    </div>
+                    <div className="text-right hidden md:block">
+                        <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">ID de Sesión</p>
+                        <p className="text-white font-mono text-base">#CONF-{String(Date.now()).slice(-6)}</p>
                     </div>
                 </div>
 
-                {/* Product List */}
-                <div className="divide-y divide-gray-100">
-                    {(selectedProducts || []).map((product, index) => {
-                        const name = sanitizeText(product.name, 120);
-                        const category = sanitizeText(product.category, 50);
+                {/* Table Breakdown */}
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 text-left border-b border-gray-100">
+                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Detalle de Inversión</th>
+                                <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Cant</th>
+                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {selectedProducts.map((p, idx) => (
+                                <tr key={idx}>
+                                    <td className="px-8 md:px-12 py-5">
+                                        <h4 className="font-bold text-gray-800 text-sm whitespace-pre-wrap">{p.name || p.product_name || 'Artículo'}</h4>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase">{p.category || p.category_name || 'General'}</p>
+                                    </td>
+                                    <td className="px-4 py-5 text-center font-bold text-blue-600 text-sm">x{p.quantity || 1}</td>
+                                    <td className="px-8 md:px-12 py-5 text-right font-bold text-gray-900">{formatCurrency(p.price * (p.quantity || 1))}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
 
-                        return (
-                            <div key={product.id || index} className="flex items-center gap-3 px-4 md:px-6 py-3">
-                                {renderImage(product.image_url, 'sm')}
-                                <div className="flex-grow min-w-0 pr-4">
-                                    <h4 className="font-bold text-gray-800 text-sm md:text-base truncate">
-                                        {name}
-                                    </h4>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{category}</span>
-                                </div>
-                                <div className="text-center flex-shrink-0 min-w-[30px]">
-                                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-                                        x{product.quantity || 1}
-                                    </span>
-                                </div>
-                                <div className="text-right min-w-[100px]">
-                                    <p className="font-bold text-gray-800 text-sm">
-                                        {formatCurrency(parseFloat(product.price) * (product.quantity || 1))}
-                                    </p>
-                                </div>
+                {/* Financial Summary */}
+                <div className="bg-gray-50/50 p-8 md:p-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+                    <div className="flex-1 space-y-4">
+                        <div className="bg-green-50 border border-green-100 p-5 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center text-xl shadow-lg shadow-green-200">
+                                <FaGift />
                             </div>
-                        );
-                    })}
-                </div>
-
-                {/* Totals */}
-                <div className="bg-gray-50 px-6 py-5 space-y-3 border-t-2 border-gray-100">
-                    {/* Subtotal */}
-                    <div className="flex items-center justify-between text-gray-600">
-                        <span className="font-medium">Subtotal</span>
-                        <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                            <div>
+                                <h4 className="font-black text-green-800 text-sm">Premio Aplicado</h4>
+                                <p className="text-green-600 text-xs font-bold leading-tight">{disc.label}</p>
+                                {disc.discountAmount > 0 && (
+                                    <p className="text-green-500 font-black text-lg mt-1 italic">
+                                        - {formatCurrency(disc.discountAmount)} de ahorro directo
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                            <FaCalendarAlt /> Oferta válida por las próximas 48 horas
+                        </div>
                     </div>
 
-                    {/* Prize/Discount */}
-                    {discount.discountAmount > 0 ? (
-                        <div className="flex items-center justify-between bg-green-50 -mx-6 px-6 py-3 border-y border-green-100">
-                            <span className="font-semibold text-green-700 flex items-center gap-2">
-                                <FaGift className="text-yellow-500" /> {discount.label}
-                            </span>
-                            <span className="font-bold text-green-600 text-lg">
-                                - {formatCurrency(discount.discountAmount)}
-                            </span>
+                    <div className="w-full md:w-[320px] bg-white p-6 rounded-3xl shadow-xl border border-blue-50">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Valor Comercial</span>
+                            <span className="text-gray-400 font-bold line-through">{formatCurrency(subtotal)}</span>
                         </div>
-                    ) : (
-                        <div className="flex items-center justify-between bg-green-50 -mx-6 px-6 py-3 border-y border-green-100">
-                            <span className="font-semibold text-green-700 flex items-center gap-2">
-                                <FaGift className="text-yellow-500" /> {discount.label}
-                            </span>
-                            <span className="font-bold text-green-600">
-                                ✅ Incluido
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Final Total */}
-                    <div className="flex items-center justify-between pt-2 border-t-2 border-blue-200">
-                        <span className="text-lg font-bold text-gray-800">TOTAL FINAL</span>
-                        <div className="text-right">
-                            {discount.discountAmount > 0 && (
-                                <span className="text-sm text-gray-400 line-through block">
-                                    {formatCurrency(subtotal)}
-                                </span>
-                            )}
-                            <span className="text-2xl md:text-3xl font-black text-blue-600">
+                        <div className="flex justify-between items-center pt-4 border-t-2 border-dashed border-gray-100">
+                            <div>
+                                <span className="text-xs font-black text-gray-900 uppercase">Total Final</span>
+                                <p className="text-[9px] text-blue-600 font-black uppercase">Neto a Pagar</p>
+                            </div>
+                            <span className="text-3xl font-black text-blue-600 tabular-nums">
                                 {formatCurrency(finalTotal)}
                             </span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* 🎯 Contact Info Capture & Action Button */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mt-6 rounded-2xl p-5 md:p-6 shadow-sm mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✓</div>
-                    <div>
-                        <h3 className="font-bold text-blue-900">¿A dónde te enviamos el Obsequio y la Copia?</h3>
-                        <p className="text-xs text-blue-700">Por favor confirma tus datos para procesar el envío de información.</p>
-                    </div>
-                </div>
-                <div className="space-y-4 mb-5">
-                    <div>
-                        <label className="block text-xs font-bold text-blue-900 mb-1 ml-1">Tu Nombre / Empresa *</label>
-                        <input
-                            type="text"
-                            placeholder="Ej: Laura Ramírez"
-                            value={localName}
-                            onChange={(e) => setLocalName(e.target.value)}
-                            className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-blue-900 mb-1 ml-1">Tu WhatsApp *</label>
-                        <input
-                            type="tel"
-                            placeholder="Ej: 300 123 4567"
-                            value={localPhone}
-                            onChange={(e) => setLocalPhone(e.target.value)}
-                            className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                </div>
+                {/* ACTION: SAVE & CONTINUE */}
+                {!quoteId && (
+                    <div className="p-8 md:p-12 border-t border-gray-100 bg-white">
+                        <div className="max-w-md mx-auto space-y-6">
+                            <div className="text-center space-y-2">
+                                <h3 className="font-black text-xl text-gray-900 flex items-center justify-center gap-2">
+                                    ¿Cómo recibes tu factura?
+                                </h3>
+                                <p className="text-gray-500 text-sm font-medium">Para enviarte la copia digital y el obsequio a tu WhatsApp, confirma tus datos:</p>
+                            </div>
 
-                {/* Continue to Portal */}
-                <button
-                    onClick={saveQuoteAndContinue}
-                    disabled={isSaving}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
-                >
-                    {isSaving ? (
-                        <>
-                            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            <span>Procesando...</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>Continuar</span>
-                            <FaCheckCircle className="text-xl" />
-                        </>
-                    )}
-                </button>
-            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Tu Nombre / Empresa</label>
+                                    <input
+                                        className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+                                        placeholder="Laura Ramírez / Restaurante El Solar"
+                                        value={localName}
+                                        onChange={(e) => setLocalName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">WhatsApp de Contacto</label>
+                                    <input
+                                        className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-500 transition-all font-bold text-gray-800"
+                                        placeholder="Ej: 320 579 2169"
+                                        value={localPhone}
+                                        onChange={(e) => setLocalPhone(e.target.value)}
+                                    />
+                                </div>
+                            </div>
 
-
-            {/* ⏰ Urgency Banner */}
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-orange-400 p-4 rounded-r-xl">
-                <div className="flex items-start gap-3">
-                    <span className="text-2xl">⚡</span>
-                    <div>
-                        <p className="font-bold text-gray-800 text-sm mb-1">
-                            Oferta válida por 48 horas
-                        </p>
-                        <p className="text-xs text-gray-600">
-                            Tu premio "{discount.label}" está reservado. Contacta a un asesor para asegurar tu descuento.
-                        </p>
+                            <button
+                                onClick={saveQuoteAndContinue}
+                                disabled={isSaving}
+                                className="w-full bg-blue-600 text-white text-lg font-black py-5 px-10 rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 relative overflow-hidden group active:scale-95 disabled:opacity-50"
+                            >
+                                {isSaving ? 'Guardando...' : (
+                                    <>Ver Mi Cotización Oficial <FaArrowRight /></>
+                                )}
+                            </button>
+                        </div>
                     </div>
+                )}
+
+                {/* Formal Footer */}
+                <div className="bg-gray-50 px-10 py-5 text-center">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.3em]">Discovery Systems POS — Calidad & Tecnología Superior</p>
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="text-center mt-8 text-gray-400 text-xs space-y-1">
-                <p>{companyConfig?.name || 'Discovery Systems POS'} © {new Date().getFullYear()} | {companyConfig?.slogan || 'Soluciones Tecnológicas POS'}</p>
-                <p>Contacto: +57 {companyConfig?.phone || '320 579 2169'} | {companyConfig?.website || 'www.discoverysystems.com'}</p>
-                {quoteId && <p className="text-gray-300">Ref: COT-{String(quoteId).padStart(4, '0')}</p>}
-            </div>
+            {/* BUTTONS BAR (ONLY AFTER SAVING OR OPTIONAL) */}
+            {quoteSaved && (
+                <div className="mt-10 flex flex-wrap justify-center gap-4 animate-fade-in">
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="px-8 py-4 bg-white border-2 border-red-100 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 hover:bg-red-50 transition-all shadow-lg"
+                    >
+                        <FaFilePdf size={20} /> Descargar PDF
+                    </button>
+                    <button
+                        onClick={handleWhatsApp}
+                        className="px-8 py-4 bg-[#25D366] text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 hover:bg-[#128C7E] transition-all shadow-lg shadow-green-200"
+                    >
+                        <FaWhatsapp size={20} /> Hablar con un Humano
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaCheckCircle, FaPaperclip, FaPaperPlane, FaRobot, FaPlay, FaCalendarAlt, FaFileAlt, FaCheck, FaBuilding, FaHandshake } from 'react-icons/fa';
+import {
+    FaCheckCircle, FaPaperclip, FaPaperPlane, FaRobot, FaPlay,
+    FaCalendarAlt, FaFileAlt, FaCheck, FaBuilding, FaHandshake,
+    FaArrowRight, FaGift, FaUserCircle, FaWhatsapp, FaTimes, FaDownload, FaEye
+} from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
-
-// Helper function to calculate a realistic typing delay globally
-const simulateTypingDelay = (messageLength) => {
-    const baseDelay = 1500; // minimum 1.5s thought process
-    const typingSpeedMsPerChar = 30; // 30ms per character
-    return Math.min(baseDelay + (messageLength * typingSpeedMsPerChar), 6000); // cap at 6 seconds
-};
 
 const ClientPortal = () => {
     const { id } = useParams();
@@ -20,7 +17,8 @@ const ClientPortal = () => {
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [advisorName, setAdvisorName] = useState('IA de Ventas');
+    const [advisorName, setAdvisorName] = useState('Daniel');
+    const [showFullProposal, setShowFullProposal] = useState(false);
 
     // Chat states
     const [messages, setMessages] = useState([]);
@@ -28,18 +26,12 @@ const ClientPortal = () => {
     const [isTyping, setIsTyping] = useState(false);
 
     // Business flow states
-    // 'greet' -> 'shipping_address' -> 'payment_method' -> 'documents' -> 'completed'
-    const [flowState, setFlowState] = useState('greet');
     const [progress, setProgress] = useState(20);
+    const [flowState, setFlowState] = useState('greet'); // 'greet' -> 'shipping' -> 'payment' -> 'completed'
     const [quickReplies, setQuickReplies] = useState([]);
 
-    // Data collection
     const [collectedData, setCollectedData] = useState({
-        city: '',
-        address: '',
-        paymentMethod: '',
-        rutFileUploaded: false,
-        rutFileName: ''
+        city: '', address: '', paymentMethod: '', rutFileUploaded: false
     });
 
     useEffect(() => {
@@ -47,160 +39,95 @@ const ClientPortal = () => {
     }, [id]);
 
     useEffect(() => {
-        scrollToBottom();
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping, quickReplies]);
 
     const fetchQuote = async () => {
         try {
             const res = await axios.get(`${API_URL}/quotes/${id}`);
             if (res.data?.success) {
-                const q = res.data.quote;
+                const q = { ...res.data.quote, items: res.data.items || [] };
                 setQuote(q);
 
-                // Try to get advisor name based on city
-                let advisor = 'IA de Ventas';
-                try {
-                    const cityParam = (q.city || 'colombia').toLowerCase().replace(/\s+/g, '-');
-                    const waRes = await axios.get(`${API_URL}/config/whatsapp/${cityParam}`);
-                    if (waRes.data?.success && waRes.data.number?.advisor) {
-                        advisor = waRes.data.number.advisor;
-                        setAdvisorName(advisor);
-                    }
-                } catch (e) {
-                    console.log('Error fetching advisor info', e);
+                // Initialize advisor
+                let adv = 'Daniel';
+                const cityParam = (q.client_city || 'colombia').toLowerCase().replace(/\s+/g, '-');
+                const waRes = await axios.get(`${API_URL}/config/whatsapp/${cityParam}`).catch(() => null);
+                if (waRes?.data?.success && waRes.data.number?.advisor) {
+                    adv = waRes.data.number.advisor;
                 }
+                setAdvisorName(adv);
 
-                // Initialize chat with typing delay
-                setLoading(false); // drop the main loading screen first
+                setLoading(false);
                 setIsTyping(true);
 
+                // Greeting
                 setTimeout(() => {
-                    setMessages([
-                        {
-                            id: 1,
-                            sender: 'bot',
-                            text: `¡Hola ${q.client_name}! 👋 Soy ${advisor}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
-                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        }
-                    ]);
+                    setMessages([{
+                        id: 1, sender: 'bot',
+                        text: `¡Hola ${q.client_name}! 👋 Soy ${adv}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }]);
 
+                    // Quote Summary Widget
                     setTimeout(() => {
-                        setMessages(prev => [
-                            ...prev,
-                            {
-                                id: 2,
-                                sender: 'app', // special type for rendering a widget inside chat
-                                type: 'quote_summary',
-                                data: {
-                                    total: q.final_amount || 0,
-                                    itemsCount: q.items?.length || 0
-                                }
+                        const allItems = res.data.items || q.items || [];
+                        console.log("Rendering items on summary:", allItems);
+                        setMessages(prev => [...prev, {
+                            id: 2, sender: 'app', type: 'quote_summary',
+                            data: {
+                                total: q.final_amount,
+                                items: allItems
                             }
-                        ]);
-                        setProgress(20);
+                        }]);
                         setIsTyping(false);
                         setQuickReplies([
                             { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
-                            { label: 'Ver Video Demo 🎬', action: 'view_demo' },
+                            { label: 'Ver Mi Propuesta Formal 📋', action: 'view_proposal' },
                             { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
                         ]);
-                    }, 1500);
-                }, 1800);
-
+                    }, 1200);
+                }, 1000);
             } else {
                 setError('Cotización no encontrada');
                 setLoading(false);
             }
         } catch (err) {
-            console.error('Error fetching quote:', err);
-            setError('Error al cargar la cotización o enlace inválido.');
+            setError('Error al cargar la cotización.');
             setLoading(false);
         }
     };
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    const handleQuickReply = async (reply) => {
+        if (reply.action === 'view_proposal') {
+            setShowFullProposal(true);
+            return;
+        }
 
-    const appendMessage = (sender, text, type = 'text', data = null) => {
+        setQuickReplies([]);
         setMessages(prev => [...prev, {
-            id: Date.now(),
-            sender,
-            text,
-            type,
-            data,
+            id: Date.now(), sender: 'user', text: reply.label,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
-    };
-
-    const handleQuickReply = async (reply) => {
-        appendMessage('user', reply.label);
-        setQuickReplies([]); // hide replies while processing
         setIsTyping(true);
-
-        if (reply.action === 'view_demo') {
-            const msg = '¡Genial! Disfruta el video. Cuando termines, dime si quieres empezar tu pedido o si tienes más dudas.';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
-            window.open('https://www.youtube.com/watch?v=demo-video', '_blank');
-            appendMessage('bot', msg);
-            setQuickReplies([
-                { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true },
-                { label: 'Tengo preguntas 🤔', action: 'ask_questions' }
-            ]);
-            setIsTyping(false);
-            return;
-        }
-
-        if (reply.action === 'ask_questions') {
-            const msg = '¡Claro! Pregúntame lo que necesites escribiendo en la caja de texto, y yo me encargaré de revisarlo contigo.';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
-            appendMessage('bot', msg);
-            setFlowState('questions');
-            setQuickReplies([
-                { label: 'Ya no tengo dudas, ¡Empezar pedido! 🚀', action: 'start_order', primary: true }
-            ]);
-            setIsTyping(false);
-            return;
-        }
 
         if (reply.action === 'start_order') {
             const msg1 = '¡Excelente decisión! 🎉 Vamos a preparar todo para tu envío.';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
-            appendMessage('bot', msg1);
+            await new Promise(r => setTimeout(r, 1500));
+            setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'bot', text: msg1, time: 'Ahora' }]);
 
-            setIsTyping(true);
-            const msg2 = 'Para programar la logística, escríbeme aquí abajo a qué Ciudad y Dirección exacta enviamos el equipo. (Ej: Bogotá, Calle 1 # 2-3 Local 4)';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
-            appendMessage('bot', msg2);
-            setFlowState('shipping_address');
+            const msg2 = '¿A qué Ciudad y Dirección enviamos el equipo? (Ej: Medellín, Cra 43 # 10-20)';
+            await new Promise(r => setTimeout(r, 1000));
+            setMessages(prev => [...prev, { id: Date.now() + 2, sender: 'bot', text: msg2, time: 'Ahora' }]);
+            setFlowState('shipping');
             setProgress(40);
-            setIsTyping(false);
-            return;
         }
 
-        if (reply.action === 'pay_transfer') {
-            const msg = '¡Perfecto! Te enviaremos los datos de Bancolombia / Nequi a tu WhatsApp para que realices la transferencia de forma segura. 🏦';
-            setCollectedData(prev => ({ ...prev, paymentMethod: 'transferencia' }));
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg.length)));
-            appendMessage('bot', msg);
-            await finishOrder('transferencia');
-            return;
-        }
-
-        if (reply.action === 'pay_contra_entrega') {
-            const msg1 = '¡Perfecto, te cobramos en la puerta de tu local! 🤝 (Aplica ciudades principales).';
-            setCollectedData(prev => ({ ...prev, paymentMethod: 'contra_entrega' }));
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
-            appendMessage('bot', msg1);
-            setProgress(75);
-
-            setIsTyping(true);
-            const msg2 = 'Para habilitar esta opción y generarte el documento de soporte (Garantía de 12 meses), por favor adjunta aquí una foto o PDF de tu RUT o Cédula.';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
-            appendMessage('bot', msg2);
-            setFlowState('documents');
-            setIsTyping(false);
-            return;
+        if (reply.action === 'ask_questions') {
+            const msg = '¡Claro! Pregúntame lo que necesites y yo revisaré el inventario por ti.';
+            await new Promise(r => setTimeout(r, 1000));
+            setMessages(prev => [...prev, { id: Date.now(), sender: 'bot', text: msg, time: 'Ahora' }]);
+            setFlowState('questions');
         }
 
         setIsTyping(false);
@@ -211,312 +138,251 @@ const ClientPortal = () => {
         const text = inputValue.trim();
         if (!text) return;
 
-        appendMessage('user', text);
+        setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text, time: 'Ahora' }]);
         setInputValue('');
         setIsTyping(true);
 
-        setIsTyping(true);
-
-        if (flowState === 'shipping_address') {
-            const msg1 = '¡Anotado! 📍 Ya registré la dirección para el despacho.';
-            setCollectedData(prev => ({ ...prev, address: text, city: 'Pendiente' })); // We capture it as raw text
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg1.length)));
-            appendMessage('bot', msg1);
-            setProgress(60);
-
-            setIsTyping(true);
-            const msg2 = 'Ahora, cuéntame cómo prefieres realizar el pago:';
-            await new Promise(r => setTimeout(r, simulateTypingDelay(msg2.length)));
-            appendMessage('bot', msg2);
-            setQuickReplies([
-                { label: 'Pago Contra Entrega 🚚', action: 'pay_contra_entrega', primary: true },
-                { label: 'Transferencia Bancaria 🏦', action: 'pay_transfer' }
-            ]);
-            setFlowState('payment_method');
-            setIsTyping(false);
-            return;
-        }
-
         if (flowState === 'questions' || flowState === 'greet') {
-            // Send to AI for QA
-            try {
-                const aiRes = await axios.post(`${API_URL}/ai/chatbot`, {
-                    question: text,
-                    context: { modules: quote?.items, total: quote?.final_amount, quoteId: quote?.id },
-                    leadId: quote?.id
-                });
-                const answer = aiRes.data.answer;
-                await new Promise(r => setTimeout(r, simulateTypingDelay(answer.length)));
-                appendMessage('bot', answer);
-            } catch (err) {
-                const fallbackMessage = "Claro, ya mismo te reviso esta información en el sistema. Mientras tanto... cuéntame, ¿tienes alguna urgencia específica con los tiempos de entrega?";
-                await new Promise(r => setTimeout(r, simulateTypingDelay(fallbackMessage.length)));
-                appendMessage('bot', fallbackMessage);
-            }
-            if (flowState !== 'questions') {
-                setTimeout(() => {
-                    setQuickReplies([
-                        { label: 'Empezar mi pedido 🚀', action: 'start_order', primary: true }
-                    ]);
-                }, 1000);
-            }
-            setIsTyping(false);
-            return;
+            const aiRes = await axios.post(`${API_URL}/ai/chatbot`, {
+                question: text, context: { total: quote?.final_amount, items: quote?.items }
+            }).catch(() => ({ data: { answer: 'Claro, déjame revisar eso con el equipo técnico...' } }));
+
+            await new Promise(r => setTimeout(r, 1000));
+            setMessages(prev => [...prev, { id: Date.now(), sender: 'bot', text: aiRes.data.answer, time: 'Ahora' }]);
+            if (flowState !== 'questions') setQuickReplies([{ label: 'Empezar pedido 🚀', action: 'start_order', primary: true }]);
         }
 
-        const defaultMessage = '¡Entendido! Si quieres avanzar con el pedido no dudes en decírmelo.';
-        await new Promise(r => setTimeout(r, simulateTypingDelay(defaultMessage.length)));
-        appendMessage('bot', defaultMessage);
         setIsTyping(false);
     };
 
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const formatCurrency = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
 
-        appendMessage('user', `📎 Archivo adjunto: ${file.name}`, 'file');
-        setIsTyping(true);
-
-        // Simulate upload
-        await new Promise(r => setTimeout(r, 1500));
-
-        setCollectedData(prev => ({ ...prev, rutFileUploaded: true, rutFileName: file.name }));
-        appendMessage('bot', '¡Documento recibido y validado con éxito! 🎉');
-
-        await finishOrder('contra_entrega');
-    };
-
-    const finishOrder = async (method) => {
-        setProgress(100);
-        setFlowState('completed');
-
-        try {
-            await axios.put(`${API_URL}/quotes/${id}/confirm`, {
-                shipping: { address: collectedData.address, city: 'Definida en chat' },
-                paymentMethod: method
-            });
-            await new Promise(r => setTimeout(r, 800));
-            appendMessage('bot', '¡Todo listo! Tu pedido ha sido confirmado y está en la cola de despacho. Nuestro equipo de logística te contactará directamente por WhatsApp en unos minutos.');
-            appendMessage('app', '', 'success_widget');
-            setIsTyping(false);
-        } catch (error) {
-            appendMessage('bot', 'Hubo un error guardando la confirmación, pero tenemos tus datos en el historial. Un agente te hablará enseguida.');
-            setIsTyping(false);
-        }
-    };
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount || 0);
-    };
-
-    if (loading && !quote) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-sans">
-                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-medium">Abriendo sala de chat...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
-                <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
-                    <div className="text-red-500 text-6xl mb-4 text-center mx-auto w-fit">⚠️</div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{error}</h2>
-                    <p className="text-gray-600 mb-6">Asegúrate de haber ingresado desde el enlace correcto que te enviamos.</p>
+    // ============================================
+    // DOCUMENT RENDERER (PREMIUM PAPER)
+    // ============================================
+    const renderPremiumDocument = () => (
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] overflow-y-auto relative animate-scale-in">
+            {/* Modal Close */}
+            <button
+                onClick={() => setShowFullProposal(false)}
+                className="absolute top-6 right-6 w-10 h-10 bg-[#1c242e]/10 text-[#1c242e] rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all z-20"
+            >
+                <FaTimes />
+            </button>
+            <div className="bg-[#1c242e] p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-blue-600">
+                <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center p-3 backdrop-blur-md">
+                        <img src="/logo.png" alt="Discovery" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="text-left">
+                        <h3 className="text-white font-black text-xl tracking-tight uppercase">Discovery Systems</h3>
+                        <p className="text-blue-300 text-[10px] font-black tracking-[0.2em] uppercase opacity-80">Software & Hardware POS</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Cotización Oficial</p>
+                    <p className="text-white font-mono text-lg">#DS-{String(id).padStart(4, '0')}</p>
                 </div>
             </div>
-        );
-    }
+
+            {/* Info Section */}
+            <div className="p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-10 bg-white">
+                <div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Preparado para:</span>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">{quote?.client_name}</p>
+                    <p className="text-gray-500 font-medium">{quote?.client_phone}</p>
+                </div>
+                <div className="md:text-right">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fecha de Emisión:</span>
+                    <p className="font-bold text-gray-800">{new Date(quote?.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    <span className="inline-flex items-center gap-2 text-green-600 font-black text-[10px] bg-green-50 px-3 py-1 rounded-full border border-green-100 mt-2">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Documento Verificado
+                    </span>
+                </div>
+            </div>
+
+            {/* Items Table */}
+            <div className="px-8 md:px-12">
+                <table className="w-full border-collapse">
+                    <thead>
+                        <tr className="bg-gray-50 text-left border-b-2 border-gray-100">
+                            <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Descripción</th>
+                            <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Cant.</th>
+                            <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {quote?.items?.map((item, idx) => (
+                            <tr key={idx} className="group">
+                                <td className="py-5">
+                                    <h4 className="font-bold text-gray-800 text-sm">{item.product_name || item.name}</h4>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">{item.product_category || 'General'}</p>
+                                </td>
+                                <td className="py-5 text-center font-black text-gray-600">x{item.quantity}</td>
+                                <td className="py-5 text-right font-black text-gray-900">{formatCurrency(item.subtotal)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Totals */}
+            <div className="p-8 md:p-12 bg-gray-50/50 flex flex-col md:flex-row justify-between items-end gap-10 mt-6 border-t border-gray-100">
+                <div className="flex-1">
+                    <div className="bg-blue-600 text-white p-6 rounded-3xl shadow-xl flex items-center gap-5 relative overflow-hidden group">
+                        <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform"></div>
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl"><FaGift /></div>
+                        <div>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-80">Beneficio Aplicado</h4>
+                            <p className="text-lg font-black">{quote?.prize_label}</p>
+                            {quote?.discount_amount > 0 && <p className="text-white/70 text-xs">- {formatCurrency(quote.discount_amount)} de descuento</p>}
+                        </div>
+                    </div>
+                </div>
+                <div className="w-full md:w-[320px] bg-white p-8 rounded-[2rem] shadow-2xl shadow-blue-900/10 border border-blue-50 text-right">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto de Inversión</p>
+                    <p className="text-4xl font-black text-blue-600">{formatCurrency(quote?.final_amount)}</p>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-2">IVA Incluido / Colombia</p>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-12 py-6 border-t border-gray-100 flex justify-between items-center bg-white text-[9px] font-bold text-gray-300 uppercase tracking-widest">
+                <span>Discovery Systems POS © 2026</span>
+                <span>Documento Impreso Digitalmente</span>
+            </div>
+        </div >
+    );
+
+    if (loading && !quote) return <div className="min-h-screen bg-gray-100 flex items-center justify-center"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+    if (error) return <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 text-center"><div className="bg-white p-10 rounded-3xl shadow-xl"><FaTimes className="text-red-500 text-5xl mx-auto mb-4" /><h2 className="text-2xl font-bold">{error}</h2></div></div>;
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col font-sans h-screen overflow-hidden">
-            {/* COMPOSITE HEADER AND PROGRESS */}
-            <header className="bg-[#1c242e] border-b border-gray-800 shadow-md z-10 sticky top-0">
-                <div className="max-w-4xl mx-auto px-4 py-3">
-                    <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 flex items-center justify-center">
-                                <img src="/logo.png" alt="Discovery Systems Pos" className="w-full h-full object-contain" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-white">{advisorName}</h1>
-                                <p className="text-xs text-[#A8E0F0] font-medium flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-[#A8E0F0] shadow-[0_0_8px_#A8E0F0] rounded-full animate-pulse"></span> En línea (Atención Personalizada)
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="bg-[#12181f] px-3 py-1 rounded-full border border-gray-700 hidden sm:block">
-                                <span className="text-xs font-bold text-[#A8E0F0]">Cotización #{String(quote?.id).padStart(4, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+        <div className="min-h-screen bg-gray-100 flex flex-col font-sans h-screen overflow-hidden relative">
 
-                    {/* PROGRESS BAR */}
-                    <div className="w-full bg-[#12181f] rounded-full h-2 mt-2">
-                        <div className="bg-[#A8E0F0] shadow-[0_0_10px_#A8E0F0] h-2 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
+            {/* Header */}
+            <header className="bg-[#1c242e] border-b border-gray-800 shadow-md z-10 sticky top-0">
+                <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <img src="/logo.png" alt="Discovery" className="w-10 h-10 object-contain" />
+                        <div>
+                            <h1 className="text-white font-bold text-base leading-none">{advisorName}</h1>
+                            <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse"></span> Asesor Discovery
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex justify-between mt-1 px-1">
-                        <span className="text-[10px] text-gray-400 font-medium">Progreso del Pedido</span>
-                        <span className="text-[10px] text-[#A8E0F0] font-bold">{progress}% completado</span>
-                    </div>
+                </div>
+                {/* Slim Progress */}
+                <div className="w-full h-1 bg-black/20">
+                    <div className="h-full bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.5)] transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                 </div>
             </header>
 
-            {/* CHAT MESSAGES AREA */}
-            <main className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto bg-gray-100 pb-8 custom-scrollbar">
-                <div className="space-y-4">
-                    <div className="text-center text-xs text-gray-400 my-4 bg-gray-200 w-fit mx-auto px-3 py-1 rounded-full">
-                        Hoy - {new Date().toLocaleDateString()}
-                    </div>
-
+            {/* Messages */}
+            <main className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto bg-gray-100 pb-20 custom-scrollbar">
+                <div className="space-y-6">
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
-
-                            {/* BOT MESSAGE */}
                             {msg.sender === 'bot' && (
-                                <div className="flex gap-2 max-w-[85%] sm:max-w-[70%]">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-600 mt-auto ml-1">
-                                        🤖
-                                    </div>
-                                    <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-3 shadow-sm relative">
-                                        <p className="text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                                        <span className="text-[10px] text-gray-400 absolute bottom-1 right-2">{msg.time}</span>
-                                        <div className="pb-2"></div>
+                                <div className="flex gap-3 max-w-[85%]">
+                                    <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-xl mt-auto border border-gray-100">🤖</div>
+                                    <div className="bg-white border border-gray-100 rounded-3xl rounded-bl-none p-4 shadow-sm relative">
+                                        <p className="text-sm text-gray-800 leading-relaxed">{msg.text}</p>
+                                        <span className="text-[8px] text-gray-300 uppercase font-black absolute -top-4 left-2">{msg.time}</span>
                                     </div>
                                 </div>
                             )}
 
-                            {/* SPECIAL WIDGET / APP CONTENT IN CHAT */}
                             {msg.sender === 'app' && msg.type === 'quote_summary' && (
-                                <div className="w-full sm:max-w-[70%] ml-10 mb-2">
-                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
-                                        <div className="flex items-center gap-2 text-indigo-800 font-bold mb-3 border-b border-blue-100 pb-2">
-                                            <FaFileAlt /> Tu Cotización Resumida
+                                <div className="w-full sm:max-w-[80%] ml-14 group">
+                                    <div className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_60px_rgba(0,0,0,0.08)] transition-all transform hover:-translate-y-1">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <FaFileAlt className="text-blue-500" /> Tu Propuesta Discovery
+                                            </h4>
+                                            <span className="text-[9px] bg-blue-50 text-blue-500 px-2 py-1 rounded-full font-black">Ref #{id}</span>
                                         </div>
-                                        <div className="space-y-2 mb-3">
-                                            {(quote?.items || []).slice(0, 3).map((item, idx) => (
-                                                <div key={idx} className="flex justify-between items-center text-xs text-gray-700">
-                                                    <span className="truncate pr-4">• {item.name || item.product_name}</span>
-                                                    <span className="font-medium whitespace-nowrap">x{item.quantity}</span>
+
+                                        <div className="space-y-3 mb-6">
+                                            {(msg.data.items || []).length === 0 ? (
+                                                <p className="text-xs text-gray-400 italic">Cargando detalles del inventario...</p>
+                                            ) : (msg.data.items || []).slice(0, 4).map((it, idx) => (
+                                                <div key={idx} className="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0 hover:bg-blue-50/50 transition-colors">
+                                                    <span className="truncate pr-4 font-medium text-gray-700">
+                                                        📦 {it.product_name || it.name || it.description || 'Artículo'}
+                                                    </span>
+                                                    <span className="font-extrabold text-blue-600 whitespace-nowrap">x{it.quantity || 1}</span>
                                                 </div>
                                             ))}
-                                            {(quote?.items?.length > 3) && <div className="text-xs text-gray-400 italic">... y más artículos</div>}
+                                            {(msg.data.items || []).length > 4 && (
+                                                <p className="text-[10px] text-gray-400 font-bold italic mt-2">+ {(msg.data.items || []).length - 4} elementos adicionales en el documento oficial</p>
+                                            )}
                                         </div>
-                                        <div className="flex justify-between items-center pt-2 border-t border-blue-200">
-                                            <span className="text-sm font-bold text-gray-600">Total a Pagar:</span>
-                                            <span className="text-lg font-black text-indigo-900">{formatCurrency(msg.data.total)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {msg.sender === 'app' && msg.type === 'success_widget' && (
-                                <div className="w-full sm:max-w-[70%] ml-10 mb-2">
-                                    <div className="bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm text-center">
-                                        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-3 shadow-lg shadow-green-200">
-                                            <FaCheck />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-green-800 mb-1">¡Todo Listo!</h3>
-                                        <p className="text-sm text-green-700 mb-4">Pedido #{String(quote?.id).padStart(4, '0')} en cola de despacho.</p>
-                                        <button
-                                            onClick={() => window.open(`https://wa.me/573205792169?text=Hola,%20acabo%20de%20confirmar%20mi%20pedido%20(ID%20${String(quote?.id).padStart(4, '0')})%20en%20el%20Portal.%20¿Podemos%20coordinar?`, '_blank')}
-                                            className="w-full py-3 bg-[#25D366] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-[#128C7E] transition"
-                                        >
-                                            <FaWhatsapp className="text-xl" /> Hablar con Asesor Humano
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* USER MESSAGE */}
-                            {msg.sender === 'user' && (
-                                <div className="flex gap-2 max-w-[85%] sm:max-w-[70%]">
-                                    <div className="bg-indigo-600 text-white rounded-2xl rounded-br-none p-3 shadow-md relative">
-                                        {msg.type === 'file' ? (
-                                            <div className="text-[14px] flex items-center gap-2 bg-indigo-700 p-2 rounded-lg">
-                                                {msg.text}
+                                        <div className="flex flex-col sm:flex-row justify-between items-center pt-5 border-t border-gray-100 gap-4 mt-2">
+                                            <div className="text-left w-full sm:w-auto">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Total Inversión</p>
+                                                <p className="text-2xl font-black text-blue-800">{formatCurrency(msg.data.total)}</p>
                                             </div>
-                                        ) : (
-                                            <p className="text-[15px] leading-relaxed break-words">{msg.text}</p>
-                                        )}
-                                        <div className="flex justify-end mt-1 items-center gap-1">
-                                            <span className="text-[10px] text-indigo-200">{msg.time}</span>
-                                            <FaCheck className="text-[8px] text-white opacity-80" />
+                                            <button
+                                                onClick={() => setShowFullProposal(true)}
+                                                className="w-full sm:w-auto px-6 py-4 bg-[#1c242e] text-[#A8E0F0] font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-gray-200 hover:bg-black transition-all flex items-center justify-center gap-2 active:scale-95 group"
+                                            >
+                                                Ver Detalle Pro <FaEye className="group-hover:scale-125 transition-transform" />
+                                            </button>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {msg.sender === 'user' && (
+                                <div className="max-w-[85%]">
+                                    <div className="bg-blue-600 text-white rounded-3xl rounded-br-none p-4 shadow-xl shadow-blue-100">
+                                        <p className="text-sm font-bold leading-relaxed">{msg.text}</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ))}
-
-                    {isTyping && (
-                        <div className="flex gap-2 max-w-[85%] sm:max-w-[70%] animate-fade-in">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-600 mt-auto ml-1 pb-1">🤖</div>
-                            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-4 shadow-sm flex gap-1 items-center">
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div ref={messagesEndRef} className="h-4"></div>
+                    {isTyping && <div className="flex gap-2 ml-14"><div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce"></div><div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce delay-100"></div><div className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-bounce delay-200"></div></div>}
+                    <div ref={messagesEndRef}></div>
                 </div>
             </main>
 
-            {/* INPUT AREA */}
-            <footer className="bg-white border-t border-gray-200 p-3 pb-6 w-full flex-shrink-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] relative">
+            {/* Input Footer */}
+            <footer className="bg-white border-t border-gray-100 p-4 sticky bottom-0 z-20">
                 <div className="max-w-4xl mx-auto">
-
-                    {/* Quick Replies */}
-                    {quickReplies.length > 0 && !isTyping && (
-                        <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in-up">
-                            {quickReplies.map((reply, idx) => (
+                    {quickReplies.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+                            {quickReplies.map((r, i) => (
                                 <button
-                                    key={idx}
-                                    onClick={() => handleQuickReply(reply)}
-                                    className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${reply.primary ? 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transform' : 'bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}
+                                    key={i}
+                                    onClick={() => handleQuickReply(r)}
+                                    className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest ${r.primary ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}
                                 >
-                                    {reply.label}
+                                    {r.label}
                                 </button>
                             ))}
                         </div>
                     )}
-
-                    <form onSubmit={handleSendMessage} className="flex gap-2 items-center bg-gray-100 rounded-full p-1 pl-4 mx-1 border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-300 focus-within:border-indigo-400 transition-all">
-
-                        {flowState === 'documents' && (
-                            <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-2 transition-colors">
-                                <FaPaperclip className="text-xl" />
-                                <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,image/*" />
-                            </label>
-                        )}
-
+                    <form onSubmit={handleSendMessage} className="flex gap-3 bg-gray-50 p-2 rounded-[2rem] border border-gray-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50 transition-all">
                         <input
-                            type="text"
+                            className="flex-1 bg-transparent px-6 py-3 outline-none font-bold text-gray-900 placeholder-gray-400"
+                            placeholder="Escribe tu duda o responde aquí..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
-                            placeholder={flowState === 'documents' ? 'Sube tu documento pulsando el clip 📎' : flowState === 'shipping_address' ? 'Escribe tu ciudad y dirección...' : 'Escribe tu mensaje...'}
-                            className="flex-1 bg-transparent border-none outline-none py-3 text-gray-800 placeholder-gray-400 text-[15px]"
-                            disabled={isTyping || flowState === 'completed' || (flowState === 'documents' && !inputValue)}
                         />
-
-                        <button
-                            type="submit"
-                            disabled={!inputValue.trim() || isTyping || flowState === 'completed'}
-                            className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center disabled:opacity-50 disabled:bg-gray-400 transition-colors mr-1 shadow-md"
-                        >
-                            <FaPaperPlane className="-ml-0.5" />
-                        </button>
+                        <button className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all"><FaPaperPlane /></button>
                     </form>
-                    <div className="text-center mt-2">
-                        <span className="text-[10px] text-gray-400 font-medium">🔒 Todo nuestro chat es confidencial y seguro</span>
-                    </div>
                 </div>
             </footer>
+
+            {/* FULL PROPOSAL MODAL */}
+            {showFullProposal && (
+                <div className="fixed inset-0 z-[100] bg-[#1c242e]/80 backdrop-blur-lg flex items-center justify-center p-4">
+                    {renderPremiumDocument()}
+                </div>
+            )}
         </div>
     );
 };

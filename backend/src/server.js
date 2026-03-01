@@ -1,4 +1,5 @@
-﻿import express from 'express';
+﻿import './polyfill.js';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import db from './config/database.js'; // Importar DB
@@ -20,11 +21,13 @@ import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
 import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
 import aiRuleRoutes from './routes/aiRuleRoutes.js'; // Memoria de IA
 
+import morgan from 'morgan';
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4050; // Changed port to avoid conflicts
 
+app.use(morgan('dev'));
 app.use(cors({
   // ... (keep existing cors config)
 }));

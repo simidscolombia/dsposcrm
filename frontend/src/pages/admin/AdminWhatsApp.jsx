@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaWhatsapp, FaPlug, FaPowerOff, FaQrcode, FaPaperPlane, FaHistory, FaSpinner, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaRedo, FaCog } from 'react-icons/fa';
+import { FaWhatsapp, FaPlug, FaPowerOff, FaQrcode, FaPaperPlane, FaHistory, FaSpinner, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaRedo, FaTools } from 'react-icons/fa';
 
 const API_URL = '/api';
 
@@ -114,7 +114,7 @@ const AdminWhatsApp = () => {
         { id: 'status', label: 'Estado', icon: <FaPlug /> },
         { id: 'send', label: 'Enviar', icon: <FaPaperPlane /> },
         { id: 'logs', label: 'Historial', icon: <FaHistory /> },
-        { id: 'setup', label: 'Configuración', icon: <FaCog /> }
+        { id: 'setup', label: 'Configuración', icon: <FaTools /> }
     ];
 
     return (

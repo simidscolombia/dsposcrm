@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaCog, FaHandshake, FaHeadset, FaWhatsapp, FaBrain, FaImage } from 'react-icons/fa';
+import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaTools, FaHandshake, FaHeadset, FaWhatsapp, FaBrain, FaImage } from 'react-icons/fa';
 
 const AdminLayout = () => {
     const linkClass = ({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`;
@@ -55,7 +55,7 @@ const AdminLayout = () => {
                     {/* Config Section */}
                     <p className="text-[10px] text-slate-500 font-bold uppercase px-4 pt-4 pb-1">Sistema</p>
                     <NavLink to="/admin/config" className={linkClass}>
-                        <FaCog /> Configuración
+                        <FaTools /> Configuración
                     </NavLink>
                     <NavLink to="/admin/whatsapp" className={linkClass}>
                         <FaWhatsapp /> WhatsApp

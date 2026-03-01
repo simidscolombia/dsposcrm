@@ -8,6 +8,10 @@
 Mejorar sustancialmente la experiencia del usuario (UX) mediante pasos guiados, eliminación de fricción prematura de captura de datos, simplificación de la vista de cotización y personalización dinámica del portal conversacional del cliente.
 
 #### ✅ Logros y Soluciones Implementadas
+- [x] **Arquitectura 'Premium Paper' 📄**: Rediseño total de la Vista Previa y Factura Final para simular un documento oficial de alta gama.
+- [x] **Edición Dinámica en Tiempo Real 🔄**: Capacidad de modificar cantidades, cambiar productos o eliminar líneas directamente desde la vista previa de "papel".
+- [x] **Sincronización de Portal de Clientes ☁️**: Corrección de mapeo de campos (final_amount) para asegurar que el portal muestre el total real de la cotización.
+- [x] **Optimización de UX en Ruleta 🎰**: Transición suave entre la personalización del kit y la obtención del premio.
 1. **Rediseño del Flujo de Cotización (Anti-fricción)**:
    - **Problema**: Solicitar nombre y teléfono antes de jugar la "Ruleta" generaba fricción innecesaria (la gente desconfía antes del premio).
    - **Solución**: Se movió la solicitud de Nombre y Teléfono (WhatsApp) *después* del premio (al final del todo, preguntando "¿A dónde te enviamos el Obsequio y la Copia?"). Psicológicamente aumenta la conversión.

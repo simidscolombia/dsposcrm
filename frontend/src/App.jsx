@@ -62,7 +62,7 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v6.0 - NEW QUOTE FLOW 🚀");
+    console.log("v6.1 - PRODUCTION CLOUD SYNC 🚀");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);

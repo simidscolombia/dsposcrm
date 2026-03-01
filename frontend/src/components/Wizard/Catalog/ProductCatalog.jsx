@@ -148,7 +148,15 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
             setCurrentStep(curr => curr + 1);
             window.scrollTo(0, 0);
         } else {
-            const items = Object.entries(cart).map(([id, qty]) => ({ ...products.find(p => p.id === parseInt(id)), quantity: qty }));
+            const items = Object.entries(cart).map(([idStr, qty]) => {
+                const productId = parseInt(idStr);
+                const product = products.find(p => p.id === productId);
+                if (!product) {
+                    console.error("Critical: Product not found in catalog state during finalizing", productId);
+                    return null;
+                }
+                return { ...product, quantity: qty };
+            }).filter(Boolean);
             onContinue(items);
         }
     };
