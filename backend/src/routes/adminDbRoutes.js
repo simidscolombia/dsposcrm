@@ -37,7 +37,6 @@ router.post('/init-tables', async (req, res) => {
         }
 
         // 2. Crear Tabla Productos (Actualizada)
-        // Nota: Si ya existe, esto no borrará datos, pero añadiremos columnas si faltan.
         await db.query(`
             CREATE TABLE IF NOT EXISTS crm_products (
                 id SERIAL PRIMARY KEY,
@@ -46,14 +45,25 @@ router.post('/init-tables', async (req, res) => {
                 price DECIMAL(12, 2) NOT NULL,
                 image_url TEXT,
                 category_id INTEGER REFERENCES crm_categories(id) ON DELETE SET NULL,
-                category VARCHAR(100), -- Mantener por compatibilidad temporal
+                category VARCHAR(100),
                 stock INTEGER DEFAULT 0,
                 is_active BOOLEAN DEFAULT true,
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
-        console.log('✅ Tabla crm_products verificada.');
 
+        // ASEGURAR COLUMNAS (Migración automática para tablas existentes)
+        try {
+            await db.query(`ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES crm_categories(id) ON DELETE SET NULL`);
+            await db.query(`ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+            await db.query(`ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 0`);
+            await db.query(`ALTER TABLE crm_products ADD COLUMN IF NOT EXISTS category VARCHAR(100)`);
+            console.log('✅ Estructura de crm_products sincronizada.');
+        } catch (e) {
+            console.log('⏳ Nota migración productos:', e.message);
+        }
+
+        // 3. Sincronizar Categorías (Nichos de Negocio Principales)
         await db.query(`
             INSERT INTO crm_categories (name, slug, icon, description, "order") VALUES
             ('Restaurantes y Licorerías', 'gastronomia', 'FaUtensils', 'Soluciones para gastronomía y licores', 1),
@@ -64,9 +74,13 @@ router.post('/init-tables', async (req, res) => {
             ('Hardware POS', 'hardware', 'FaServer', 'Equipos físicos y terminales', 6),
             ('Software Licencias', 'software', 'FaCode', 'Licencias y sistemas', 7),
             ('Servicios y Soporte', 'servicios', 'FaTools', 'Instalación y mantenimiento', 8)
-            ON CONFLICT (name) DO NOTHING;
+            ON CONFLICT (name) DO UPDATE SET 
+                slug = EXCLUDED.slug,
+                icon = EXCLUDED.icon,
+                description = EXCLUDED.description,
+                "order" = EXCLUDED."order";
         `);
-        console.log('✅ Categorías base sincronizadas.');
+        console.log('✅ Categorías de negocio sincronizadas.');
 
         // 4. Crear Tabla de Premios
         await db.query(`
