@@ -3,7 +3,18 @@ import axios from 'axios';
 import { FaPlus, FaMinus, FaTrash, FaArrowLeft, FaGift, FaShoppingCart, FaEdit, FaExchangeAlt, FaTimes, FaSearch, FaCheck } from 'react-icons/fa';
 
 const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientName, clientPhone, onUpdateClient }) => {
-    const [products, setProducts] = useState(selectedProducts || []);
+    // Helper to sanitize corrupted data (long hashes/base64)
+    const sanitizeText = (text, maxLength = 100) => {
+        if (!text || typeof text !== 'string') return text;
+        if (text.length > maxLength) return text.substring(0, Math.min(text.length, 50)) + '...';
+        return text;
+    };
+
+    const [products, setProducts] = useState((selectedProducts || []).map(p => ({
+        ...p,
+        name: sanitizeText(p.name, 120),
+        category: sanitizeText(p.category, 50)
+    })));
 
     // Auth info
     const [nameInput, setNameInput] = useState(clientName || '');
@@ -78,11 +89,17 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
 
     // Select product from modal
     const handleSelectProduct = (product) => {
+        const sanitized = {
+            ...product,
+            name: sanitizeText(product.name, 120),
+            category: sanitizeText(product.category, 50)
+        };
+
         if (modalMode === 'swap' && swapIndex !== null) {
             // Replace the product at swapIndex, keep same quantity
             setProducts(prev => {
                 const updated = [...prev];
-                updated[swapIndex] = { ...product, quantity: updated[swapIndex].quantity };
+                updated[swapIndex] = { ...sanitized, quantity: updated[swapIndex].quantity };
                 return updated;
             });
         } else if (modalMode === 'add') {
@@ -97,7 +114,7 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                 });
             } else {
                 // Add new product
-                setProducts(prev => [...prev, { ...product, quantity: 1 }]);
+                setProducts(prev => [...prev, { ...sanitized, quantity: 1 }]);
             }
         }
         setShowModal(false);
@@ -157,14 +174,20 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
     // RENDER HELPERS
     // =============================================
     const renderImage = (img, size = 'md') => {
-        const isUrl = img && (img.startsWith('http') || img.startsWith('/'));
-        const sizeClasses = size === 'sm' ? 'w-10 h-10' : 'w-12 h-12 md:w-14 md:h-14';
+        const isUrl = img && (typeof img === 'string') && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:image'));
+        const sizeClasses = size === 'sm' ? 'w-10 h-10' : 'w-12 h-12 md:w-16 md:h-16';
+
         return (
-            <div className={`${sizeClasses} rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100`}>
+            <div className={`${sizeClasses} rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100 overflow-hidden shadow-inner`}>
                 {isUrl ? (
-                    <img src={img} alt="Product" className="w-full h-full object-contain rounded-lg p-1" />
+                    <img
+                        src={img}
+                        alt="Product"
+                        className="w-full h-full object-contain p-1"
+                        onError={(e) => { e.target.src = ''; e.target.parentElement.innerHTML = '<span class="text-2xl">📦</span>'; }}
+                    />
                 ) : (
-                    <span className={size === 'sm' ? 'text-xl' : 'text-2xl'}>{img || '📦'}</span>
+                    <span className={size === 'sm' ? 'text-xl' : 'text-3xl'}>📦</span>
                 )}
             </div>
         );
@@ -220,8 +243,8 @@ const QuotePreview = ({ selectedProducts, onConfirm, onGoBackToCatalog, clientNa
                                     {renderImage(product.image_url)}
 
                                     {/* Info */}
-                                    <div className="flex-grow min-w-0">
-                                        <h4 className="font-semibold text-gray-800 text-sm md:text-base truncate">
+                                    <div className="flex-grow min-w-0 pr-4">
+                                        <h4 className="font-bold text-gray-900 text-sm md:text-base truncate">
                                             {product.name}
                                         </h4>
                                         <p className="text-xs text-gray-400 uppercase tracking-wider">

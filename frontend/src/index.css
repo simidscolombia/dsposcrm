@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* UI Safety Layer */
+* {
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+img {
+    max-width: 100%;
+}
+
+.truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}

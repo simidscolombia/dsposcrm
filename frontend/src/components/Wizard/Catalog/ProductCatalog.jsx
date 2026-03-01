@@ -39,7 +39,14 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                     axios.get(`${API_BASE}/admin/ai-rules`)
                 ]);
 
-                if (prodRes.data.success) setProducts(prodRes.data.products);
+                if (prodRes.data.success) {
+                    const sanitized = prodRes.data.products.map(p => ({
+                        ...p,
+                        name: p.name?.length > 100 ? p.name.substring(0, 50) + '...' : p.name,
+                        description: p.description?.length > 200 ? p.description.substring(0, 100) + '...' : p.description
+                    }));
+                    setProducts(sanitized);
+                }
 
                 // Find rule for current business type
                 if (rulesRes.data.success) {
