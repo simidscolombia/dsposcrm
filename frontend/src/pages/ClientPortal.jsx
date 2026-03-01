@@ -336,16 +336,28 @@ const ClientPortal = () => {
 
             {/* FULL PROPOSAL MODAL */}
             {showFullProposal && (
-                <div className="fixed inset-0 z-[100] bg-[#1c242e]/90 backdrop-blur-xl flex flex-col items-center justify-start p-4 overflow-y-auto" onClick={() => setShowFullProposal(false)}>
-                    {/* Floating Close Button - Always Visible */}
+                <div className="fixed inset-0 z-[100] bg-[#1c242e]/95 backdrop-blur-2xl flex flex-col items-center p-0 md:p-8 overflow-y-auto" onClick={() => setShowFullProposal(false)}>
+                    {/* Fixed High-Visibility Close Button */}
                     <button
                         onClick={(e) => { e.stopPropagation(); setShowFullProposal(false); }}
-                        className="fixed top-6 right-6 md:top-10 md:right-10 w-14 h-14 bg-white text-gray-900 rounded-full flex items-center justify-center shadow-2xl z-[120] hover:bg-red-500 hover:text-white transition-all active:scale-90 border-4 border-white/20"
+                        className="fixed top-4 right-4 md:top-8 md:right-8 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] z-[200] hover:bg-red-500 hover:text-white transition-all active:scale-90 border-2 border-white/20"
+                        aria-label="Cerrar Propuesta"
                     >
-                        <FaTimes size={24} />
+                        <FaTimes size={20} />
                     </button>
-                    <div className="w-full max-w-4xl" onClick={e => e.stopPropagation()}>
+
+                    <div className="w-full max-w-4xl relative z-[110] mt-16 md:mt-0" onClick={e => e.stopPropagation()}>
                         {renderPremiumDocument()}
+
+                        {/* Redundant bottom close button for mobile/long scrolls */}
+                        <div className="flex justify-center py-10">
+                            <button
+                                onClick={() => setShowFullProposal(false)}
+                                className="px-10 py-4 bg-white/10 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest hover:bg-white/20 transition-all flex items-center gap-3"
+                            >
+                                <FaTimes /> Volver al Chat
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
