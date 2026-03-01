@@ -170,13 +170,32 @@ const HomePage = () => {
                 </div>
             </section>
 
+            {/* Floating Admin Entry (Subtle) */}
+            <button
+                onClick={() => navigate('/admin')}
+                className="fixed bottom-4 right-4 w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white/10 hover:text-white/40 transition-all z-10"
+                title="Admin Access"
+            >
+                <FaCog />
+            </button>
+
             {/* Footer */}
-            <footer className="bg-gray-900 py-12 px-6 text-center text-gray-500 text-sm">
-                <div className="max-w-7xl mx-auto space-y-6">
-                    <div className="flex justify-center gap-4 text-white text-xl">
-                        <img src="/logo.png" alt="Logo" className="w-8 opacity-50 grayscale" />
+            <footer className="bg-[#0f172a] py-16 px-6 text-center border-t border-white/5">
+                <div className="max-w-7xl mx-auto space-y-8">
+                    <div className="flex justify-center items-center gap-4 text-white/30">
+                        <img src="/logo.png" alt="Logo" className="w-8 opacity-20 grayscale" />
+                        <span className="font-bold tracking-widest text-xs uppercase">Discovery Systems POS</span>
                     </div>
-                    <p>© {new Date().getFullYear()} Discovery Systems POS. Soluciones Tecnológicas de Vanguardia.</p>
+
+                    <div className="flex justify-center flex-wrap gap-8 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        <a href="#/admin" className="hover:text-[#A8E0F0] transition-colors">Panel de Control</a>
+                        <a href="https://wa.me/573202792169" className="text-green-600 hover:text-green-500">Soporte WhatsApp</a>
+                        <a href="#/configurador" className="hover:text-white transition-colors">Cotizador Online</a>
+                    </div>
+
+                    <p className="text-gray-600 text-[10px]">
+                        © {new Date().getFullYear()} Soluciones Tecnológicas de Vanguardia. Medellín, Colombia.
+                    </p>
                 </div>
             </footer>
 
