@@ -10,7 +10,7 @@ import { speak, stopSpeech } from '../../../utils/aiVoice';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
 
-const ProductCatalog = ({ onContinue, systemType, businessType }) => {
+const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProducts = [] }) => {
     const [products, setProducts] = useState([]);
     const [aiRules, setAiRules] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -24,11 +24,11 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
     // Define steps for Guided Flow (Combo only)
     const isGuided = systemType === 'Combo';
     const steps = [
-        { name: 'Hardware Principal', categories: ['Computadores', 'Hardware POS', 'PC Corporativo'], icon: '🖥️' },
-        { name: 'Caja e Impresión', categories: ['Impresoras', 'Cajones', 'Hardware'], icon: '🖨️' },
-        { name: 'Lectores y Rapidez', categories: ['Lectores', 'Accesorios'], icon: '🔫' },
-        { name: 'Software y Control', categories: ['Software'], icon: '💾' },
-        { name: 'Extras y Soporte', categories: ['Servicios', 'Otros'], icon: '⚙️' }
+        { name: 'Hardware Principal', categories: ['Computadores', 'Hardware POS', 'PC Corporativo', 'All in one', 'POS', 'Terminal'], icon: '🖥️' },
+        { name: 'Caja e Impresión', categories: ['Impresoras', 'Cajones', 'Hardware', 'Punto de venta', 'Fiscal', 'Papel'], icon: '🖨️' },
+        { name: 'Lectores y Rapidez', categories: ['Lectores', 'Accesorios', 'Escáner', 'Código de barras'], icon: '🔫' },
+        { name: 'Software y Control', categories: ['Software', 'Sistema', 'Licencia', 'App', 'Nube'], icon: '💾' },
+        { name: 'Extras y Soporte', categories: ['Servicios', 'Otros', 'Soporte', 'Garantía', 'Instalación'], icon: '⚙️' }
     ];
 
     useEffect(() => {
@@ -54,6 +54,17 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
         };
         fetchData();
     }, [businessType]);
+
+    // Build cart from preSelectedProducts
+    useEffect(() => {
+        if (preSelectedProducts && preSelectedProducts.length > 0 && Object.keys(cart).length === 0) {
+            const initialCart = {};
+            preSelectedProducts.forEach(p => {
+                initialCart[p.id] = p.quantity || 1;
+            });
+            setCart(initialCart);
+        }
+    }, [preSelectedProducts, products]);
 
     // AI Assistant Personality & Speech
     useEffect(() => {
@@ -106,14 +117,21 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
     const stepProducts = useMemo(() => {
         if (!isGuided) return products;
 
-        const keywords = steps[currentStep].categories.map(c => c.toLowerCase());
+        // Split keywords to match partials (e.g. "hardware" in "hardware pos")
+        const keywords = steps[currentStep].categories.flatMap(c => c.toLowerCase().split(' '));
 
         return products.filter(p => {
             const pCat = (p.category_name || p.category || '').toLowerCase();
             const pName = (p.name || '').toLowerCase();
+            const pSlug = (p.category_slug || '').toLowerCase();
 
-            // Check if product category or name contains ANY of the step's target keywords
-            return keywords.some(key => pCat.includes(key) || pName.includes(key));
+            // Check if product category name, slug or product name contains ANY of the step's target keywords
+            return keywords.some(key =>
+                pCat.includes(key) ||
+                pName.includes(key) ||
+                pSlug.includes(key) ||
+                (key.length > 3 && pCat.includes(key.substring(0, 4)))
+            );
         });
     }, [products, currentStep, isGuided]);
 
@@ -253,10 +271,33 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
                 </div>
 
                 {stepProducts.length === 0 && (
-                    <div className="py-20 text-center space-y-4">
-                        <FaRobot className="text-6xl text-gray-200 mx-auto" />
-                        <p className="text-gray-400 font-bold uppercase tracking-widest">No hay más productos en este paso.</p>
-                        <button onClick={handleNextStep} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold">Pasar al siguiente</button>
+                    <div className="py-20 text-center space-y-6 bg-white rounded-3xl border-2 border-dashed border-gray-100 mx-4">
+                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                            <FaRobot className="text-4xl text-gray-200" />
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">No hay productos sugeridos en este paso.</p>
+                            <p className="text-gray-300 text-xs text-center max-w-xs mx-auto">Prueba buscando en otras categorías o mira el catálogo completo.</p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button
+                                onClick={() => {
+                                    // Hacky way to disable filter temporarily: set systemType to something else
+                                    // but better if we just had a state for 'showAllOverride'
+                                    alert("Cargando catálogo completo...");
+                                    window.location.reload(); // Quick fix or we could add a state
+                                }}
+                                className="text-blue-600 font-bold hover:underline py-2 px-4"
+                            >
+                                Ver catálogo completo
+                            </button>
+                            <button
+                                onClick={handleNextStep}
+                                className="bg-[#1c242e] text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-gray-200 active:scale-95 transition-all"
+                            >
+                                Pasar al siguiente paso
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

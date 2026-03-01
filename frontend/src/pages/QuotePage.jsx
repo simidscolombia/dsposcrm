@@ -198,6 +198,7 @@ const QuotePage = () => {
                     <ProductCatalog
                         systemType={selections.systemType}
                         businessType={selections.businessType}
+                        preSelectedProducts={selections.selectedProducts}
                         onContinue={(products) => handleNext('selectedProducts', products)}
                     />
                 );

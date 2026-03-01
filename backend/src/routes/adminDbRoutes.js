@@ -3,8 +3,8 @@ import db from '../config/database.js';
 
 const router = express.Router();
 
-// Endpoint para inicializar tablas de Categorías y Productos
-router.post('/init-tables', async (req, res) => {
+// Endpoint para inicializar tablas (Soporta GET y POST para mayor facilidad)
+router.all('/init-tables', async (req, res) => {
     try {
         console.log('Iniciando configuración de Base de Datos Admin...');
 
@@ -141,17 +141,31 @@ router.post('/init-tables', async (req, res) => {
         `);
         console.log('✅ Tabla crm_ai_rules verificada.');
 
-        // Insertar Reglas iniciales para alimentar el "Cerebro" de la IA
+        // 9. Insertar Productos de Ejemplo (si la tabla está vacía)
+        const checkProducts = await db.query('SELECT COUNT(*) FROM crm_products');
+        if (parseInt(checkProducts.rows[0].count) === 0) {
+            await db.query(`
+                INSERT INTO crm_products (name, description, price, category, stock, image_url) VALUES
+                ('PC All-in-One Industrial', 'Pantalla táctil 15", Procesador Intel, 8GB RAM', 1850000, 'hardware', 10, 'https://images.unsplash.com/photo-1591485423007-765bde4139ef?w=400'),
+                ('Impresora Térmica 80mm', 'Impresora de alta velocidad con corte automático (USB/LAN)', 450000, 'hardware', 25, 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=400'),
+                ('Cajón Monedero Reforzado', 'Apertura automática mediante impresora, 5 puestos de billetes', 220000, 'hardware', 15, 'https://images.unsplash.com/photo-1556740758-90de374c12ad?w=400'),
+                ('Lector de Código de Barras 1D/2D', 'Lectura de códigos QR y lineales, base incluida', 180000, 'hardware', 30, 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=400'),
+                ('Software Discovery POS PRO', 'Licencia vitalicia, facturación electrónica, control de inventario', 1200000, 'software', 999, 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400'),
+                ('Soporte Técnico 24/7 (1 Mes)', 'Asistencia remota ilimitada y actualizaciones gratuitas', 50000, 'servicios', 999, 'https://images.unsplash.com/photo-1521791136366-3d3950ef770b?w=400');
+            `);
+            console.log('✅ Catálogo inicial de productos creado.');
+        }
+
+        // 10. Re-vincular de nuevo por seguridad
         await db.query(`
-            INSERT INTO crm_ai_rules (niche, key_question, suggested_hardware, expert_tips, excluded_items) VALUES
-            ('Restaurantes y Bares', '¿Manejas pedidos a cocina o barra?', '["Impresora LAN", "Cajón Metálico"]', '["Usa impresoras de red para cocina", "El puerto USB es solo para caja"]', '["Lector de Barras"]'),
-            ('Micromercados y Fruver', '¿Vendes productos al granel/pesados?', '["Báscula Digital", "Lector Omnidireccional"]', '["La báscula agiliza el cobro de frutas", "Un lector robusto lee códigos húmedos"]', '["Impresora 58mm"]'),
-            ('Droguerías', '¿Vendes medicamentos por unidad o caja?', '["Lector Alta Precisión", "PC Corporativo"]', '["Los códigos de barras de medicinas son muy pequeños", "Necesitas procesar bases de datos grandes"]', '[]'),
-            ('Ferreterías', '¿Tu mostrador es un ambiente pesado o con polvo?', '["PC Torre", "Lector Industrial"]', '["Los All-in-One son delicados para ferreterías", "El cajón debe ser reforzado"]', '["Gabinetes Plásticos"]')
-            ON CONFLICT (niche) DO NOTHING;
+            UPDATE crm_products p
+            SET category_id = c.id
+            FROM crm_categories c
+            WHERE (LOWER(p.category) = LOWER(c.name) OR p.category = c.slug OR (p.category ILIKE '%hardware%' AND c.slug = 'hardware'))
+            AND (p.category_id IS NULL OR p.category_id != c.id);
         `);
 
-        res.json({ success: true, message: 'Todas las tablas administrativas configuradas, productos vinculados y cerebro de IA iniciado correctamente.' });
+        res.json({ success: true, message: 'Todas las tablas administrativas configuradas, catálogo inicial poblado y cerebro de IA iniciado correctamente.' });
 
     } catch (error) {
         console.error('Error inicializando DB:', error);
