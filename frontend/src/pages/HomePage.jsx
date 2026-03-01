@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     FaRocket, FaRobot, FaUtensils, FaTools,
-    FaStore, FaMedkit, FaCogs, FaCheckCircle
+    FaStore, FaMedkit, FaCog, FaCheckCircle
 } from 'react-icons/fa';
 
 const HomePage = () => {
