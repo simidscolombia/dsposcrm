@@ -40,10 +40,14 @@ CREATE TABLE IF NOT EXISTS crm_prizes (
 -- 4. Datos por defecto: Categorías
 INSERT INTO crm_categories (name, slug, icon, description, "order") 
 VALUES
-('Hardware', 'hardware', 'FaServer', 'Equipos físicos y terminales', 1),
-('Software', 'software', 'FaCode', 'Licencias y programas', 2),
-('Servicios', 'servicios', 'FaTools', 'Instalación y soporte', 3),
-('Accesorios', 'accesorios', 'FaKeyboard', 'Periféricos y cables', 4)
+('Restaurantes y Licorerías', 'gastronomia', 'FaUtensils', 'Soluciones para gastronomía y licores', 1),
+('Droguerías y Salud', 'salud', 'FaHeartbeat', 'Equipos para farmacias y clínicas', 2),
+('Ferreterías y Hogar', 'hogar', 'FaHome', 'Kits para ferreterías y construcción', 3),
+('Mercados y Fruvers', 'mercados', 'FaStore', 'POS para supermercados y fruvers', 4),
+('Car Wash y Talleres', 'automotriz', 'FaCar', 'Soluciones para el sector automotriz', 5),
+('Hardware POS', 'hardware', 'FaServer', 'Equipos físicos y terminales', 6),
+('Software Licencias', 'software', 'FaCode', 'Licencias y sistemas', 7),
+('Servicios y Soporte', 'servicios', 'FaTools', 'Instalación y mantenimiento', 8)
 ON CONFLICT (name) DO NOTHING;
 
 -- 5. Datos por defecto: Premios

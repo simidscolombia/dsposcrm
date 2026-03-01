@@ -54,18 +54,19 @@ router.post('/init-tables', async (req, res) => {
         `);
         console.log('✅ Tabla crm_products verificada.');
 
-        // 3. Insertar Categorías por Defecto (si está vacía)
-        const checkCats = await db.query('SELECT COUNT(*) FROM crm_categories');
-        if (parseInt(checkCats.rows[0].count) === 0) {
-            await db.query(`
-                INSERT INTO crm_categories (name, slug, icon, description, "order") VALUES
-                ('Hardware', 'hardware', 'FaServer', 'Equipos físicos y terminales', 1),
-                ('Software', 'software', 'FaCode', 'Licencias y programas', 2),
-                ('Servicios', 'servicios', 'FaTools', 'Instalación y soporte', 3),
-                ('Accesorios', 'accesorios', 'FaKeyboard', 'Periféricos y cables', 4);
-            `);
-            console.log('✅ Categorías por defecto insertadas.');
-        }
+        await db.query(`
+            INSERT INTO crm_categories (name, slug, icon, description, "order") VALUES
+            ('Restaurantes y Licorerías', 'gastronomia', 'FaUtensils', 'Soluciones para gastronomía y licores', 1),
+            ('Droguerías y Salud', 'salud', 'FaHeartbeat', 'Equipos para farmacias y clínicas', 2),
+            ('Ferreterías y Hogar', 'hogar', 'FaHome', 'Kits para ferreterías y construcción', 3),
+            ('Mercados y Fruvers', 'mercados', 'FaStore', 'POS para supermercados y fruvers', 4),
+            ('Car Wash y Talleres', 'automotriz', 'FaCar', 'Soluciones para el sector automotriz', 5),
+            ('Hardware POS', 'hardware', 'FaServer', 'Equipos físicos y terminales', 6),
+            ('Software Licencias', 'software', 'FaCode', 'Licencias y sistemas', 7),
+            ('Servicios y Soporte', 'servicios', 'FaTools', 'Instalación y mantenimiento', 8)
+            ON CONFLICT (name) DO NOTHING;
+        `);
+        console.log('✅ Categorías base sincronizadas.');
 
         // 4. Crear Tabla de Premios
         await db.query(`
