@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     FaDatabase, FaCheckCircle, FaExclamationTriangle, FaChartLine,
-    FaMoneyBillWave, FaFilter, FaTruck, FaUniversity, FaSync
+    FaMoneyBillWave, FaFilter, FaTruck, FaUniversity, FaSync, FaBrain
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -76,7 +76,7 @@ const AdminDashboard = () => {
             ) : (
                 <>
                     {/* Top Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="bg-gradient-to-br from-blue-600 to-indigo-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
                             <FaMoneyBillWave className="absolute -right-6 -top-6 text-9xl text-white opacity-10 group-hover:scale-110 transition-transform duration-500" />
                             <h3 className="text-blue-100 font-semibold mb-1 uppercase tracking-wider text-xs">Ventas (Contra Entrega / Trf)</h3>
@@ -89,6 +89,13 @@ const AdminDashboard = () => {
                             <h3 className="text-emerald-100 font-semibold mb-1 uppercase tracking-wider text-xs">Dinero Flotante en Pipeline</h3>
                             <div className="text-4xl font-black text-white mb-2">{formatCurrency(stats?.pendingRevenue)}</div>
                             <p className="text-emerald-200 text-sm">Valor total en cotizaciones activas</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-600 to-fuchsia-800 p-6 rounded-2xl shadow-lg relative overflow-hidden group col-span-1 md:col-span-2 lg:col-span-1">
+                            <FaBrain className="absolute -right-6 -top-6 text-9xl text-white opacity-10 animate-pulse" />
+                            <h3 className="text-purple-100 font-semibold mb-1 uppercase tracking-wider text-xs">Cerebro Discovery (IA)</h3>
+                            <div className="text-4xl font-black text-white mb-2">ACTIVO</div>
+                            <p className="text-purple-200 text-sm">Asistente experto guiando en el Wizard</p>
                         </div>
                     </div>
 
