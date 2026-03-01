@@ -329,6 +329,52 @@ class AIController {
       });
     }
   }
+  /**
+   * POST /api/ai/brain/analyze
+   * El "Cerebro" de Discovery aprende de textos (WhatsApp o Manuales)
+   */
+  async learnFromText(req, res) {
+    try {
+      const { text } = req.body;
+      if (!text || text.length < 20) {
+        return res.status(400).json({ success: false, error: 'Texto insuficiente para aprender.' });
+      }
+
+      const result = await aiService.analyzeDeepLearningText(text);
+
+      return res.json({
+        success: result.success,
+        analysis: result.analysis,
+        tokensUsed: result.tokensUsed
+      });
+    } catch (error) {
+      console.error('Error en learn-from-text:', error);
+      return res.status(500).json({ success: false, error: 'Error del Cerebro Discovery.' });
+    }
+  }
+
+  /**
+   * POST /api/ai/design/enhance
+   * Agente de Diseño que analiza y optimiza imágenes
+   */
+  async enhanceDesign(req, res) {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, error: 'No se subió imagen' });
+
+      const base64Data = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype;
+
+      const result = await aiService.analyzeProductImage(base64Data, mimeType);
+
+      return res.json({
+        success: true,
+        suggestion: result.suggestion
+      });
+    } catch (error) {
+      console.error('Error en enhance-design:', error);
+      return res.status(500).json({ success: false, error: 'Error del Agente de Diseño.' });
+    }
+  }
 }
 
 export default new AIController();

@@ -204,6 +204,107 @@ Si no sabes la respuesta, sugiere hablar con un asesor.`;
     }
 
     /**
+     * Analiza una imagen de producto para optimizar su diseño y descripción (Agente de Diseño)
+     */
+    async analyzeProductImage(base64Data, mimeType) {
+        const systemPrompt = `Eres un experto en diseño de UI/UX y Marketing para E-commerce. 
+Tu tarea es analizar esta imagen de producto y proporcionar una mejora estratégica.
+
+Responde SOLO en formato JSON válido:
+{
+  "description": "Una descripción premium, persuasiva y técnica del producto.",
+  "colors": ["#hex1", "#hex2"],
+  "score": number (de 1 a 100 en impacto visual),
+  "suggestions": ["mejora1", "mejora2"]
+}`;
+
+        try {
+            const model = this.genAI.getGenerativeModel({
+                model: this.modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const inlineDataPart = {
+                inlineData: { data: base64Data, mimeType }
+            };
+
+            const result = await model.generateContent([systemPrompt, inlineDataPart]);
+            const response = await result.response;
+            const text = response.text();
+
+            return {
+                success: true,
+                suggestion: JSON.parse(text)
+            };
+        } catch (error) {
+            console.error('Error en Agente de Diseño Gemini:', error);
+            return {
+                success: false,
+                suggestion: {
+                    description: "Producto de alta calidad para tu sistema POS.",
+                    colors: ["#1c242e", "#A8E0F0"],
+                    score: 85,
+                    suggestions: ["Mejorar iluminación", "Fondo neutro"]
+                }
+            };
+        }
+    }
+
+    /**
+     * Extrae conocimiento experto de textos libres (vaya, "Aprende" de chats o manuales)
+     */
+    async analyzeDeepLearningText(text) {
+        const systemPrompt = `Eres el Cerebro de Discovery Systems. Tu misión es extraer conocimiento experto de la transcripción que se te proporciona.
+La transcripción puede ser un chat de WhatsApp con un cliente o un fragmento de un manual técnico.
+
+Tu tarea:
+1. Identifica el "Nicho de Negocio" (ej: Veterinaria, Tienda de Mascotas, Repuestos de Bicicletas).
+2. Genera una "Respuesta de Experto" o consejo principal que el asistente de ventas debería decirle a un cliente de ese nicho.
+3. Lista el "Hardware Recomendado" (ej: Impresora LAN, Lector 2D, Pantalla Táctil).
+4. Proporciona una lista de "Tips de Experto" (mínimo 2) para ese nicho.
+
+Responde SOLO en formato JSON válido:
+{
+  "niche": "Nombre del Nicho",
+  "expert_advice": "La frase que el robot debe decir (ej: Si manejas más de 1000 productos, te recomiendo...)",
+  "hardware": ["item1", "item2"],
+  "tips": ["tip1", "tip2"],
+  "success": true
+}`;
+
+        try {
+            const model = this.genAI.getGenerativeModel({
+                model: this.modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `${systemPrompt}\n\nTexto a analizar:\n"${text}"`;
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const resText = response.text();
+
+            const analysis = JSON.parse(resText);
+            return {
+                success: true,
+                analysis,
+                tokensUsed: response.usageMetadata?.totalTokenCount || 0
+            };
+        } catch (error) {
+            console.error('Error en Aprendizaje Profundo:', error);
+            return {
+                success: false,
+                error: error.message,
+                analysis: {
+                    niche: "General",
+                    expert_advice: "Si necesitas ayuda, consulta a un asesor técnico.",
+                    hardware: ["Impresora USB", "Cajón"],
+                    tips: ["Mantén tu inventario al día", "Usa papel térmico de 80mm"]
+                }
+            };
+        }
+    }
+
+    /**
      * Extrae información estructurada de un texto de RUT colombiano parsing
      */
     async extractRutInfo(base64Data, mimeType = 'application/pdf') {

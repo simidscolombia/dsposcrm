@@ -23,4 +23,10 @@ router.get('/cost-summary', aiController.getCostSummary);
 // Ruta para extraer RUT con pdf-parse + Gemini
 router.post('/extract-rut', upload.single('rutFile'), aiController.extractRut);
 
+// Ruta para "El Cerebro" Discovery: Aprender de textos (WhatsApp/Manuales)
+router.post('/brain/analyze', aiController.learnFromText);
+
+// Ruta para Agente de Diseño: Mejorar imágenes
+router.post('/design/enhance', upload.single('image'), aiController.enhanceDesign);
+
 export default router;
