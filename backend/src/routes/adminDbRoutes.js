@@ -126,7 +126,32 @@ router.post('/init-tables', async (req, res) => {
         // 7. Asegurar que la categoría 'Software' tenga el nombre corto oficial
         await db.query(`UPDATE crm_categories SET name = 'Software' WHERE slug = 'software';`);
 
-        res.json({ success: true, message: 'Todas las tablas administrativas configuradas y productos vinculados correctamente.' });
+        // 8. Crear Tabla de Reglas de Expertos de IA
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS crm_ai_rules (
+                id SERIAL PRIMARY KEY,
+                niche VARCHAR(100) NOT NULL UNIQUE,
+                key_question TEXT,
+                suggested_hardware JSONB,
+                expert_tips JSONB,
+                excluded_items JSONB,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        console.log('✅ Tabla crm_ai_rules verificada.');
+
+        // Insertar Reglas iniciales para alimentar el "Cerebro" de la IA
+        await db.query(`
+            INSERT INTO crm_ai_rules (niche, key_question, suggested_hardware, expert_tips, excluded_items) VALUES
+            ('Restaurantes y Bares', '¿Manejas pedidos a cocina o barra?', '["Impresora LAN", "Cajón Metálico"]', '["Usa impresoras de red para cocina", "El puerto USB es solo para caja"]', '["Lector de Barras"]'),
+            ('Micromercados y Fruver', '¿Vendes productos al granel/pesados?', '["Báscula Digital", "Lector Omnidireccional"]', '["La báscula agiliza el cobro de frutas", "Un lector robusto lee códigos húmedos"]', '["Impresora 58mm"]'),
+            ('Droguerías', '¿Vendes medicamentos por unidad o caja?', '["Lector Alta Precisión", "PC Corporativo"]', '["Los códigos de barras de medicinas son muy pequeños", "Necesitas procesar bases de datos grandes"]', '[]'),
+            ('Ferreterías', '¿Tu mostrador es un ambiente pesado o con polvo?', '["PC Torre", "Lector Industrial"]', '["Los All-in-One son delicados para ferreterías", "El cajón debe ser reforzado"]', '["Gabinetes Plásticos"]')
+            ON CONFLICT (niche) DO NOTHING;
+        `);
+
+        res.json({ success: true, message: 'Todas las tablas administrativas configuradas, productos vinculados y cerebro de IA iniciado correctamente.' });
 
     } catch (error) {
         console.error('Error inicializando DB:', error);

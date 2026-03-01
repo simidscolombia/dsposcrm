@@ -185,10 +185,10 @@ const QuotePage = () => {
             case 2:
                 return <SystemTypeSelection onSelect={(val) => handleNext('systemType', val)} />;
 
-            case 3:
                 return (
                     <ProductCatalog
                         systemType={selections.systemType}
+                        businessType={selections.businessType}
                         onContinue={(products) => handleNext('selectedProducts', products)}
                     />
                 );

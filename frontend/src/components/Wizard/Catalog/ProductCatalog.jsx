@@ -1,71 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
-import { FaShoppingCart, FaPlus, FaMinus, FaTrash, FaCheck, FaSpinner } from 'react-icons/fa';
+import {
+    FaShoppingCart, FaPlus, FaMinus, FaTrash,
+    FaCheck, FaSpinner, FaRobot, FaArrowRight,
+    FaChevronCircleRight, FaMicrophone, FaVolumeUp
+} from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { speak, stopSpeech } from '../../../utils/aiVoice';
 
-const ProductCatalog = ({ onContinue, systemType }) => {
+const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
+
+const ProductCatalog = ({ onContinue, systemType, businessType }) => {
     const [products, setProducts] = useState([]);
+    const [aiRules, setAiRules] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState({});
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+    const [currentStep, setCurrentStep] = useState(0);
+    const [showAiBubble, setShowAiBubble] = useState(false);
+    const [aiMessage, setAiMessage] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
+    const hasSpokenRef = useRef(false);
 
-    // Configuración de API URL
-    const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
-    const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
+    // Define steps for Guided Flow (Combo only)
+    const isGuided = systemType === 'Combo';
+    const steps = [
+        { name: 'Hardware Principal', categories: ['Computadores', 'Hardware POS', 'PC Corporativo'], icon: '🖥️' },
+        { name: 'Caja e Impresión', categories: ['Impresoras', 'Cajones', 'Hardware'], icon: '🖨️' },
+        { name: 'Lectores y Rapidez', categories: ['Lectores', 'Accesorios'], icon: '🔫' },
+        { name: 'Software y Control', categories: ['Software'], icon: '💾' },
+        { name: 'Extras y Soporte', categories: ['Servicios', 'Otros'], icon: '⚙️' }
+    ];
 
-    // Cargar productos desde el Backend
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchData = async () => {
             try {
-                const res = await axios.get(`${API_URL}/api/products`);
-                if (res.data.success) {
-                    setProducts(res.data.products);
+                const [prodRes, rulesRes] = await Promise.all([
+                    axios.get(`${API_BASE}/products`),
+                    axios.get(`${API_BASE}/admin/ai-rules`)
+                ]);
+
+                if (prodRes.data.success) setProducts(prodRes.data.products);
+
+                // Find rule for current business type
+                if (rulesRes.data.success) {
+                    const rule = rulesRes.data.rules.find(r => r.niche === businessType);
+                    setAiRules(rule);
                 }
-            } catch (error) {
-                console.error("Error cargando productos:", error);
+            } catch (err) {
+                console.error("Error loading advisor data", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProducts();
-    }, []);
+        fetchData();
+    }, [businessType]);
 
-    // Inicializar carrito según selección previa (solo cuando products ya cargó)
+    // AI Assistant Personality & Speech
     useEffect(() => {
-        if (!loading && products.length > 0 && systemType === 'Combo') {
-            const newCart = {};
-
-            // Función helper para buscar productos por nombre parcial
-            const addByName = (nameFrag) => {
-                const p = products.find(prod => prod.name.toLowerCase().includes(nameFrag.toLowerCase()));
-                if (p) newCart[p.id] = 1;
-            };
-
-            // Pre-selección para Combo Completo
-            addByName('Computador');
-            addByName('Impresora Térmica');
-            addByName('Cajón');
-            addByName('Lector Código de Barras 1D');
-            addByName('Licencia Software POS');
-
-            setCart(newCart);
+        if (!loading && products.length > 0) {
+            setTimeout(() => {
+                const welcomeMsg = `Hola, soy tu asistente Discovery. Basado en que tienes un ${businessType || 'negocio'}, te guiaré para armar el mejor kit.`;
+                setAiMessage(welcomeMsg);
+                setShowAiBubble(true);
+                // speak(welcomeMsg); // Auto-speech is often blocked, let's wait for user interaction or use a button
+            }, 1000);
         }
-    }, [loading, products, systemType]);
+    }, [loading, businessType, products]);
+
+    // Update AI message per step
+    useEffect(() => {
+        if (isGuided && !loading) {
+            let stepMsg = "";
+            if (currentStep === 0) stepMsg = "Empecemos por el computador. Para tu sector, te recomiendo uno robusto.";
+            if (currentStep === 1) stepMsg = aiRules?.expert_tips?.[0] || "No olvides la impresora térmica, es vital para el despacho.";
+            if (currentStep === 2 && businessType?.toLowerCase().includes('restaurante')) {
+                stepMsg = "En restaurantes el lector no siempre es vital, pero ayuda mucho con snacks.";
+            }
+
+            setAiMessage(stepMsg);
+            // speak(stepMsg); // Voice feedback
+        }
+    }, [currentStep, isGuided, loading, aiRules]);
 
     const addToCart = (product) => {
-        setCart(prev => ({
-            ...prev,
-            [product.id]: (prev[product.id] || 0) + 1
-        }));
+        setCart(prev => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }));
     };
 
     const removeFromCart = (product) => {
         setCart(prev => {
             const newCart = { ...prev };
-            if (newCart[product.id] > 1) {
-                newCart[product.id]--;
-            } else {
-                delete newCart[product.id];
-            }
+            if (newCart[product.id] > 1) newCart[product.id]--;
+            else delete newCart[product.id];
             return newCart;
         });
     };
@@ -77,199 +102,171 @@ const ProductCatalog = ({ onContinue, systemType }) => {
         }, 0);
     };
 
-    const handleNext = () => {
-        const selectedItems = Object.entries(cart).map(([id, qty]) => {
-            const product = products.find(p => p.id === parseInt(id));
-            return { ...product, quantity: qty };
+    // Filter products by current step category
+    const stepProducts = useMemo(() => {
+        if (!isGuided) return products;
+        const catSearch = steps[currentStep].categories.map(c => c.toLowerCase());
+        return products.filter(p => {
+            const pCat = (p.category_name || p.category || '').toLowerCase();
+            return catSearch.some(c => pCat.includes(c));
         });
-        onContinue(selectedItems);
-    };
+    }, [products, currentStep, isGuided]);
 
-    // Filtrar productos según el tipo de sistema
-    const filteredProducts = products.filter(p => {
-        if (systemType === 'Software') {
-            const cat = String(p.category || '').toLowerCase();
-            const catName = String(p.category_name || '').toLowerCase();
-            const catSlug = String(p.category_slug || '').toLowerCase();
-            return cat === 'software' || catName.includes('software') || catSlug === 'software';
+    const handleNextStep = () => {
+        stopSpeech();
+        if (currentStep < steps.length - 1) {
+            setCurrentStep(curr => curr + 1);
+            window.scrollTo(0, 0);
+        } else {
+            const items = Object.entries(cart).map(([id, qty]) => ({ ...products.find(p => p.id === parseInt(id)), quantity: qty }));
+            onContinue(items);
         }
-        return true;
-    });
-
-    // Título dinámico
-    const getTitle = () => {
-        if (systemType === 'Software') return 'Elige tu Plan de Software';
-        if (systemType === 'Combo') return 'Personaliza tu Combo Ideal';
-        return 'Arma tu Kit a Medida';
     };
 
-    // Renderizado de Imagen Seguro (URL, base64, o fallback)
-    const renderImage = (img, isList = false) => {
-        const isUrl = img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:'));
-        const sizeClass = isList ? 'text-4xl' : 'text-6xl';
-
-        return (
-            <div className={`w-full h-full flex items-center justify-center bg-gray-50 ${!isUrl && sizeClass}`}>
-                {isUrl ? (
-                    <img
-                        src={img}
-                        alt="Product"
-                        className="w-full h-full object-contain p-2"
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                ) : (
-                    <span className="text-gray-300">📦</span>
-                )}
-            </div>
-        );
-    };
-
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 animate-pulse">
-                <FaSpinner className="animate-spin text-4xl text-blue-600 mb-4" />
-                <p className="text-gray-500 font-medium">Cargando catálogo...</p>
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-96">
+            <FaSpinner className="animate-spin text-5xl text-blue-500 mb-4" />
+            <span className="font-black text-gray-400 uppercase tracking-widest">Activando Neuronas...</span>
+        </div>
+    );
 
     return (
-        <div className="w-full max-w-6xl mx-auto px-4 py-8 animate-fade-in-up">
-            {/* Header / Subtitle Info Only */}
-            <div className="text-center mb-8">
-                <p className="text-gray-500 max-w-2xl mx-auto">
-                    {systemType === 'Software'
-                        ? 'Selecciona el plan que prefieras. Puedes elegir mensual o anual.'
-                        : 'Puedes subir o bajar las cantidades de los productos que ya incluimos por defecto para ti.'}
-                </p>
-            </div>
-
-            <div className="flex justify-end items-center mb-4 md:mb-6">
-                {/* Selector de Vista */}
-                <div className="flex bg-gray-100 p-1 rounded-lg flex-shrink-0">
-                    <button
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}
-                        aria-label="Vista Cuadrícula"
+        <div className="min-h-screen bg-gray-50/50 pb-32 pt-6 px-4">
+            {/* AI Floating Advisor */}
+            <AnimatePresence>
+                {showAiBubble && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="fixed top-24 right-4 z-50 flex flex-col items-end gap-3 max-w-xs"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-400'}`}
-                        aria-label="Vista Lista"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <p className="text-gray-500 mb-6 text-sm md:text-base hidden md:block">
-                {systemType === 'Combo'
-                    ? 'Hemos pre-seleccionado lo mejor para ti. Puedes cambiar componentes o agregar extras.'
-                    : 'Selecciona los elementos que necesitas para potenciar tu negocio.'}
-            </p>
-            <div className="md:hidden text-center mb-4">
-                <span className="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-bold">v4.5 - NUEVO ESTILO 🛍️</span>
-            </div>
-
-            {filteredProducts.length === 0 ? (
-                <div className="text-center text-gray-400 py-10">
-                    <p>No se encontraron productos en esta categoría.</p>
-                </div>
-            ) : (
-                <div className={`grid ${viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6' : 'grid-cols-1 gap-3'}`}>
-                    {filteredProducts.map(product => {
-                        const qty = cart[product.id] || 0;
-                        const isSelected = qty > 0;
-
-                        return (
-                            <div
-                                key={product.id}
-                                className={`bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all relative flex ${viewMode === 'grid' ? 'flex-col' : 'flex-row items-center p-2'} ${isSelected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'}`}
+                        <div className="bg-white p-4 rounded-2xl rounded-tr-none shadow-2xl border border-blue-100/50 relative">
+                            <p className="text-sm font-medium text-gray-700 leading-relaxed">{aiMessage}</p>
+                            <div className="absolute top-0 -right-2 w-4 h-4 bg-white rotate-45 border-t border-r border-blue-50" />
+                            <button
+                                onClick={() => speak(aiMessage)}
+                                className="mt-2 text-blue-500 text-xs font-bold flex items-center gap-1 hover:underline"
                             >
-                                {/* Badge de Selección */}
-                                {isSelected && (
-                                    <div className={`absolute bg-blue-100 text-blue-600 p-1 rounded-full z-10 ${viewMode === 'grid' ? 'top-2 right-2' : 'top-1 right-1'}`}>
-                                        <FaCheck className="text-[10px]" />
+                                <FaVolumeUp /> Escuchar Asesoría
+                            </button>
+                        </div>
+                        <div className="w-16 h-16 bg-[#1c242e] rounded-full border-4 border-[#A8E0F0] flex items-center justify-center text-3xl text-[#A8E0F0] shadow-xl overflow-hidden">
+                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+                                <FaRobot />
+                            </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="max-w-6xl mx-auto">
+                {/* Stepper (Only for Combo) */}
+                {isGuided && (
+                    <div className="mb-12">
+                        <div className="flex justify-between items-center mb-6 overflow-x-auto pb-4 scrollbar-hide">
+                            {steps.map((s, i) => (
+                                <div key={i} className={`flex flex-col items-center gap-2 min-w-[80px] transition-all ${i === currentStep ? 'opacity-100 scale-110' : 'opacity-40 grayscale'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg ${i === currentStep ? 'bg-[#A8E0F0] text-[#1c242e]' : 'bg-white text-gray-400'}`}>
+                                        {s.icon}
                                     </div>
-                                )}
-
-                                {/* IMAGEN (Estilo MercadoLibre / Amazon) */}
-                                <div className={`${viewMode === 'grid' ? 'w-full h-28 md:h-36 border-b border-gray-50' : 'w-20 h-20 md:w-24 md:h-24 rounded-lg flex-shrink-0 border border-gray-100 mr-3'}`}>
-                                    {renderImage(product.image_url, viewMode === 'list')}
+                                    <span className="text-[10px] font-black uppercase text-center tracking-tighter">{s.name}</span>
                                 </div>
+                            ))}
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <motion.div
+                                animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                                className="h-full bg-[#A8E0F0]"
+                            />
+                        </div>
+                    </div>
+                )}
 
-                                {/* CONTENIDO */}
-                                <div className={`flex flex-col flex-grow ${viewMode === 'grid' ? 'p-3' : 'py-1'}`}>
-
-                                    <h3 className={`font-medium text-gray-800 leading-tight mb-1 ${viewMode === 'grid' ? 'text-xs md:text-sm line-clamp-2 h-[2.5em]' : 'text-sm md:text-lg'}`}>
-                                        {product.name}
-                                    </h3>
-
-                                    {viewMode === 'list' && (
-                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{product.category}</p>
-                                    )}
-
-                                    <div className="mt-auto pt-2 flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            {viewMode === 'grid' && <p className="text-[9px] text-gray-400 uppercase mb-0.5">{product.category}</p>}
-                                            <p className="text-gray-900 font-bold text-sm md:text-base">
-                                                ${parseFloat(product.price).toLocaleString('es-CO')}
-                                            </p>
-                                        </div>
-
-                                        {/* CONTROLES */}
-                                        {qty === 0 ? (
-                                            <button
-                                                onClick={() => addToCart(product)}
-                                                className={`bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'w-8 h-8 rounded-full' : 'px-4 py-2 text-sm font-semibold'}`}
-                                            >
-                                                <FaPlus className={viewMode === 'grid' ? 'text-xs' : 'mr-1 text-xs'} />
-                                                {viewMode === 'list' && 'Agregar'}
-                                            </button>
-                                        ) : (
-                                            <div className="flex items-center bg-blue-50 rounded-lg p-1">
-                                                <button onClick={() => removeFromCart(product)} className="w-6 h-6 flex items-center justify-center bg-white text-blue-600 rounded shadow-sm">
-                                                    {qty === 1 ? <FaTrash className="text-[8px]" /> : <FaMinus className="text-[8px]" />}
-                                                </button>
-                                                <span className="font-bold text-blue-800 text-xs mx-2 min-w-[10px] text-center">{qty}</span>
-                                                <button onClick={() => addToCart(product)} className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded shadow-sm">
-                                                    <FaPlus className="text-[8px]" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                {/* Step Context */}
+                <div className="mb-8">
+                    <h2 className="text-3xl font-black text-gray-900 uppercase">
+                        {isGuided ? steps[currentStep].name : 'Catálogo de Soluciones'}
+                    </h2>
+                    <p className="text-gray-500">
+                        {isGuided ? `Paso ${currentStep + 1} de ${steps.length}: Selecciona tus componentes.` : 'Elige lo que necesitas para tu negocio.'}
+                    </p>
                 </div>
-            )}
 
-            {/* Footer Flotante con Total */}
-            <div className="fixed bottom-0 left-0 w-full bg-white border-t p-4 shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-40 safe-area-bottom">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div>
-                        <div className="text-[10px] md:text-xs text-gray-400 font-medium tracking-wider uppercase">Total Estimado</div>
-                        <div className="text-xl md:text-2xl font-black text-gray-800">${calculateTotal().toLocaleString('es-CO')}</div>
-                        {Object.keys(cart).length > 0 && <span className="text-[10px] md:text-xs text-blue-500 font-medium">{Object.keys(cart).length} item(s)</span>}
+                {/* Products Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <AnimatePresence mode="wait">
+                        {stepProducts.map(product => (
+                            <motion.div
+                                layout
+                                key={product.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className={`bg-white rounded-3xl p-5 border-2 transition-all relative group ${cart[product.id] ? 'border-blue-500 shadow-xl' : 'border-white shadow-sm hover:border-blue-200'}`}
+                            >
+                                <div className="h-48 mb-4 rounded-2xl overflow-hidden bg-gray-50 relative">
+                                    {product.image_url ? (
+                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform" />
+                                    ) : <div className="w-full h-full flex items-center justify-center text-4xl opacity-10">📦</div>}
+                                    {cart[product.id] && (
+                                        <div className="absolute top-4 right-4 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg">
+                                            <FaCheck />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <h3 className="font-black text-gray-800 uppercase tracking-tight mb-1 line-clamp-1">{product.name}</h3>
+                                <p className="text-xs text-gray-400 mb-4 h-10 overflow-hidden line-clamp-2">{product.description || 'Tecnología líder para tu punto de venta.'}</p>
+
+                                <div className="flex items-center justify-between mt-4">
+                                    <span className="text-2xl font-black text-gray-900">${parseFloat(product.price).toLocaleString()}</span>
+                                    <div className="flex bg-gray-100 rounded-xl p-1 gap-2">
+                                        {cart[product.id] > 0 && (
+                                            <>
+                                                <button onClick={() => removeFromCart(product)} className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm text-red-500 hover:bg-red-50 transition-colors">
+                                                    {cart[product.id] === 1 ? <FaTrash size={12} /> : <FaMinus size={12} />}
+                                                </button>
+                                                <span className="w-8 flex items-center justify-center font-black text-blue-600">{cart[product.id]}</span>
+                                            </>
+                                        )}
+                                        <button onClick={() => addToCart(product)} className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors">
+                                            <FaPlus size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+
+                {stepProducts.length === 0 && (
+                    <div className="py-20 text-center space-y-4">
+                        <FaRobot className="text-6xl text-gray-200 mx-auto" />
+                        <p className="text-gray-400 font-bold uppercase tracking-widest">No hay más productos en este paso.</p>
+                        <button onClick={handleNextStep} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold">Pasar al siguiente</button>
+                    </div>
+                )}
+            </div>
+
+            {/* Footer Nav */}
+            <footer className="fixed bottom-0 left-0 w-full bg-[#1c242e] text-white p-6 shadow-[0_-20px_50px_rgba(0,0,0,0.3)] z-40 overflow-hidden">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Inversión Estimada</span>
+                        <span className="text-3xl font-black text-[#A8E0F0]">${calculateTotal().toLocaleString()}</span>
                     </div>
                     <button
-                        onClick={handleNext}
-                        disabled={calculateTotal() === 0}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 md:px-8 rounded-xl font-bold hover:shadow-lg hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 md:gap-3 text-sm md:text-base"
+                        onClick={handleNextStep}
+                        className="group bg-[#A8E0F0] text-[#1c242e] px-10 py-4 rounded-2xl font-black text-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(168,224,240,0.4)]"
                     >
-                        <FaShoppingCart />
-                        <span className="hidden md:inline">Continuar</span>
-                        <span className="md:hidden">Seguir</span>
+                        {currentStep < steps.length - 1 ? (
+                            <> SIGUIENTE PASO <FaArrowRight className="group-hover:translate-x-1 transition-transform" /> </>
+                        ) : (
+                            <> GENERAR COTIZACIÓN <FaChevronCircleRight /> </>
+                        )}
                     </button>
                 </div>
-            </div>
+            </footer>
         </div>
     );
 };

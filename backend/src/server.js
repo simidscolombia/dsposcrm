@@ -18,6 +18,7 @@ import paymentRoutes from './routes/paymentRoutes.js'; // Pagos y Cobros
 import distributorRoutes from './routes/distributorRoutes.js'; // Distribuidores
 import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
 import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
+import aiRuleRoutes from './routes/aiRuleRoutes.js'; // Memoria de IA
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use('/api/payments', paymentRoutes); // Pagos y Cobros mensuales
 app.use('/api/distributors', distributorRoutes); // Socios y Distribuidores
 app.use('/api/tickets', ticketRoutes); // Soporte y Tickets
 app.use('/api/whatsapp', whatsappRoutes); // WhatsApp WAHA Integration
+app.use('/api/admin/ai-rules', aiRuleRoutes); // Cerebro de IA
 
 app.get('/health', (req, res) => {
   res.json({

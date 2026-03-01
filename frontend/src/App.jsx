@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from './pages/HomePage';
 import QuotePage from './pages/QuotePage';
 import ClientPortal from './pages/ClientPortal';
 // Admin Imports
@@ -15,6 +16,7 @@ import CRMBilling from './pages/admin/CRMBilling';
 import CRMDistributors from './pages/admin/CRMDistributors';
 import CRMSupport from './pages/admin/CRMSupport';
 import AdminWhatsApp from './pages/admin/AdminWhatsApp';
+import AdminAI from './pages/admin/AdminAI';
 
 function App() {
   // Global Click Sound Effect
@@ -66,8 +68,11 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        {/* Wizard principal - todo el flujo inline */}
-        <Route path="/" element={<QuotePage />} />
+        {/* Landing Page Principal */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* El Wizard Experto (Antes estaba en /) */}
+        <Route path="/configurador" element={<QuotePage />} />
 
         {/* Client Portal */}
         <Route path="/portal/:id" element={<ClientPortal />} />
@@ -85,6 +90,7 @@ function App() {
           <Route path="billing" element={<CRMBilling />} />
           <Route path="support" element={<CRMSupport />} />
           <Route path="whatsapp" element={<AdminWhatsApp />} />
+          <Route path="ai" element={<AdminAI />} />
         </Route>
       </Routes>
     </HashRouter>
