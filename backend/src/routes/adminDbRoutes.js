@@ -74,8 +74,8 @@ router.post('/init-tables', async (req, res) => {
             ('Hardware POS', 'hardware', 'FaServer', 'Equipos físicos y terminales', 6),
             ('Software Licencias', 'software', 'FaCode', 'Licencias y sistemas', 7),
             ('Servicios y Soporte', 'servicios', 'FaTools', 'Instalación y mantenimiento', 8)
-            ON CONFLICT (name) DO UPDATE SET 
-                slug = EXCLUDED.slug,
+            ON CONFLICT (slug) DO UPDATE SET 
+                name = EXCLUDED.name,
                 icon = EXCLUDED.icon,
                 description = EXCLUDED.description,
                 "order" = EXCLUDED."order";
