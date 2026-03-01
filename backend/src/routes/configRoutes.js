@@ -195,6 +195,30 @@ router.put('/billing', async (req, res) => {
 });
 
 // ============================================
+// PUT /api/config/marketing
+// Actualizar activos marketing (video, hero, etc)
+// ============================================
+router.put('/marketing', async (req, res) => {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS crm_config (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+        await db.query(`
+            INSERT INTO crm_config (key, value, updated_at)
+            VALUES ('marketing_assets', $1, NOW())
+            ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
+        `, [JSON.stringify(req.body)]);
+        res.json({ success: true, message: 'Activos marketing actualizados' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
 // GET /api/config/all
 // Toda la configuración del sistema
 // ============================================
@@ -241,6 +265,7 @@ router.post('/init', async (req, res) => {
             company_info: getDefaultCompanyConfig(),
             whatsapp_numbers: getDefaultWhatsAppConfig(),
             billing_config: getDefaultBillingConfig(),
+            marketing_assets: getDefaultMarketingConfig(),
         };
 
         for (const [key, value] of Object.entries(defaults)) {
@@ -260,6 +285,17 @@ router.post('/init', async (req, res) => {
 // ============================================
 // DEFAULT CONFIGURATIONS
 // ============================================
+
+function getDefaultMarketingConfig() {
+    return {
+        video_demo_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Placeholder
+        hero_image_url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=1200',
+        carousel_images: [
+            'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&q=80&w=800',
+            'https://images.unsplash.com/photo-1556742111-a301076d9d18?auto=format&fit=crop&q=80&w=800'
+        ]
+    };
+}
 
 function getDefaultCompanyConfig() {
     return {

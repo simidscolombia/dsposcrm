@@ -17,6 +17,7 @@ import CRMDistributors from './pages/admin/CRMDistributors';
 import CRMSupport from './pages/admin/CRMSupport';
 import AdminWhatsApp from './pages/admin/AdminWhatsApp';
 import AdminAI from './pages/admin/AdminAI';
+import AdminCMS from './pages/admin/AdminCMS';
 
 function App() {
   // Global Click Sound Effect
@@ -91,6 +92,7 @@ function App() {
           <Route path="support" element={<CRMSupport />} />
           <Route path="whatsapp" element={<AdminWhatsApp />} />
           <Route path="ai" element={<AdminAI />} />
+          <Route path="cms" element={<AdminCMS />} />
         </Route>
       </Routes>
     </HashRouter>

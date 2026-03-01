@@ -102,13 +102,18 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
         }, 0);
     };
 
-    // Filter products by current step category
+    // Smart Filter: Match products by category names OR specific keywords
     const stepProducts = useMemo(() => {
         if (!isGuided) return products;
-        const catSearch = steps[currentStep].categories.map(c => c.toLowerCase());
+
+        const keywords = steps[currentStep].categories.map(c => c.toLowerCase());
+
         return products.filter(p => {
             const pCat = (p.category_name || p.category || '').toLowerCase();
-            return catSearch.some(c => pCat.includes(c));
+            const pName = (p.name || '').toLowerCase();
+
+            // Check if product category or name contains ANY of the step's target keywords
+            return keywords.some(key => pCat.includes(key) || pName.includes(key));
         });
     }, [products, currentStep, isGuided]);
 
@@ -120,6 +125,14 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
         } else {
             const items = Object.entries(cart).map(([id, qty]) => ({ ...products.find(p => p.id === parseInt(id)), quantity: qty }));
             onContinue(items);
+        }
+    };
+
+    const handlePrevStep = () => {
+        stopSpeech();
+        if (currentStep > 0) {
+            setCurrentStep(curr => curr - 1);
+            window.scrollTo(0, 0);
         }
     };
 
@@ -255,16 +268,27 @@ const ProductCatalog = ({ onContinue, systemType, businessType }) => {
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Inversión Estimada</span>
                         <span className="text-3xl font-black text-[#A8E0F0]">${calculateTotal().toLocaleString()}</span>
                     </div>
-                    <button
-                        onClick={handleNextStep}
-                        className="group bg-[#A8E0F0] text-[#1c242e] px-10 py-4 rounded-2xl font-black text-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(168,224,240,0.4)]"
-                    >
-                        {currentStep < steps.length - 1 ? (
-                            <> SIGUIENTE PASO <FaArrowRight className="group-hover:translate-x-1 transition-transform" /> </>
-                        ) : (
-                            <> GENERAR COTIZACIÓN <FaChevronCircleRight /> </>
+                    <div className="flex items-center gap-4">
+                        {currentStep > 0 && (
+                            <button
+                                onClick={handlePrevStep}
+                                className="bg-white/10 text-white p-4 rounded-2xl hover:bg-white/20 transition-all"
+                                title="Regresar al paso anterior"
+                            >
+                                <FaArrowRight className="rotate-180" />
+                            </button>
                         )}
-                    </button>
+                        <button
+                            onClick={handleNextStep}
+                            className="group bg-[#A8E0F0] text-[#1c242e] px-10 py-4 rounded-2xl font-black text-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(168,224,240,0.4)]"
+                        >
+                            {currentStep < steps.length - 1 ? (
+                                <> SIGUIENTE <FaArrowRight className="group-hover:translate-x-1 transition-transform" /> </>
+                            ) : (
+                                <> FINALIZAR <FaChevronCircleRight /> </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </footer>
         </div>

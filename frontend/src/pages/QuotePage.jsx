@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 // Steps
@@ -55,11 +56,19 @@ const QuotePage = () => {
         prize: null
     });
 
-    // Client data from URL params
     const [clientData, setClientData] = useState({
         name: '',
         phone: ''
     });
+    const location = useLocation();
+
+    // Contextual flow: if we come from Niche Cards on Home
+    useEffect(() => {
+        if (location.state?.initialNiche) {
+            setSelections(prev => ({ ...prev, businessType: location.state.initialNiche }));
+            // We still start at step 0 for city, but step 1 will be pre-filled.
+        }
+    }, [location]);
 
     // Anti-cheat: has the roulette been played?
     const [roulettePlayed, setRoulettePlayed] = useState(false);

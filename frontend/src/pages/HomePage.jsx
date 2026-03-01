@@ -1,15 +1,36 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import {
     FaRocket, FaRobot, FaUtensils, FaTools,
-    FaStore, FaMedkit, FaCog, FaCheckCircle
+    FaStore, FaMedkit, FaCog, FaCheckCircle,
+    FaArrowRight, FaPlay
 } from 'react-icons/fa';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
 
 const HomePage = () => {
     const navigate = useNavigate();
 
+    const [assets, setAssets] = useState({
+        video_demo_url: '',
+        hero_image_url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=1200',
+        carousel_images: []
+    });
+
     useEffect(() => {
         window.scrollTo(0, 0);
+        const fetchAssets = async () => {
+            try {
+                const res = await axios.get(`${API_BASE}/config/all`);
+                if (res.data.success && res.data.configs.marketing_assets) {
+                    setAssets(res.data.configs.marketing_assets);
+                }
+            } catch (e) {
+                console.log("Using default assets");
+            }
+        };
+        fetchAssets();
     }, []);
 
     const niches = [
@@ -23,16 +44,21 @@ const HomePage = () => {
         <div className="min-h-screen bg-white font-sans text-gray-900">
             {/* Navigation */}
             <nav className="fixed w-full z-50 bg-[#1c242e]/95 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
+                <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <img src="/logo.png" alt="Discovery" className="w-10 h-10 object-contain" />
                     <div className="flex flex-col">
                         <span className="text-white font-bold text-xl leading-none tracking-wide">Discovery</span>
                         <span className="text-gray-400 text-[10px] font-semibold leading-none tracking-widest uppercase">Systems Pos</span>
                     </div>
-                </div>
+                </Link>
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
                     <a href="#soluciones" className="hover:text-[#A8E0F0] transition-colors">Soluciones</a>
-                    <a href="#ia" className="hover:text-[#A8E0F0] transition-colors">IA Discovery</a>
+                    <button
+                        onClick={() => navigate('/configurador')}
+                        className="hover:text-[#A8E0F0] transition-colors flex items-center gap-2"
+                    >
+                        IA Discovery <FaRocket size={12} className="text-[#A8E0F0]" />
+                    </button>
                     <button
                         onClick={() => navigate('/configurador')}
                         className="bg-[#A8E0F0] text-[#1c242e] px-6 py-2 rounded-full font-bold hover:shadow-[0_0_20px_rgba(168,224,240,0.5)] transition-all transform hover:scale-105"
@@ -65,17 +91,22 @@ const HomePage = () => {
                                     EMPEZAR CONFIGURACIÓN <FaRocket className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                 </div>
                             </button>
-                            <button className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all">
-                                Ver Vídeo Demo
-                            </button>
+                            <a
+                                href={assets.video_demo_url || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all flex items-center gap-2"
+                            >
+                                <FaPlay size={14} className="text-[#A8E0F0]" /> Ver Vídeo Demo
+                            </a>
                         </div>
                     </div>
                     <div className="relative">
                         <div className="absolute -inset-4 bg-[#A8E0F0]/20 blur-3xl rounded-full animate-pulse" />
                         <img
-                            src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800"
+                            src={assets.hero_image_url || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800"}
                             alt="POS System"
-                            className="relative rounded-2xl shadow-2xl border border-white/10"
+                            className="relative rounded-2xl shadow-2xl border border-white/10 w-full"
                         />
                         {/* AI Floating Card */}
                         <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-4 animate-bounce-slow">
@@ -100,7 +131,11 @@ const HomePage = () => {
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {niches.map((n, idx) => (
-                            <div key={idx} className="group bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer">
+                            <div
+                                key={idx}
+                                onClick={() => navigate('/configurador', { state: { initialNiche: n.name } })}
+                                className="group bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer"
+                            >
                                 <div className={`w-16 h-16 rounded-2xl bg-${n.color}-50 text-${n.color}-500 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform`}>
                                     {n.icon}
                                 </div>
