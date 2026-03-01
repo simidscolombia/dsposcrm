@@ -151,7 +151,13 @@ const QuotePage = () => {
 
     // From QuotePreview: update products and confirm (go to roulette)
     const handleQuoteConfirm = (updatedProducts) => {
-        setSelections(prev => ({ ...prev, selectedProducts: updatedProducts }));
+        // Final sanitization before proceeding to final stages
+        const sanitizedProducts = (updatedProducts || []).map(p => ({
+            ...p,
+            name: p.name?.length > 120 ? p.name.substring(0, 50) + '...' : p.name,
+            category: p.category?.length > 50 ? p.category.substring(0, 30) + '...' : p.category
+        }));
+        setSelections(prev => ({ ...prev, selectedProducts: sanitizedProducts }));
         setStep(ROULETTE_STEP); // Go to roulette
     };
 

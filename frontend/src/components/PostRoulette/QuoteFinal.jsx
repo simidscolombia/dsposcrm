@@ -20,6 +20,33 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
     const [localName, setLocalName] = useState(clientName || '');
     const [localPhone, setLocalPhone] = useState(clientPhone || '');
 
+    // Helper to sanitize corrupted data (long hashes/base64)
+    const sanitizeText = (text, maxLength = 100) => {
+        if (!text || typeof text !== 'string') return text;
+        if (text.length > maxLength) return text.substring(0, Math.min(text.length, 50)) + '...';
+        return text;
+    };
+
+    const renderImage = (img, size = 'sm') => {
+        const isUrl = img && (typeof img === 'string') && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:image'));
+        const sizeClasses = size === 'sm' ? 'w-10 h-10' : 'w-14 h-14';
+
+        return (
+            <div className={`${sizeClasses} rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100 overflow-hidden shadow-inner`}>
+                {isUrl ? (
+                    <img
+                        src={img}
+                        alt="Product"
+                        className="w-full h-full object-contain p-1"
+                        onError={(e) => { e.target.src = ''; e.target.parentElement.innerHTML = '<span class="text-xl">📦</span>'; }}
+                    />
+                ) : (
+                    <span className={size === 'sm' ? 'text-xl' : 'text-3xl'}>📦</span>
+                )}
+            </div>
+        );
+    };
+
     // ============================================
     // FETCH CONFIG ON MOUNT
     // ============================================
@@ -354,30 +381,32 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
 
                 {/* Product List */}
                 <div className="divide-y divide-gray-100">
-                    {(selectedProducts || []).map((product, index) => (
-                        <div key={product.id || index} className="flex items-center gap-3 px-4 md:px-6 py-3">
-                            <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 border text-xl">
-                                {product.image_url && (product.image_url.startsWith('http') || product.image_url.startsWith('/'))
-                                    ? <img src={product.image_url} alt="" className="w-full h-full object-contain p-1 rounded-lg" />
-                                    : (product.image_url || '📦')
-                                }
+                    {(selectedProducts || []).map((product, index) => {
+                        const name = sanitizeText(product.name, 120);
+                        const category = sanitizeText(product.category, 50);
+
+                        return (
+                            <div key={product.id || index} className="flex items-center gap-3 px-4 md:px-6 py-3">
+                                {renderImage(product.image_url, 'sm')}
+                                <div className="flex-grow min-w-0 pr-4">
+                                    <h4 className="font-bold text-gray-800 text-sm md:text-base truncate">
+                                        {name}
+                                    </h4>
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{category}</span>
+                                </div>
+                                <div className="text-center flex-shrink-0 min-w-[30px]">
+                                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                                        x{product.quantity || 1}
+                                    </span>
+                                </div>
+                                <div className="text-right min-w-[100px]">
+                                    <p className="font-bold text-gray-800 text-sm">
+                                        {formatCurrency(parseFloat(product.price) * (product.quantity || 1))}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-grow min-w-0">
-                                <h4 className="font-medium text-gray-800 text-sm truncate">{product.name}</h4>
-                                <span className="text-[10px] text-gray-400 uppercase">{product.category}</span>
-                            </div>
-                            <div className="text-center flex-shrink-0 min-w-[30px]">
-                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-                                    x{product.quantity || 1}
-                                </span>
-                            </div>
-                            <div className="text-right min-w-[100px]">
-                                <p className="font-bold text-gray-800 text-sm">
-                                    {formatCurrency(parseFloat(product.price) * (product.quantity || 1))}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Totals */}
