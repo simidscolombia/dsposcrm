@@ -19,14 +19,26 @@ router.get('/status', async (req, res) => {
             connected: result.success && result.status === 'WORKING',
             status: result.status || 'DISCONNECTED',
             details: result.data || null,
-            wahaUrl: process.env.WAHA_URL || 'No configurado'
+            wahaUrl: process.env.WAHA_URL || 'No configurado',
+            config: {
+                wahaUrl: process.env.WAHA_URL || 'No configurado',
+                hasApiKey: !!process.env.WAHA_API_KEY,
+                session: process.env.WAHA_SESSION || 'default',
+                configured: !!(process.env.WAHA_URL && process.env.WAHA_API_KEY)
+            }
         });
     } catch (error) {
         res.json({
             success: true,
             connected: false,
             status: 'ERROR',
-            error: error.message
+            error: error.message,
+            config: {
+                wahaUrl: process.env.WAHA_URL || 'No configurado',
+                hasApiKey: !!process.env.WAHA_API_KEY,
+                session: process.env.WAHA_SESSION || 'default',
+                configured: !!(process.env.WAHA_URL && process.env.WAHA_API_KEY)
+            }
         });
     }
 });
@@ -41,23 +53,31 @@ router.post('/start', async (req, res) => {
         const wahaUrl = process.env.WAHA_URL || 'http://localhost:3000';
         const apiKey = process.env.WAHA_API_KEY;
         const sessionName = process.env.WAHA_SESSION || 'default';
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['X-Api-Key'] = apiKey;
 
-        const response = await axios.post(`${wahaUrl}/api/sessions/start`, {
-            name: sessionName,
-            config: {
-                proxy: null,
-                webhooks: [{
-                    url: `${process.env.BACKEND_URL || 'https://dspos.vercel.app'}/api/whatsapp/webhook`,
-                    events: ['message', 'session.status']
-                }]
-            }
-        }, {
-            headers: { 'X-Api-Key': apiKey }
-        });
+        // Try to create session (WAHA auto-starts it)
+        let response;
+        try {
+            response = await axios.post(`${wahaUrl}/api/sessions`, {
+                name: sessionName,
+                start: true,
+                config: {
+                    webhooks: [{
+                        url: 'https://dspos.vercel.app/api/whatsapp/webhook',
+                        events: ['message', 'session.status']
+                    }]
+                }
+            }, { headers });
+        } catch (createErr) {
+            // Session might already exist, try starting it
+            response = await axios.post(`${wahaUrl}/api/sessions/${sessionName}/start`, {}, { headers });
+        }
 
         res.json({ success: true, session: response.data });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        const detail = error.response?.data || error.message;
+        res.status(500).json({ success: false, error: typeof detail === 'string' ? detail : JSON.stringify(detail) });
     }
 });
 
@@ -71,23 +91,25 @@ router.get('/qr', async (req, res) => {
         const wahaUrl = process.env.WAHA_URL || 'http://localhost:3000';
         const apiKey = process.env.WAHA_API_KEY;
         const sessionName = process.env.WAHA_SESSION || 'default';
+        const headers = {};
+        if (apiKey) headers['X-Api-Key'] = apiKey;
 
-        const response = await axios.get(`${wahaUrl}/api/sessions/${sessionName}/auth/qr`, {
-            headers: { 'X-Api-Key': apiKey },
-            responseType: 'arraybuffer'
+        // WAHA QR endpoint: /api/{session}/auth/qr
+        const response = await axios.get(`${wahaUrl}/api/${sessionName}/auth/qr`, {
+            headers,
+            responseType: 'arraybuffer',
+            timeout: 10000
         });
 
-        // Return as base64 image
         const base64 = Buffer.from(response.data).toString('base64');
         res.json({
             success: true,
             qr: `data:image/png;base64,${base64}`
         });
     } catch (error) {
-        // If SCAN state, session may already be authenticated
         res.json({
             success: false,
-            error: error.message,
+            error: error.response?.data?.message || error.message,
             hint: 'La sesión puede ya estar autenticada o WAHA no está disponible'
         });
     }
@@ -103,12 +125,10 @@ router.post('/stop', async (req, res) => {
         const wahaUrl = process.env.WAHA_URL || 'http://localhost:3000';
         const apiKey = process.env.WAHA_API_KEY;
         const sessionName = process.env.WAHA_SESSION || 'default';
+        const headers = {};
+        if (apiKey) headers['X-Api-Key'] = apiKey;
 
-        await axios.post(`${wahaUrl}/api/sessions/stop`, {
-            name: sessionName
-        }, {
-            headers: { 'X-Api-Key': apiKey }
-        });
+        await axios.post(`${wahaUrl}/api/sessions/${sessionName}/stop`, {}, { headers });
 
         res.json({ success: true, message: 'Sesión cerrada' });
     } catch (error) {

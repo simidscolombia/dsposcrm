@@ -35,7 +35,7 @@ const AdminCategories = () => {
         try {
             const payload = {
                 ...formData,
-                slug: formData.slug || formData.name.toLowerCase().replace(/ /g, '-')
+                slug: formData.slug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
             };
 
             if (editMode) {
@@ -48,13 +48,12 @@ const AdminCategories = () => {
             resetForm();
         } catch (error) {
             console.error('Error guardando categoría:', error);
-            const errorMsg = error.response?.data?.error || error.message || 'Error desconocido';
-            alert(`Error al guardar: ${typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg}`);
+            alert('Error: ' + (error.response?.data?.error || error.message));
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('¿Seguro que deseas eliminar esta categoría?')) return;
+        if (!confirm('¿Seguro que deseas eliminar esta categoría? Esto podría afectar a los productos asociados.')) return;
         try {
             await axios.delete(`${API_URL}/categories/${id}`);
             fetchCategories();
@@ -83,131 +82,144 @@ const AdminCategories = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800">Categorías</h1>
+        <div className="space-y-8 animate-fade-in pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <FaEdit className="text-white text-2xl" />
+                        </div>
+                        Categorías
+                    </h1>
+                    <p className="text-gray-500 mt-1 font-medium italic">Clasificación lógica para tu catálogo</p>
+                </div>
+
                 <button
                     onClick={() => { resetForm(); setShowModal(true); }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-lg"
+                    className="bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-gray-200 transition-all hover:-translate-y-1 active:scale-95"
                 >
-                    <FaPlus /> Nueva Categoría
+                    <FaPlus /> Crear Categoría
                 </button>
             </div>
 
             {loading ? (
-                <div className="flex justify-center p-12 text-gray-400">
-                    <FaSpinner className="animate-spin text-4xl" />
+                <div className="flex flex-col items-center justify-center p-24 text-gray-400 gap-4">
+                    <FaSpinner className="animate-spin text-5xl text-indigo-500" />
+                    <span className="font-bold animate-pulse">Organizando estantes...</span>
                 </div>
             ) : categories.length === 0 ? (
-                <div className="text-center p-12 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-400">
-                    No hay categorías creadas. ¡Crea la primera!
+                <div className="text-center p-20 bg-white rounded-[2.5rem] shadow-xl shadow-gray-100 border border-gray-100 flex flex-col items-center gap-4">
+                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
+                        <FaTimes className="text-gray-200 text-3xl" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800">Sin categorías</h2>
+                    <p className="text-gray-400 max-w-xs mx-auto">Crea categorías para organizar tus productos de Hardware o Software.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase font-semibold">
-                            <tr>
-                                <th className="px-6 py-4">Orden</th>
-                                <th className="px-6 py-4">Nombre</th>
-                                <th className="px-6 py-4">Slug (URL)</th>
-                                <th className="px-6 py-4 text-center">Icono</th>
-                                <th className="px-6 py-4 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {categories.map((cat) => (
-                                <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-gray-400 font-mono">#{cat.order}</td>
-                                    <td className="px-6 py-4 font-medium text-gray-800">{cat.name}</td>
-                                    <td className="px-6 py-4 text-gray-500 text-sm">/CAT-{cat.slug}</td>
-                                    <td className="px-6 py-4 text-center text-xl text-blue-500">
-                                        {/* Aquí podríamos renderizar el icono dinámicamente si tenemos la librería cargada */}
-                                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mx-auto">
-                                            {cat.icon ? <FaCheck className="text-xs" /> : '-'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right space-x-2">
-                                        <button onClick={() => handleEdit(cat)} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors">
-                                            <FaEdit />
-                                        </button>
-                                        <button onClick={() => handleDelete(cat.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                                            <FaTrash />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {categories.map((cat) => (
+                        <div key={cat.id} className="group bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-100/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 relative flex flex-col">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 text-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                                    <FaCheck />
+                                </div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-300 bg-gray-50 px-3 py-1 rounded-full">
+                                    Orden: {cat.order}
+                                </div>
+                            </div>
+
+                            <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">{cat.name}</h3>
+                            <p className="text-xs text-gray-400 font-medium mb-6 line-clamp-2 leading-relaxed">
+                                {cat.description || "Sin descripción proporcionada para esta categoría automátizada."}
+                            </p>
+
+                            <div className="mt-auto pt-6 border-t border-gray-50 flex justify-between items-center">
+                                <span className="text-[10px] font-mono text-gray-300 uppercase leading-none">ID: #{cat.id}</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleEdit(cat)} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-indigo-600 hover:text-white rounded-xl transition-all shadow-sm">
+                                        <FaEdit size={14} />
+                                    </button>
+                                    <button onClick={() => handleDelete(cat.id)} className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm">
+                                        <FaTrash size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* Modal Form */}
+            {/* Premium Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative animate-pop-in">
-                        <h2 className="text-xl font-bold mb-4">
-                            {editMode ? 'Editar Categoría' : 'Nueva Categoría'}
-                        </h2>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-xl z-[100] flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 animate-pop-in border border-white/20 my-auto">
+                        <div className="flex justify-between items-center mb-8">
+                            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                                {editMode ? 'Pulir Grupo' : 'Nuevo Grupo'}
+                            </h2>
+                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-black bg-gray-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">✕</button>
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Nombre de Categoría</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                    placeholder="Ej. Gaming, Periféricos"
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-bold text-gray-800"
+                                    placeholder="Ej. Hardware, Software..."
                                     required
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug (Opcional)</label>
-                                    <input
-                                        type="text"
-                                        value={formData.slug}
-                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono text-gray-500"
-                                        placeholder="gaming-perifericos"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Orden Visual</label>
                                     <input
                                         type="number"
                                         value={formData.order}
                                         onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none font-bold text-gray-800"
                                         min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">ID Slug (Auto)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.slug}
+                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                        className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-[10px] font-mono text-gray-400 uppercase tracking-tighter"
+                                        placeholder="hardware-pos"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Breve Descripción</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none min-h-[80px]"
-                                    placeholder="Breve descripción de la categoría"
+                                    className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none font-medium text-gray-700 min-h-[100px]"
+                                    placeholder="Explique qué productos pertenecen a este grupo..."
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                            <div className="flex justify-end gap-3 pt-6 border-t border-gray-50">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                                    className="px-8 py-3.5 text-gray-500 hover:bg-gray-50 rounded-2xl font-bold transition-colors"
                                 >
-                                    Cancelar
+                                    Cerrar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all"
+                                    className="px-12 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-xl shadow-indigo-500/20 active:scale-95 transition-all"
                                 >
-                                    {editMode ? 'Actualizar' : 'Crear'}
+                                    {editMode ? 'Actualizar' : 'Crear Grupo'}
                                 </button>
                             </div>
                         </form>
