@@ -92,7 +92,7 @@ const ClientPortal = () => {
                                 sender: 'app', // special type for rendering a widget inside chat
                                 type: 'quote_summary',
                                 data: {
-                                    total: q.final_total,
+                                    total: q.final_amount || 0,
                                     itemsCount: q.items?.length || 0
                                 }
                             }
@@ -242,7 +242,7 @@ const ClientPortal = () => {
             try {
                 const aiRes = await axios.post(`${API_URL}/ai/chatbot`, {
                     question: text,
-                    context: { modules: quote?.items, total: quote?.final_total, quoteId: quote?.id },
+                    context: { modules: quote?.items, total: quote?.final_amount, quoteId: quote?.id },
                     leadId: quote?.id
                 });
                 const answer = aiRes.data.answer;
