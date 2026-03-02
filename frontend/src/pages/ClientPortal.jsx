@@ -52,14 +52,15 @@ const ClientPortal = () => {
             } catch (e) { console.log("Using default advisor"); }
 
             // Initial messages
+            const firstName = (res.data.client_name || 'Cliente').split(' ')[0];
             const initialMsgs = [
                 {
                     id: 1, sender: 'bot', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    text: `¡Hola ${res.data.client_name.split(' ')[0]}! 👋 Soy ${advisorName}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
+                    text: `¡Hola ${firstName}! 👋 Soy ${advisorName}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
                     type: 'proposal_card',
                     data: {
                         total: res.data.final_amount,
-                        items: res.data.items
+                        items: res.data.items || []
                     }
                 }
             ];
