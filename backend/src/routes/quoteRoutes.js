@@ -222,26 +222,25 @@ router.post('/', async (req, res) => {
     }
 });
 
+
 // ============================================
 // GET /api/quotes/:id
-// Obtener cotización por ID
+// Obtener cotización por ID (Unificada para Admin y Portal)
 // ============================================
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const quoteResult = await db.query('SELECT * FROM crm_quotes WHERE id = $1', [id]);
 
-        const quote = await db.query('SELECT * FROM crm_quotes WHERE id = $1', [id]);
-        if (quote.rows.length === 0) {
+        if (quoteResult.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Cotización no encontrada' });
         }
 
+        const quote = quoteResult.rows[0];
         const items = await db.query('SELECT * FROM crm_quote_items WHERE quote_id = $1', [id]);
+        quote.items = items.rows;
 
-        res.json({
-            success: true,
-            quote: quote.rows[0],
-            items: items.rows
-        });
+        res.json({ success: true, quote });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -290,28 +289,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET /api/quotes/:id
-// Obtener cotización por ID para Portal Cliente
-// ============================================
-router.get('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const quoteResult = await db.query('SELECT * FROM crm_quotes WHERE id = $1', [id]);
-
-        if (quoteResult.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Cotización no encontrada' });
-        }
-
-        const quote = quoteResult.rows[0];
-        const items = await db.query('SELECT * FROM crm_quote_items WHERE quote_id = $1', [id]);
-        quote.items = items.rows;
-
-        res.json({ success: true, quote });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // ============================================
 // PUT /api/quotes/:id/confirm

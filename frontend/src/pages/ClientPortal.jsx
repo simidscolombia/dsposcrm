@@ -40,11 +40,12 @@ const ClientPortal = () => {
         try {
             setLoading(true);
             const res = await axios.get(`${API_URL}/quotes/${id}`);
-            setQuote(res.data);
+            const quoteData = res.data.quote || res.data;
+            setQuote(quoteData);
 
             // Fetch Advisor Name based on city
             try {
-                const cityParam = res.data.client_city || 'Bogotá';
+                const cityParam = quoteData.client_city || 'Bogotá';
                 const advisorRes = await axios.get(`${API_URL}/config/whatsapp/${cityParam}`);
                 if (advisorRes.data.success) {
                     setAdvisorName(advisorRes.data.advisor.name);
@@ -52,15 +53,15 @@ const ClientPortal = () => {
             } catch (e) { console.log("Using default advisor"); }
 
             // Initial messages
-            const firstName = (res.data.client_name || 'Cliente').split(' ')[0];
+            const firstName = (quoteData.client_name || 'Cliente').split(' ')[0];
             const initialMsgs = [
                 {
                     id: 1, sender: 'bot', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     text: `¡Hola ${firstName}! 👋 Soy ${advisorName}, Asesor Personal en Discovery Systems. Veo que cotizaste un sistema con nosotros y tu propuesta está lista. ¿Qué te gustaría hacer ahora?`,
                     type: 'proposal_card',
                     data: {
-                        total: res.data.final_amount,
-                        items: res.data.items || []
+                        total: quoteData.final_amount || quoteData.total_amount,
+                        items: quoteData.items || []
                     }
                 }
             ];
@@ -137,7 +138,11 @@ const ClientPortal = () => {
         setIsTyping(false);
     };
 
-    const formatCurrency = (val) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val || 0);
+    const formatCurrency = (val) => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return '$ 0';
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+    };
 
     const renderPremiumDocument = () => (
         <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-4xl w-full relative animate-scale-in my-8 overflow-hidden">
