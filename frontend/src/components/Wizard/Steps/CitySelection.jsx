@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { colombiaData } from '../../../data/colombia';
-import { FaMapMarkerAlt, FaGlobeAmericas, FaChevronRight, FaArrowLeft, FaSearch, FaHistory } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaGlobeAmericas, FaChevronRight, FaArrowLeft, FaSearch, FaTimes } from 'react-icons/fa';
 
 const CitySelection = ({ onSelect }) => {
     const [selectedDept, setSelectedDept] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [detectedCity, setDetectedCity] = useState(null);
     const [detecting, setDetecting] = useState(false);
+
+    // Helper para normalizar texto (quitar acentos para búsqueda)
+    const normalize = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    };
 
     // Intentar geolocalizar al cargar
     useEffect(() => {
@@ -28,21 +33,29 @@ const CitySelection = ({ onSelect }) => {
 
     // BÚSQUEDA INTELIGENTE GLOBAL: Busca en todas las ciudades de todos los departamentos
     const searchResults = useMemo(() => {
-        if (!searchTerm || searchTerm.length < 2) return [];
+        const term = normalize(searchTerm);
+        if (!term || term.length < 2) return [];
 
         const results = [];
-        const term = searchTerm.toLowerCase();
 
         colombiaData.forEach(dept => {
+            const deptNorm = normalize(dept.department);
             dept.cities.forEach(city => {
-                if (city.toLowerCase().includes(term) || dept.department.toLowerCase().includes(term)) {
+                const cityNorm = normalize(city);
+                if (cityNorm.includes(term) || deptNorm.includes(term)) {
                     results.push({ city, department: dept.department, emoji: dept.emoji });
                 }
             });
         });
 
-        // Limitar resultados para no saturar el móvil
-        return results.slice(0, 15);
+        // Ordenar: exactos primero, luego por longitud
+        return results.sort((a, b) => {
+            const aNorm = normalize(a.city);
+            const bNorm = normalize(b.city);
+            if (aNorm === term) return -1;
+            if (bNorm === term) return 1;
+            return aNorm.length - bNorm.length;
+        }).slice(0, 15);
     }, [searchTerm]);
 
     const handleDeptSelect = (dept) => {
@@ -60,97 +73,122 @@ const CitySelection = ({ onSelect }) => {
     };
 
     return (
-        <div className="max-w-xl mx-auto p-4 md:p-6 animate-fade-in flex flex-col h-full">
-            {/* Header - Compacto en móvil */}
-            <div className="text-center mb-6">
-                <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl md:text-2xl shadow-inner">
-                    <FaMapMarkerAlt />
+        <div className="max-w-xl mx-auto p-4 md:p-6 animate-fade-in flex flex-col h-full bg-gray-50/30">
+            {/* Header - Muy visual para móvil */}
+            <div className="text-center mb-6 pt-2">
+                <div className="relative inline-block">
+                    <div className="w-16 h-16 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg transform -rotate-3">
+                        <FaMapMarkerAlt />
+                    </div>
+                    {detecting && (
+                        <div className="absolute -right-2 -top-2 w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
+                    )}
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">¿Dónde te encuentras?</h2>
-                <p className="text-gray-500 text-xs md:text-sm mt-1">Busca tu ciudad para personalizar tu oferta.</p>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">¿En qué ciudad<br />estás hoy?</h2>
             </div>
 
-            {/* Buscador Inteligente - Siempre Arriba */}
-            <div className="relative mb-4 sticky top-0 z-10">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            {/* Buscador - Fijo en la parte superior del flujo */}
+            <div className="relative mb-6 sticky top-0 z-20 group">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 group-focus-within:scale-125 transition-transform" />
                 <input
                     type="text"
-                    placeholder="Escribe tu ciudad (ej: Medellín, Chía...)"
-                    className="w-full pl-12 pr-4 py-4 md:py-5 bg-white border-2 border-transparent shadow-lg rounded-2xl focus:border-blue-500 outline-none transition-all text-base md:text-lg"
+                    placeholder="Escribe tu ciudad (ej: Chía, Cali...)"
+                    className="w-full pl-12 pr-12 py-5 bg-white border-2 border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] rounded-3xl focus:border-blue-500 outline-none transition-all text-lg font-medium placeholder:text-gray-300"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    autoFocus={!detectedCity}
                 />
                 {searchTerm && (
                     <button
                         onClick={() => setSearchTerm('')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 text-gray-400 rounded-full p-1 text-xs"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-100 text-gray-400 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-50 hover:text-red-400 transition-colors"
                     >
-                        ✕
+                        <FaTimes />
                     </button>
                 )}
             </div>
 
-            {/* Geodetección - Solo si no estamos buscando */}
+            {/* SUGERENCIA INTELIGENTE (GEOLOCALIZACIÓN) */}
             {detectedCity && !searchTerm && !selectedDept && (
-                <div className="mb-4">
+                <div className="mb-8 animate-fade-in">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">¿Es esta tu ubicación?</p>
                     <button
                         onClick={() => onSelect(detectedCity)}
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl text-white shadow-md active:scale-95 transition-all flex items-center justify-between group"
+                        className="w-full bg-white p-5 rounded-3xl border-2 border-blue-500 shadow-xl shadow-blue-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"
                     >
-                        <div className="flex items-center gap-3">
-                            <FaGlobeAmericas className="text-xl animate-spin-slow" />
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                <FaGlobeAmericas className="text-2xl animate-spin-slow" />
+                            </div>
                             <div className="text-left">
-                                <p className="text-[9px] uppercase font-black opacity-70 tracking-tighter">Sugerencia inteligente</p>
-                                <p className="text-base font-bold">{detectedCity}</p>
+                                <p className="text-xl font-black text-gray-800">{detectedCity}</p>
+                                <p className="text-xs text-blue-500 font-bold">Clic para confirmar</p>
                             </div>
                         </div>
-                        <FaChevronRight className="text-white/50" />
+                        <div className="bg-blue-600 text-white p-2 rounded-xl">
+                            <FaChevronRight />
+                        </div>
                     </button>
                 </div>
             )}
 
-            {/* RESULTADOS DE BÚSQUEDA GLOBAL */}
-            {searchTerm && searchResults.length > 0 && (
-                <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100 animate-fade-in">
-                    <div className="p-3 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
-                        Resultados encontrados
-                    </div>
-                    {searchResults.map((item, idx) => (
-                        <button
-                            key={`${item.city}-${idx}`}
-                            onClick={() => handleGlobalSelect(item)}
-                            className="w-full p-4 hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-center justify-between transition-colors group active:bg-blue-100"
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className="text-xl">{item.emoji}</span>
-                                <div className="text-left">
-                                    <p className="font-bold text-gray-800 group-hover:text-blue-700">{item.city}</p>
-                                    <p className="text-[10px] text-gray-400">{item.department}</p>
-                                </div>
+            {/* RESULTADOS DE BÚSQUEDA (MODO ACTIVO) */}
+            {searchTerm && (
+                <div className="animate-fade-in-up">
+                    {searchResults.length > 0 ? (
+                        <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border border-blue-50">
+                            <div className="p-4 bg-blue-50/50 text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] border-b border-blue-100 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                                Sugerencias encontradas
                             </div>
-                            <FaChevronRight className="text-gray-300 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                        </button>
-                    ))}
+                            <div className="divide-y divide-gray-50 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                {searchResults.map((item, idx) => (
+                                    <button
+                                        key={`${item.city}-${idx}`}
+                                        onClick={() => handleGlobalSelect(item)}
+                                        className="w-full p-5 hover:bg-blue-50 flex items-center justify-between group active:bg-blue-100 transition-all font-sans"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-2xl transition-transform group-hover:scale-125">{item.emoji}</span>
+                                            <div className="text-left">
+                                                <p className="font-bold text-gray-800 text-lg group-hover:text-blue-700">{item.city}</p>
+                                                <p className="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{item.department}</p>
+                                            </div>
+                                        </div>
+                                        <FaChevronRight className="text-gray-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : searchTerm.length >= 2 && (
+                        <div className="text-center py-12 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100 shadow-sm">
+                            <div className="text-5xl mb-4 grayscale opacity-30">🔍</div>
+                            <p className="text-gray-800 font-black">No encontramos resultados</p>
+                            <p className="text-sm text-gray-400 mt-2 px-8">Intenta escribiendo el nombre sin tildes o revisa la ortografía.</p>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* LISTA POR DEPARTAMENTOS (SI NO HAY BÚSQUEDA) */}
+            {/* NAVEGACIÓN POR DEPARTAMENTOS (ESTADO INICIAL) */}
             {!searchTerm && !selectedDept && (
-                <div className="flex-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">O selecciona tu departamento</p>
-                    <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-                        <div className="max-h-[40vh] md:max-h-[350px] overflow-y-auto custom-scrollbar">
+                <div className="flex-1 animate-fade-in">
+                    <div className="flex items-center justify-between mb-3 px-2">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">O explora por departamento</p>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm">
+                        <div className="max-h-[50vh] md:max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-gray-50">
                             {colombiaData.map((dept) => (
                                 <button
                                     key={dept.department}
                                     onClick={() => handleDeptSelect(dept)}
-                                    className="w-full p-4 hover:bg-blue-50 border-b border-gray-50 last:border-0 flex items-center justify-between transition-colors group active:bg-gray-100"
+                                    className="w-full p-4 hover:bg-blue-50 flex items-center justify-between group active:bg-gray-100 transition-colors"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <span className="text-xl">{dept.emoji}</span>
-                                        <span className="font-semibold text-gray-700 group-hover:text-blue-700">{dept.department}</span>
+                                        <span className="text-xl grayscale group-hover:grayscale-0 transition-all">{dept.emoji}</span>
+                                        <span className="text-sm font-bold text-gray-600 group-hover:text-blue-700">{dept.department}</span>
                                     </div>
-                                    <FaChevronRight className="text-gray-200" />
+                                    <FaChevronRight className="text-gray-100 group-hover:text-blue-200" />
                                 </button>
                             ))}
                         </div>
@@ -158,42 +196,39 @@ const CitySelection = ({ onSelect }) => {
                 </div>
             )}
 
-            {/* LISTA POR CIUDAD (DENTRO DE DEPARTAMENTO SELECCIONADO) */}
+            {/* NAVEGACIÓN CIUDADES (SEGUNDA CAPA) */}
             {!searchTerm && selectedDept && (
-                <div className="animate-fade-in">
+                <div className="animate-fade-in-up">
                     <button
                         onClick={handleBack}
-                        className="mb-4 flex items-center gap-2 text-blue-600 font-bold text-sm"
+                        className="mb-4 flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest bg-blue-50 px-4 py-2 rounded-full w-fit active:scale-95 transition-all"
                     >
-                        <FaArrowLeft /> Volver
+                        <FaArrowLeft /> Regresar
                     </button>
 
-                    <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b border-gray-100">
-                            <h3 className="font-bold text-gray-800 text-sm">🏙️ Ciudades en {selectedDept.department}</h3>
+                    <div className="bg-white rounded-[2rem] shadow-xl border border-blue-50 overflow-hidden">
+                        <div className="p-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+                            <h3 className="font-bold flex items-center gap-2">
+                                <span className="text-2xl">{selectedDept.emoji}</span>
+                                <div>
+                                    <p className="text-[10px] opacity-70 uppercase tracking-tight font-black">Departamento</p>
+                                    <p className="text-lg leading-tight">{selectedDept.department}</p>
+                                </div>
+                            </h3>
                         </div>
-                        <div className="grid grid-cols-1 max-h-[40vh] md:max-h-[350px] overflow-y-auto custom-scrollbar">
+                        <div className="grid grid-cols-1 max-h-[50vh] md:max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-gray-50">
                             {selectedDept.cities.map((city) => (
                                 <button
                                     key={city}
                                     onClick={() => onSelect(city)}
-                                    className="p-4 hover:bg-blue-50 border-b border-gray-50 text-left flex items-center justify-between font-medium text-gray-600 active:bg-blue-100"
+                                    className="p-5 hover:bg-blue-50 text-left flex items-center justify-between font-bold text-gray-700 active:bg-blue-100 transition-all group"
                                 >
-                                    {city}
-                                    <FaChevronRight className="text-xs text-blue-300" />
+                                    <span>{city}</span>
+                                    <FaChevronRight className="text-blue-100 group-hover:text-blue-600 transition-all" />
                                 </button>
                             ))}
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Sin resultados */}
-            {searchTerm && searchResults.length === 0 && (
-                <div className="text-center py-10 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                    <div className="text-4xl mb-2">🕵️‍♂️</div>
-                    <p className="text-gray-500 font-medium">No encontramos esa ciudad.</p>
-                    <p className="text-xs text-gray-400 mt-1">Prueba escribiendo "Bogotá" o "Cali"</p>
                 </div>
             )}
         </div>
