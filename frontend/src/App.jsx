@@ -62,41 +62,54 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v6.1 - PRODUCTION CLOUD SYNC 🚀");
+    console.log("v6.2 - PRODUCTION CLOUD SYNC 🚀");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);
 
   return (
     <HashRouter>
-      <Routes>
-        {/* Landing Page Principal */}
-        <Route path="/" element={<HomePage />} />
+      <div className="relative min-h-screen bg-gray-50 flex flex-col">
+        {/* Banner de Versión Persistente */}
+        <div className="bg-[#1c242e] text-[#A8E0F0] text-[10px] py-1 px-4 flex justify-between items-center z-[200] border-b border-blue-500/20 font-mono tracking-widest uppercase">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <span>Discovery Systems POS v6.2</span>
+          </div>
+          <div className="hidden md:block">Cloud Sync • Supabase Ready • Node 16 Stable</div>
+        </div>
 
-        {/* El Wizard Experto (Antes estaba en /) */}
-        <Route path="/configurador" element={<QuotePage />} />
+        <div className="flex-1">
+          <Routes>
+            {/* Landing Page Principal */}
+            <Route path="/" element={<HomePage />} />
 
-        {/* Client Portal */}
-        <Route path="/portal/:id" element={<ClientPortal />} />
+            {/* El Wizard Experto (Antes estaba en /) */}
+            <Route path="/configurador" element={<QuotePage />} />
 
-        {/* Rutas Administrativas */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="prizes" element={<AdminPrizes />} />
-          <Route path="pipeline" element={<CRMPipeline />} />
-          <Route path="clients" element={<CRMClients />} />
-          <Route path="distributors" element={<CRMDistributors />} />
-          <Route path="billing" element={<CRMBilling />} />
-          <Route path="support" element={<CRMSupport />} />
-          <Route path="whatsapp" element={<AdminWhatsApp />} />
-          <Route path="ai" element={<AdminAI />} />
-          <Route path="cms" element={<AdminCMS />} />
-          <Route path="design" element={<AdminDesign />} />
-        </Route>
-      </Routes>
+            {/* Client Portal */}
+            <Route path="/portal/:id" element={<ClientPortal />} />
+
+            {/* Rutas Administrativas */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="prizes" element={<AdminPrizes />} />
+              <Route path="pipeline" element={<CRMPipeline />} />
+              <Route path="clients" element={<CRMClients />} />
+              <Route path="distributors" element={<CRMDistributors />} />
+              <Route path="billing" element={<CRMBilling />} />
+              <Route path="support" element={<CRMSupport />} />
+              <Route path="whatsapp" element={<AdminWhatsApp />} />
+              <Route path="ai" element={<AdminAI />} />
+              <Route path="cms" element={<AdminCMS />} />
+              <Route path="design" element={<AdminDesign />} />
+            </Route>
+          </Routes>
+        </div>
+      </div>
     </HashRouter>
   );
 }
