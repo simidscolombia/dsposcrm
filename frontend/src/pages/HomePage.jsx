@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
-    FaRocket, FaRobot, FaUtensils, FaTools,
+    FaRocket, FaUtensils, FaTools,
     FaStore, FaMedkit, FaCheckCircle,
-    FaArrowRight, FaPlay
+    FaArrowRight, FaPlay, FaUserTie, FaCommentDots, FaInfoCircle
 } from 'react-icons/fa';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
@@ -43,215 +43,261 @@ const HomePage = () => {
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900">
             {/* Navigation */}
-            <nav className="fixed w-full z-50 bg-[#1c242e]/95 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
-                <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <nav className="fixed w-full z-50 bg-[#1c242e]/95 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center transition-all duration-300">
+                <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                     <img src="/logo.png" alt="Discovery" className="w-10 h-10 object-contain" />
                     <div className="flex flex-col">
-                        <span className="text-white font-bold text-xl leading-none tracking-wide">Discovery</span>
-                        <span className="text-gray-400 text-[10px] font-semibold leading-none tracking-widest uppercase">Systems Pos</span>
+                        <span className="text-white font-black text-xl leading-none tracking-tight">Discovery</span>
+                        <span className="text-gray-400 text-[10px] font-bold leading-none tracking-widest uppercase opacity-60">Systems Pos</span>
                     </div>
                 </Link>
-                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
-                    <a href="#soluciones" className="hover:text-[#A8E0F0] transition-colors">Soluciones</a>
+                <div className="hidden md:flex items-center gap-8 text-sm">
+                    <a href="#soluciones" className="text-gray-300 hover:text-[#A8E0F0] font-bold uppercase tracking-widest text-[11px] transition-colors">Soluciones</a>
+
+                    <Link to="/admin" className="flex items-center gap-2 text-[#A8E0F0] font-black border-r border-white/10 pr-6 hover:opacity-70 transition-all text-[11px] uppercase tracking-[0.1em]">
+                        <FaUserTie className="text-sm" /> Ingresar
+                    </Link>
+
                     <button
                         onClick={() => navigate('/configurador')}
-                        className="hover:text-[#A8E0F0] transition-colors flex items-center gap-2"
+                        className="bg-[#A8E0F0] text-[#1c242e] px-8 py-2.5 rounded-xl font-black uppercase text-[11px] tracking-widest hover:shadow-[0_0_20px_rgba(168,224,240,0.4)] transition-all transform hover:scale-105"
                     >
-                        IA Discovery <FaRocket size={12} className="text-[#A8E0F0]" />
-                    </button>
-                    <button
-                        onClick={() => navigate('/configurador')}
-                        className="bg-[#A8E0F0] text-[#1c242e] px-6 py-2 rounded-full font-bold hover:shadow-[0_0_20px_rgba(168,224,240,0.5)] transition-all transform hover:scale-105"
-                    >
-                        Configurar ahora
+                        Empezar cotización ahora
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 px-6 overflow-hidden bg-[#1c242e]">
-                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#A8E0F0]/10 to-transparent pointer-events-none" />
-                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-8 animate-fade-in">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[#A8E0F0] text-sm font-semibold">
-                            <FaRobot className="animate-pulse" /> Desarrollado con Inteligencia Artificial
+            <section className="relative pt-40 pb-24 px-6 overflow-hidden bg-[#1c242e]">
+                <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#A8E0F0]/5 to-transparent pointer-events-none" />
+                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+                    <div className="space-y-8 animate-fade-in relative z-10">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[#A8E0F0] text-[10px] font-black uppercase tracking-[0.2em] shadow-inner">
+                            <span className="w-2 h-2 bg-[#A8E0F0] rounded-full animate-pulse shadow-[0_0_10px_#A8E0F0]"></span>
+                            Sistema POS de Nueva Generación
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-black text-white leading-tight">
-                            Configura tu <span className="text-[#A8E0F0]">Sistema a Medida</span> aquí.
+                        <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter">
+                            Configura tu <br /> <span className="text-[#A8E0F0]">Cotización</span> <br /> ahora.
                         </h1>
-                        <p className="text-xl text-gray-400 max-w-lg">
-                            No compres solo hardware. Obtén una asesoría experta en tiempo real para equipar tu negocio con tecnología de punta.
+                        <p className="text-xl text-gray-400 max-w-lg leading-relaxed font-medium">
+                            Olvídate de pagar de más. Obtén una asesoría experta y personalizada para equipar tu negocio con la tecnología exacta que necesitas.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col sm:flex-row gap-5">
                             <button
                                 onClick={() => navigate('/configurador')}
-                                className="group relative px-8 py-4 bg-[#A8E0F0] text-[#1c242e] rounded-xl font-black text-lg overflow-hidden transition-all hover:shadow-[0_0_30px_rgba(168,224,240,0.4)]"
+                                className="group relative px-10 py-6 bg-[#A8E0F0] text-[#1c242e] rounded-2xl font-black text-xl overflow-hidden transition-all hover:shadow-[0_20px_40px_-10px_rgba(168,224,240,0.5)] flex items-center justify-center gap-3"
                             >
-                                <div className="relative z-10 flex items-center gap-2">
-                                    EMPEZAR CONFIGURACIÓN <FaRocket className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                                </div>
+                                EMPEZAR COTIZACIÓN AHORA <FaRocket className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                             </button>
                             <a
                                 href={assets.video_demo_url || "#"}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all flex items-center gap-2"
+                                className="px-10 py-6 bg-white/5 border border-white/10 text-white rounded-2xl font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-3 backdrop-blur-sm"
                             >
                                 <FaPlay size={14} className="text-[#A8E0F0]" /> Ver Vídeo Demo
                             </a>
                         </div>
                     </div>
-                    <div className="relative">
-                        <div className="absolute -inset-4 bg-[#A8E0F0]/20 blur-3xl rounded-full animate-pulse" />
-                        <img
-                            src={assets.hero_image_url || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800"}
-                            alt="POS System"
-                            className="relative rounded-2xl shadow-2xl border border-white/10 w-full"
-                        />
-                        {/* AI Floating Card */}
-                        <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-4 animate-bounce-slow">
-                            <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white text-xl">
-                                <FaRobot />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Asistente Virtual</p>
-                                <p className="text-sm font-black text-gray-800">"Sugerencia: Kit de Restaurante..."</p>
-                            </div>
+                    <div className="relative animate-fade-in-right">
+                        <div className="absolute -inset-10 bg-[#A8E0F0]/10 blur-[120px] rounded-full animate-pulse" />
+                        <div className="relative">
+                            <img
+                                src={assets.hero_image_url || "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=800"}
+                                alt="POS System"
+                                className="relative rounded-[4rem] shadow-2xl border border-white/10 w-full object-cover aspect-[4/3] grayscale transition-all duration-700 hover:grayscale-0"
+                            />
+                            {/* Accent line */}
+                            <div className="absolute -bottom-10 -right-10 w-40 h-40 border-r-8 border-b-8 border-[#A8E0F0]/20 rounded-br-[4rem]" />
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Solutions by Niche */}
-            <section id="soluciones" className="py-24 px-6 bg-gray-50">
-                <div className="max-w-7xl mx-auto space-y-16">
-                    <div className="text-center space-y-4">
-                        <h2 className="text-4xl font-black text-gray-900">Soluciones por Nicho</h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">Adaptamos nuestro sistema a las necesidades reales de tu sector comercial.</p>
+            <section id="soluciones" className="py-32 px-6 bg-gray-50/50">
+                <div className="max-w-7xl mx-auto space-y-20">
+                    <div className="max-w-3xl space-y-6">
+                        <p className="text-[#A8E0F0] font-black uppercase tracking-[0.3em] text-[10px]">Especialización</p>
+                        <h2 className="text-5xl font-black text-gray-900 tracking-tight leading-none">Soluciones para <br /> cada Nicho</h2>
+                        <p className="text-gray-500 text-lg font-medium leading-relaxed">Adaptamos nuestro sistema a las necesidades y retos operativos de tu sector comercial.</p>
                     </div>
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {niches.map((n, idx) => (
                             <div
                                 key={idx}
                                 onClick={() => navigate('/configurador', { state: { initialNiche: n.name } })}
-                                className="group bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer"
+                                className="group bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:border-blue-50 hover:-translate-y-4 transition-all duration-500 cursor-pointer"
                             >
-                                <div className={`w-16 h-16 rounded-2xl bg-${n.color}-50 text-${n.color}-500 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform`}>
+                                <div className={`w-20 h-20 rounded-3xl bg-${n.color}-50 text-${n.color}-500 flex items-center justify-center text-4xl mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner`}>
                                     {n.icon}
                                 </div>
-                                <h3 className="text-xl font-bold mb-2">{n.name}</h3>
-                                <p className="text-gray-500 text-sm">Configuración avanzada optimizada para flujo de alto tráfico.</p>
+                                <h3 className="text-2xl font-black mb-3 text-gray-800 tracking-tight">{n.name}</h3>
+                                <p className="text-gray-500 text-sm leading-relaxed font-medium">Configuración premium optimizada para la operación de tu {n.name.toLowerCase()}.</p>
+                                <div className="mt-8 pt-8 border-t border-gray-50 flex items-center gap-2 text-[10px] font-black text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                                    Configurar Ahora <FaArrowRight />
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* AI Features */}
-            <section id="ia" className="py-24 px-6 bg-white border-t border-gray-100">
-                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
-                    <div className="order-2 lg:order-1">
+            {/* Expert Advisory Section */}
+            <section className="py-32 px-6 bg-white overflow-hidden">
+                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-24 items-center">
+                    <div className="relative">
+                        <div className="absolute -inset-20 bg-blue-50 blur-[100px] opacity-60 rounded-full" />
                         <img
-                            src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&q=80&w=800"
-                            alt="AI Tech"
-                            className="rounded-3xl shadow-lg transform -rotate-2"
+                            src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800"
+                            alt="Professional Support"
+                            className="relative rounded-[4rem] shadow-2xl rotate-2 hover:rotate-0 transition-transform duration-1000"
                         />
+                        <div className="absolute -bottom-10 -left-10 bg-[#1c242e] text-white p-10 rounded-[3rem] shadow-2xl hidden md:block">
+                            <p className="text-4xl font-black text-[#A8E0F0]">100%</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">Soporte Humano</p>
+                        </div>
                     </div>
-                    <div className="order-1 lg:order-2 space-y-8">
-                        <h2 className="text-4xl font-black leading-tight">El Cotizador que <span className="text-blue-600">Aprende contigo.</span></h2>
-                        <div className="space-y-6">
+                    <div className="space-y-10">
+                        <h2 className="text-5xl md:text-6xl font-black text-gray-900 leading-[1.1] tracking-tighter">Asesoría de <span className="text-blue-600 text-glow">Expertos</span> para tu crecimiento.</h2>
+                        <div className="space-y-8">
                             {[
-                                { title: 'Asesoría en Tiempo Real', desc: 'La IA analiza tu tipo de negocio y sugiere el hardware compatible.' },
-                                { title: 'Optimización de Costos', desc: 'Evita comprar accesorios que no necesitas según tu operación local.' },
-                                { title: 'Soporte Predictivo', desc: 'Identifica posibles cuellos de botella en tu configuración antes de comprar.' }
+                                { title: 'Personalización Total', desc: 'No vendemos cajas, diseñamos soluciones basadas en tu flujo de trabajo.' },
+                                { title: 'Hardware Certificado', desc: 'Solo trabajamos con marcas líderes que garantizan durabilidad y velocidad.' },
+                                { title: 'Puesta en Marcha', desc: 'Recibe tu sistema configurado, importado y listo para vender desde el minuto uno.' }
                             ].map((f, idx) => (
-                                <div key={idx} className="flex gap-4">
-                                    <div className="flex-shrink-0 w-6 h-6 text-green-500 mt-1">
+                                <div key={idx} className="flex gap-6 group">
+                                    <div className="flex-shrink-0 w-12 h-12 bg-gray-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
                                         <FaCheckCircle />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-gray-900">{f.title}</h4>
-                                        <p className="text-gray-600 text-sm">{f.desc}</p>
+                                        <h4 className="font-black text-gray-900 uppercase text-xs tracking-widest mb-2">{f.title}</h4>
+                                        <p className="text-gray-500 font-medium leading-relaxed">{f.desc}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                         <button
                             onClick={() => navigate('/configurador')}
-                            className="w-full py-4 bg-[#1c242e] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-black transition-all"
+                            className="w-fit px-12 py-6 bg-[#1c242e] text-white rounded-2xl font-black text-lg flex items-center justify-center gap-4 hover:bg-black transition-all shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] group"
                         >
-                            Comenzar Asesoría Virtual <FaRobot />
+                            PEDIR MI ASESORÍA AHORA <FaRocket className="group-hover:translate-x-1" />
                         </button>
                     </div>
                 </div>
             </section>
 
             {/* CTA Final */}
-            <section className="py-20 px-6">
-                <div className="max-w-5xl mx-auto bg-gradient-to-br from-[#1c242e] to-[#2d3a4b] rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
-                    <h2 className="text-4xl md:text-5xl font-black text-white mb-8 relative z-10">¿Listo para modernizar tu negocio?</h2>
-                    <div className="relative z-10 flex flex-col sm:flex-row justify-center gap-6">
-                        <button
-                            onClick={() => navigate('/configurador')}
-                            className="bg-[#A8E0F0] text-[#1c242e] px-12 py-5 rounded-2xl font-black text-xl hover:scale-105 transition-transform shadow-xl"
-                        >
-                            Configurar mi Sistema
-                        </button>
-                        <button className="bg-white/10 text-white border border-white/20 px-12 py-5 rounded-2xl font-bold text-xl hover:bg-white/20 transition-all">
-                            Hablar con un asesor
-                        </button>
+            <section className="py-24 px-6 mb-20">
+                <div className="max-w-6xl mx-auto bg-gradient-to-br from-[#1c242e] via-[#242f3d] to-[#1c242e] rounded-[5rem] p-16 md:p-24 text-center relative overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-white/5">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+                    <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#A8E0F0]/10 blur-[100px] rounded-full" />
+                    <div className="relative z-10 space-y-10">
+                        <h2 className="text-5xl md:text-7xl font-black text-white leading-tight tracking-tighter">¿Listo para modernizar <br /> tu punto de venta?</h2>
+                        <div className="flex flex-col sm:flex-row justify-center gap-6 pt-4">
+                            <button
+                                onClick={() => navigate('/configurador')}
+                                className="bg-[#A8E0F0] text-[#1c242e] px-16 py-7 rounded-3xl font-black text-2xl hover:scale-105 hover:rotate-2 transition-all shadow-[0_30px_60px_-15px_rgba(168,224,240,0.5)]"
+                            >
+                                EMPEZAR COTIZACIÓN AHORA
+                            </button>
+                            <a
+                                href="https://wa.me/573202792169"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-white/5 text-white border border-white/10 px-16 py-7 rounded-3xl font-bold text-2xl hover:bg-white/10 transition-all backdrop-blur-sm"
+                            >
+                                Hablar con un asesor
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Floating Admin Entry (Subtle) */}
-            <button
-                onClick={() => navigate('/admin')}
-                className="fixed bottom-4 right-4 w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center text-white/10 hover:text-white/40 transition-all z-10"
-                title="Admin Access"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            </button>
+            {/* Assistant Floating Icon - Responsive & Interactive */}
+            <div className="fixed bottom-10 left-10 z-[100] group">
+                <div className="absolute -inset-4 bg-blue-500 group-hover:bg-[#A8E0F0] blur-2xl opacity-10 group-hover:opacity-30 transition-all duration-500 rounded-full" />
+                <button
+                    onClick={() => navigate('/configurador')}
+                    className="relative w-20 h-20 bg-[#1c242e] text-[#A8E0F0] rounded-[2rem] shadow-2xl flex items-center justify-center text-4xl hover:scale-110 active:scale-95 transition-all duration-500 outline-none border border-white/10 group-hover:rotate-12"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-50" />
+                    <FaCommentDots />
+                </button>
+                {/* Tooltip Card */}
+                <div className="absolute left-[110%] top-1/2 -translate-y-1/2 bg-white p-5 rounded-[2rem] shadow-2xl border border-gray-100 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-500 translate-x-10 group-hover:translate-x-0 min-w-[200px]">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-blue-200">
+                            <FaUserTie />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none">Asistente</p>
+                            <p className="text-[10px] text-green-500 font-bold flex items-center gap-1 mt-1">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Virtual Daniel
+                            </p>
+                        </div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-medium italic">"¡Hola! ¿Te ayudo a configurar <br /> tu cotización online?"</p>
+                    <div className="mt-3 flex gap-2">
+                        <div className="flex-1 h-1 bg-gray-50 rounded-full overflow-hidden">
+                            <div className="w-full h-full bg-blue-500 animate-loading-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Footer */}
-            <footer className="bg-[#0f172a] py-16 px-6 text-center border-t border-white/5">
-                <div className="max-w-7xl mx-auto space-y-8">
-                    <div className="flex justify-center items-center gap-4 text-white/30">
-                        <img src="/logo.png" alt="Logo" className="w-8 opacity-20 grayscale" />
-                        <span className="font-bold tracking-widest text-xs uppercase">Discovery Systems POS</span>
+            <footer className="bg-[#0b1120] py-20 px-6 text-center border-t border-white/5">
+                <div className="max-w-7xl mx-auto space-y-12">
+                    <div className="flex flex-col items-center gap-6">
+                        <img src="/logo.png" alt="Logo" className="w-12 opacity-20 hover:opacity-100 transition-opacity duration-700" />
+                        <div className="space-y-1">
+                            <p className="text-white font-black text-2xl leading-none tracking-tighter">Discovery</p>
+                            <p className="text-gray-600 text-[10px] uppercase font-black tracking-[0.4em] opacity-40">Systems POS Solutions</p>
+                        </div>
                     </div>
 
-                    <div className="flex justify-center flex-wrap gap-8 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                        <a href="#/admin" className="hover:text-[#A8E0F0] transition-colors">Panel de Control</a>
-                        <a href="https://wa.me/573202792169" className="text-green-600 hover:text-green-500">Soporte WhatsApp</a>
-                        <a href="#/configurador" className="hover:text-white transition-colors">Cotizador Online</a>
+                    <div className="flex justify-center flex-wrap gap-12 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
+                        <Link to="/admin" className="hover:text-[#A8E0F0] transition-all">Panel Administrativo</Link>
+                        <a href="https://wa.me/573202792169" className="text-green-600 hover:text-green-500 border-b-2 border-green-500/10 hover:border-green-500 transition-all pb-1 mx-4">WhatsApp Oficial</a>
+                        <Link to="/configurador" className="hover:text-white transition-all">Cotizador Web</Link>
                     </div>
 
-                    <p className="text-gray-600 text-[10px]">
-                        © {new Date().getFullYear()} Soluciones Tecnológicas de Vanguardia. Medellín, Colombia.
-                    </p>
+                    <div className="pt-12 border-t border-white/5 space-y-4">
+                        <p className="text-gray-400 text-[10px] font-bold max-w-sm mx-auto leading-relaxed">
+                            © {new Date().getFullYear()} Discovery Systems. Diseñado para la eficiencia operativa.
+                        </p>
+                        <p className="text-gray-600 text-[9px] uppercase tracking-widest font-black opacity-30">Medellín • Colombia</p>
+                    </div>
                 </div>
             </footer>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 4s infinite ease-in-out;
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in {
-          animation: fadeIn 1s ease-out;
+          animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeInRight {
+          from { opacity: 0; transform: translateX(50px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-in-right {
+          animation: fadeInRight 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes loading-bar {
+          0% { width: 0; transform: translateX(-100%); }
+          50% { width: 100%; transform: translateX(0); }
+          100% { width: 0; transform: translateX(100%); }
+        }
+        .animate-loading-bar {
+          animation: loading-bar 3s infinite ease-in-out;
+        }
+        .text-glow {
+          text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
       `}} />
         </div>
