@@ -62,7 +62,7 @@ const HomePage = () => {
                         onClick={() => navigate('/configurador')}
                         className="bg-[#A8E0F0] text-[#1c242e] px-8 py-2.5 rounded-xl font-black uppercase text-[11px] tracking-widest hover:shadow-[0_0_20px_rgba(168,224,240,0.4)] transition-all transform hover:scale-105"
                     >
-                        Empezar cotización ahora
+                        IR AHORA
                     </button>
                 </div>
             </nav>
@@ -77,7 +77,7 @@ const HomePage = () => {
                             Sistema POS de Nueva Generación
                         </div>
                         <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter">
-                            Configura tu <br /> <span className="text-[#A8E0F0]">Cotización</span> <br /> ahora.
+                            Configura tu <br /> <span className="text-[#A8E0F0]">Sistema a Medida</span> <br /> aquí.
                         </h1>
                         <p className="text-xl text-gray-400 max-w-lg leading-relaxed font-medium">
                             Olvídate de pagar de más. Obtén una asesoría experta y personalizada para equipar tu negocio con la tecnología exacta que necesitas.
@@ -87,7 +87,7 @@ const HomePage = () => {
                                 onClick={() => navigate('/configurador')}
                                 className="group relative px-10 py-6 bg-[#A8E0F0] text-[#1c242e] rounded-2xl font-black text-xl overflow-hidden transition-all hover:shadow-[0_20px_40px_-10px_rgba(168,224,240,0.5)] flex items-center justify-center gap-3"
                             >
-                                EMPEZAR COTIZACIÓN AHORA <FaRocket className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                IR AHORA <FaRocket className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                             </button>
                             <a
                                 href={assets.video_demo_url || "#"}
