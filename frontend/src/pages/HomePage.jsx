@@ -214,37 +214,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Assistant Floating Icon - Responsive & Interactive */}
-            <div className="fixed bottom-10 left-10 z-[100] group">
-                <div className="absolute -inset-4 bg-blue-500 group-hover:bg-[#A8E0F0] blur-2xl opacity-10 group-hover:opacity-30 transition-all duration-500 rounded-full" />
-                <button
-                    onClick={() => navigate('/configurador')}
-                    className="relative w-20 h-20 bg-[#1c242e] text-[#A8E0F0] rounded-[2rem] shadow-2xl flex items-center justify-center text-4xl hover:scale-110 active:scale-95 transition-all duration-500 outline-none border border-white/10 group-hover:rotate-12"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-50" />
-                    <FaCommentDots />
-                </button>
-                {/* Tooltip Card */}
-                <div className="absolute left-[110%] top-1/2 -translate-y-1/2 bg-white p-5 rounded-[2rem] shadow-2xl border border-gray-100 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-500 translate-x-10 group-hover:translate-x-0 min-w-[200px]">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-blue-200">
-                            <FaUserTie />
-                        </div>
-                        <div>
-                            <p className="text-xs font-black text-gray-900 uppercase tracking-widest leading-none">Asistente</p>
-                            <p className="text-[10px] text-green-500 font-bold flex items-center gap-1 mt-1">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Virtual Daniel
-                            </p>
-                        </div>
-                    </div>
-                    <p className="text-[11px] text-gray-500 font-medium italic">"¡Hola! ¿Te ayudo a configurar <br /> tu cotización online?"</p>
-                    <div className="mt-3 flex gap-2">
-                        <div className="flex-1 h-1 bg-gray-50 rounded-full overflow-hidden">
-                            <div className="w-full h-full bg-blue-500 animate-loading-bar"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             {/* Footer */}
             <footer className="bg-[#0b1120] py-20 px-6 text-center border-t border-white/5">
@@ -287,14 +257,6 @@ const HomePage = () => {
         }
         .animate-fade-in-right {
           animation: fadeInRight 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes loading-bar {
-          0% { width: 0; transform: translateX(-100%); }
-          50% { width: 100%; transform: translateX(0); }
-          100% { width: 0; transform: translateX(100%); }
-        }
-        .animate-loading-bar {
-          animation: loading-bar 3s infinite ease-in-out;
         }
         .text-glow {
           text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
