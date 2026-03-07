@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import QuotePage from './pages/QuotePage';
 import ClientPortal from './pages/ClientPortal';
@@ -72,9 +72,15 @@ function App() {
       <div className="relative min-h-screen bg-gray-50 flex flex-col">
         {/* Banner de Versión Persistente */}
         <div className="bg-[#1c242e] text-[#A8E0F0] text-[10px] py-1 px-4 flex justify-between items-center z-[200] border-b border-blue-500/20 font-mono tracking-widest uppercase">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <span>Discovery Systems POS v6.5</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span>Discovery Systems POS v6.6</span>
+            </div>
+            <Link to="/admin" className="bg-blue-500/10 hover:bg-blue-500/20 text-[#A8E0F0] px-2 py-0.5 rounded border border-blue-500/30 transition-all flex items-center gap-1 group">
+              <span className="opacity-70 group-hover:opacity-100">🔐</span>
+              <span>Ingresar</span>
+            </Link>
           </div>
           <div className="hidden md:block">Cloud Sync • Supabase Ready • Node 16 Stable</div>
         </div>
