@@ -143,17 +143,17 @@ const BusinessTypeSelection = ({ onSelect }) => {
 
             {/* Main Categories View */}
             {!selectedCategory && !isCustom && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat)}
-                            className="flex flex-col items-center p-5 border-2 border-gray-100 rounded-xl hover:border-indigo-500 hover:shadow-lg transition-all group bg-white"
+                            className="flex flex-col items-center p-4 md:p-5 border-2 border-gray-100 rounded-xl hover:border-indigo-500 hover:shadow-lg transition-all group bg-white"
                         >
-                            <div className={`text-3xl mb-3 p-3 rounded-full ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform`}>
+                            <div className={`text-2xl md:text-3xl mb-2 md:mb-3 p-2 md:p-3 rounded-full ${cat.bg} ${cat.color} group-hover:scale-110 transition-transform`}>
                                 {cat.icon}
                             </div>
-                            <span className="font-semibold text-gray-700 text-sm md:text-base group-hover:text-indigo-600">
+                            <span className="font-semibold text-gray-700 text-xs md:text-base group-hover:text-indigo-600">
                                 {cat.name}
                             </span>
                         </button>
@@ -162,12 +162,12 @@ const BusinessTypeSelection = ({ onSelect }) => {
                     {/* Other / Custom Option */}
                     <button
                         onClick={() => setIsCustom(true)}
-                        className="flex flex-col items-center p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-500 hover:bg-gray-50 transition-all group"
+                        className="flex flex-col items-center p-4 md:p-5 border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-500 hover:bg-gray-50 transition-all group"
                     >
-                        <div className="text-3xl mb-3 p-3 text-gray-400 group-hover:scale-110 transition-transform">
+                        <div className="text-2xl md:text-3xl mb-2 md:mb-3 p-2 md:p-3 text-gray-400 group-hover:scale-110 transition-transform">
                             <FaSearch />
                         </div>
-                        <span className="font-semibold text-gray-500 text-sm md:text-base group-hover:text-gray-700">
+                        <span className="font-semibold text-gray-500 text-xs md:text-base group-hover:text-gray-700">
                             Otro / No está en la lista
                         </span>
                     </button>
@@ -219,17 +219,17 @@ const BusinessTypeSelection = ({ onSelect }) => {
                         <FaArrowLeft className="mr-2" /> Volver
                     </button>
 
-                    <form onSubmit={handleCustomSubmit} className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+                    <form onSubmit={handleCustomSubmit} className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-100">
                         <div className="mb-6">
-                            <label className="block text-left text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-left text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                                 Describe tu tipo de negocio
                             </label>
                             <input
                                 type="text"
                                 value={customType}
                                 onChange={(e) => setCustomType(e.target.value)}
-                                placeholder="Ej: Tienda de Comics, Taller de Arte..."
-                                className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 text-lg"
+                                placeholder="Ej: Tienda de Comics..."
+                                className="w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-gray-50 text-base md:text-lg"
                                 autoFocus
                             />
                         </div>

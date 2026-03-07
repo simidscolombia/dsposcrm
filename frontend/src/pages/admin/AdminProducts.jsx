@@ -8,7 +8,7 @@ const AdminProducts = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', description: '', price: '', category_id: '', category: '', image_url: '', stock: 0
+        name: '', description: '', price: '', category_id: '', category: '', image_url: '', stock: 0, system_type: 'All'
     });
     const [editMode, setEditMode] = useState(false);
     const [currentId, setCurrentId] = useState(null);
@@ -81,7 +81,8 @@ const AdminProducts = () => {
             category_id: prod.category_id || '',
             category: prod.category || '',
             image_url: prod.image_url || '',
-            stock: prod.stock || 0
+            stock: prod.stock || 0,
+            system_type: prod.system_type || 'All'
         });
         setCurrentId(prod.id);
         setEditMode(true);
@@ -89,7 +90,7 @@ const AdminProducts = () => {
     };
 
     const resetForm = () => {
-        setFormData({ name: '', description: '', price: '', category_id: '', category: '', image_url: '', stock: 0 });
+        setFormData({ name: '', description: '', price: '', category_id: '', category: '', image_url: '', stock: 0, system_type: 'All' });
         setEditMode(false);
         setCurrentId(null);
     };
@@ -320,7 +321,22 @@ const AdminProducts = () => {
                                     />
                                 </div>
 
-                                <div className="md:col-span-2">
+                                <div>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Segmento del Sistema</label>
+                                    <select
+                                        value={formData.system_type}
+                                        onChange={(e) => setFormData({ ...formData, system_type: e.target.value })}
+                                        className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 appearance-none cursor-pointer"
+                                        required
+                                    >
+                                        <option value="All">🚀 Todos los Flujos (General)</option>
+                                        <option value="Software">💾 Solo Software (Licencias)</option>
+                                        <option value="Combo">🖥️ Combo Completo (Guided)</option>
+                                        <option value="Mix">🔫 Software + Mix Equipos</option>
+                                    </select>
+                                </div>
+
+                                <div className="md:col-span-1">
                                     <label className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2 block ml-1">Categoría</label>
                                     <select
                                         value={formData.category_id}

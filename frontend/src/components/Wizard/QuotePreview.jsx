@@ -189,8 +189,8 @@ const QuotePreview = ({
         <div className="p-4 md:p-8 max-w-4xl mx-auto pb-24">
             {/* Page Header */}
             <div className="mb-8 text-center">
-                <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Tu Propuesta Comercial</h2>
-                <p className="text-gray-500 font-medium max-w-lg mx-auto">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2 tracking-tight">Tu Propuesta Comercial</h2>
+                <p className="text-sm md:text-base text-gray-500 font-medium max-w-lg mx-auto">
                     Personaliza cada detalle de tu sistema Discovery. Todo está listo para que te lleves el mejor precio.
                 </p>
             </div>
@@ -199,14 +199,14 @@ const QuotePreview = ({
             <div className="bg-white rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden relative">
 
                 {/* Formal Header */}
-                <div className="bg-[#1c242e] p-8 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b-4 border-blue-600">
+                <div className="bg-[#1c242e] p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b-4 border-blue-600">
                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center p-3 backdrop-blur-md">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-2xl flex items-center justify-center p-2 md:p-3 backdrop-blur-md">
                             <img src="/logo.png" alt="Discovery" className="w-full h-full object-contain" />
                         </div>
                         <div>
-                            <h3 className="text-white font-black text-xl tracking-tight uppercase">Discovery Systems</h3>
-                            <p className="text-blue-300 text-xs font-bold tracking-widest uppercase opacity-80">Software & Hardware POS</p>
+                            <h3 className="text-white font-black text-lg md:text-xl tracking-tight uppercase">Discovery Systems</h3>
+                            <p className="text-blue-300 text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-80">Software & Hardware POS</p>
                         </div>
                     </div>
                     <div className="text-left md:text-right">
@@ -216,7 +216,7 @@ const QuotePreview = ({
                 </div>
 
                 {/* Info Bar */}
-                <div className="px-8 md:px-12 py-8 bg-gray-50/50 border-b border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="px-6 md:px-12 py-6 md:py-8 bg-gray-50/50 border-b border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-1">
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
                             <FaUserCircle /> Preparado para:
@@ -236,8 +236,8 @@ const QuotePreview = ({
                                     className="flex items-center gap-2 cursor-pointer hover:bg-white hover:shadow-sm px-2 py-1 rounded-lg transition-all"
                                     onClick={() => setIsEditingName(true)}
                                 >
-                                    <span className="font-black text-gray-800 text-lg">{nameInput || 'Cliente Discovery'}</span>
-                                    <FaEdit className="text-blue-400 group-hover:scale-110 transition-transform text-sm" />
+                                    <span className="font-black text-gray-800 text-base md:text-lg">{nameInput || 'Cliente Discovery'}</span>
+                                    <FaEdit className="text-blue-400 group-hover:scale-110 transition-transform text-xs md:text-sm" />
                                 </div>
                             )}
                         </div>
@@ -256,75 +256,75 @@ const QuotePreview = ({
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-gray-100/30 text-left border-b border-gray-100">
-                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Descripción Detallada</th>
-                                <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Cant.</th>
-                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Monto Total</th>
+                                <th className="px-6 md:px-12 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Descripción</th>
+                                <th className="px-4 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Cant.</th>
+                                <th className="px-6 md:px-12 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Monto</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {products.length === 0 ? (
                                 <tr>
                                     <td colSpan="3" className="py-20 text-center">
-                                        <p className="text-gray-400 font-bold uppercase tracking-widest">No has seleccionado productos aún.</p>
+                                        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No has seleccionado productos aún.</p>
                                     </td>
                                 </tr>
                             ) : products.map((p, idx) => (
                                 <tr key={p.id || idx} className="hover:bg-blue-50/20 transition-colors group/row">
                                     {/* Info Column */}
-                                    <td className="px-8 md:px-12 py-6">
-                                        <div className="flex items-start gap-5">
+                                    <td className="px-6 md:px-12 py-4 md:py-6">
+                                        <div className="flex items-start gap-4 md:gap-5">
                                             {renderImage(p.image_url)}
                                             <div className="min-w-0 flex-grow">
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <h4 className="font-black text-gray-900 text-sm md:text-base pr-2 truncate">
-                                                        {p.name || 'Producto sin nombre'}
+                                                <div className="flex items-center gap-2 md:gap-3 mb-0.5 md:mb-1">
+                                                    <h4 className="font-black text-gray-900 text-xs md:text-base pr-1 truncate">
+                                                        {p.name || 'Producto'}
                                                     </h4>
                                                     <button
                                                         onClick={() => handleSwapClick(idx)}
-                                                        className="p-1.5 bg-gray-100 text-blue-500 rounded-lg opacity-0 group-hover/row:opacity-100 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110 shadow-sm"
+                                                        className="p-1 md:p-1.5 bg-gray-100 text-blue-500 rounded-lg md:opacity-0 group-hover/row:opacity-100 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110 shadow-sm"
                                                         title="Cambiar modelo"
                                                     >
-                                                        <FaExchangeAlt size={11} />
+                                                        <FaExchangeAlt size={10} className="md:size-[11px]" />
                                                     </button>
                                                 </div>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-3">
+                                                <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-2 md:mb-3">
                                                     Cat: {p.category || 'General'}
                                                 </p>
                                                 <button
                                                     onClick={() => removeProduct(idx)}
-                                                    className="flex items-center gap-1.5 text-red-300 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-colors opacity-0 group-hover/row:opacity-100"
+                                                    className="flex items-center gap-1.5 text-red-300 hover:text-red-500 text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors md:opacity-0 group-hover/row:opacity-100"
                                                 >
-                                                    <FaTrash size={9} /> Eliminar línea
+                                                    <FaTrash size={8} className="md:size-[9px]" /> Eliminar
                                                 </button>
                                             </div>
                                         </div>
                                     </td>
 
                                     {/* Quantity Column */}
-                                    <td className="px-4 py-6 align-middle">
-                                        <div className="flex items-center justify-center gap-2 p-1.5 bg-white border border-gray-200 rounded-2xl w-fit mx-auto shadow-sm">
+                                    <td className="px-2 md:px-4 py-4 md:py-6 align-middle">
+                                        <div className="flex items-center justify-center gap-1 md:gap-2 p-1 bg-white border border-gray-200 rounded-xl md:rounded-2xl w-fit mx-auto shadow-sm">
                                             <button
                                                 onClick={() => updateQuantity(idx, -1)}
-                                                className="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all border border-gray-100"
+                                                className="w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-gray-50 rounded-lg md:rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all border border-gray-100"
                                             >
-                                                <FaMinus size={10} />
+                                                <FaMinus size={8} md:size={10} />
                                             </button>
-                                            <span className="w-8 text-center font-black text-gray-800 text-sm">{p.quantity}</span>
+                                            <span className="w-5 md:w-8 text-center font-black text-gray-800 text-xs md:text-sm">{p.quantity}</span>
                                             <button
                                                 onClick={() => updateQuantity(idx, 1)}
-                                                className="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-xl text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-all border border-gray-100"
+                                                className="w-6 h-6 md:w-8 md:h-8 flex items-center justify-center bg-gray-50 rounded-lg md:rounded-xl text-gray-400 hover:bg-blue-50 hover:text-blue-500 transition-all border border-gray-100"
                                             >
-                                                <FaPlus size={10} />
+                                                <FaPlus size={8} md:size={10} />
                                             </button>
                                         </div>
                                     </td>
 
                                     {/* Price Column */}
-                                    <td className="px-8 md:px-12 py-6 text-right align-middle">
-                                        <p className="text-[10px] text-gray-400 font-bold mb-1 opacity-60">
-                                            {formatCurrency(p.price)} / un
+                                    <td className="px-6 md:px-12 py-4 md:py-6 text-right align-middle">
+                                        <p className="text-[9px] md:text-[10px] text-gray-400 font-bold mb-0.5 md:mb-1 opacity-60">
+                                            {formatCurrency(p.price)}
                                         </p>
-                                        <p className="font-black text-gray-900 text-lg">
+                                        <p className="font-black text-gray-900 text-sm md:text-lg">
                                             {formatCurrency(parseFloat(p.price || 0) * (p.quantity || 1))}
                                         </p>
                                     </td>
@@ -333,13 +333,13 @@ const QuotePreview = ({
 
                             {/* Empty State or Add Row */}
                             <tr>
-                                <td colSpan="3" className="px-12 py-10 text-center">
+                                <td colSpan="3" className="px-6 md:px-12 py-8 md:py-10 text-center">
                                     <button
                                         onClick={handleAddClick}
-                                        className="inline-flex items-center gap-3 px-8 py-3.5 bg-white border-2 border-dashed border-gray-200 text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-sm group"
+                                        className="inline-flex items-center gap-2 md:gap-3 px-6 md:px-8 py-3 md:py-3.5 bg-white border-2 border-dashed border-gray-200 text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all shadow-sm group"
                                     >
-                                        <FaPlus className="text-lg group-hover:rotate-90 transition-transform" />
-                                        Añadir equipo o servicio adicional
+                                        <FaPlus className="text-sm md:text-lg group-hover:rotate-90 transition-transform" />
+                                        Añadir equipo o servicio
                                     </button>
                                 </td>
                             </tr>
@@ -360,17 +360,17 @@ const QuotePreview = ({
                             </p>
                         </div>
 
-                        <div className="w-full md:w-[350px] bg-white rounded-3xl p-6 shadow-2xl shadow-blue-900/10 border border-blue-50">
+                        <div className="w-full md:w-[350px] bg-white rounded-3xl p-5 md:p-6 shadow-2xl shadow-blue-900/10 border border-blue-50">
                             <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal Neto</span>
-                                <span className="text-gray-600 font-bold">{formatCurrency(calculateTotal())}</span>
+                                <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal Neto</span>
+                                <span className="text-gray-600 font-bold text-sm md:text-base">{formatCurrency(calculateTotal())}</span>
                             </div>
-                            <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
+                            <div className="flex justify-between items-center pt-3 md:pt-4 mt-3 md:mt-4 border-t border-gray-100">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-black text-gray-900 uppercase tracking-tighter leading-none">Total Inversión</span>
-                                    <span className="text-[9px] text-blue-600 font-bold">IVA Incluido</span>
+                                    <span className="text-[10px] md:text-xs font-black text-gray-900 uppercase tracking-tighter leading-none">Total Inversión</span>
+                                    <span className="text-[8px] md:text-[9px] text-blue-600 font-bold">IVA Incluido</span>
                                 </div>
-                                <span className="text-3xl font-black text-blue-600 tabular-nums">
+                                <span className="text-2xl md:text-3xl font-black text-blue-600 tabular-nums">
                                     {formatCurrency(calculateTotal())}
                                 </span>
                             </div>
@@ -402,10 +402,10 @@ const QuotePreview = ({
 
                 <button
                     onClick={() => onConfirm(products)}
-                    className="w-full flex-grow bg-blue-600 text-white text-xl font-black py-5 px-10 rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 relative overflow-hidden group active:scale-95"
+                    className="w-full flex-grow bg-blue-600 text-white text-base md:text-xl font-black py-4 md:py-5 px-6 md:px-10 rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 md:hover:-translate-y-1 transition-all flex items-center justify-center gap-3 md:gap-4 relative overflow-hidden group active:scale-95"
                 >
-                    <span className="relative z-10 flex items-center gap-3">
-                        ¡Confirmar & Ir por mi Premio! <FaGift className="text-2xl animate-pulse" />
+                    <span className="relative z-10 flex items-center gap-2 md:gap-3">
+                        Confirmar & Ir por mi Premio <FaGift className="text-xl md:text-2xl animate-pulse" />
                     </span>
                     {/* Shimmer effect */}
                     <div className="absolute inset-x-0 inset-y-0 w-1/4 h-full bg-white/20 -skew-x-12 translate-x-[-200%] group-hover:animate-shimmer transition-all"></div>

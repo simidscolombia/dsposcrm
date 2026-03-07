@@ -77,23 +77,23 @@ const CitySelection = ({ onSelect }) => {
             {/* Header - Muy visual para móvil */}
             <div className="text-center mb-6 pt-2">
                 <div className="relative inline-block">
-                    <div className="w-16 h-16 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg transform -rotate-3">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600 text-white rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-3 md:mb-4 text-2xl md:text-3xl shadow-lg transform -rotate-3">
                         <FaMapMarkerAlt />
                     </div>
                     {detecting && (
-                        <div className="absolute -right-2 -top-2 w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
+                        <div className="absolute -right-1 -top-1 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
                     )}
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">¿En qué ciudad<br />estás hoy?</h2>
+                <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight leading-tight">¿En qué ciudad<br />estás hoy?</h2>
             </div>
 
             {/* Buscador - Fijo en la parte superior del flujo */}
             <div className="relative mb-6 sticky top-0 z-20 group">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 group-focus-within:scale-125 transition-transform" />
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 group-focus-within:scale-110 transition-transform" />
                 <input
                     type="text"
                     placeholder="Escribe tu ciudad (ej: Chía, Cali...)"
-                    className="w-full pl-12 pr-12 py-5 bg-white border-2 border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] rounded-3xl focus:border-blue-500 outline-none transition-all text-lg font-medium placeholder:text-gray-300"
+                    className="w-full pl-12 pr-12 py-4 md:py-5 bg-white border-2 border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] rounded-2xl md:rounded-3xl focus:border-blue-500 outline-none transition-all text-base md:text-lg font-medium placeholder:text-gray-300"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     autoFocus={!detectedCity}
@@ -114,18 +114,18 @@ const CitySelection = ({ onSelect }) => {
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">¿Es esta tu ubicación?</p>
                     <button
                         onClick={() => onSelect(detectedCity)}
-                        className="w-full bg-white p-5 rounded-3xl border-2 border-blue-500 shadow-xl shadow-blue-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"
+                        className="w-full bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border-2 border-blue-500 shadow-xl shadow-blue-500/10 flex items-center justify-between group active:scale-[0.98] transition-all"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                                <FaGlobeAmericas className="text-2xl animate-spin-slow" />
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600">
+                                <FaGlobeAmericas className="text-xl md:text-2xl animate-spin-slow" />
                             </div>
                             <div className="text-left">
-                                <p className="text-xl font-black text-gray-800">{detectedCity}</p>
-                                <p className="text-xs text-blue-500 font-bold">Clic para confirmar</p>
+                                <p className="text-lg md:text-xl font-black text-gray-800">{detectedCity}</p>
+                                <p className="text-[10px] md:text-xs text-blue-500 font-bold">Clic para confirmar</p>
                             </div>
                         </div>
-                        <div className="bg-blue-600 text-white p-2 rounded-xl">
+                        <div className="bg-blue-600 text-white p-1.5 md:p-2 rounded-lg md:rounded-xl text-xs md:text-base">
                             <FaChevronRight />
                         </div>
                     </button>
@@ -136,23 +136,23 @@ const CitySelection = ({ onSelect }) => {
             {searchTerm && (
                 <div className="animate-fade-in-up">
                     {searchResults.length > 0 ? (
-                        <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border border-blue-50">
-                            <div className="p-4 bg-blue-50/50 text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] border-b border-blue-100 flex items-center gap-2">
+                        <div className="bg-white rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-blue-50">
+                            <div className="p-3 md:p-4 bg-blue-50/50 text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] border-b border-blue-100 flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
                                 Sugerencias encontradas
                             </div>
-                            <div className="divide-y divide-gray-50 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                            <div className="divide-y divide-gray-50 max-h-[40vh] md:max-h-[50vh] overflow-y-auto custom-scrollbar">
                                 {searchResults.map((item, idx) => (
                                     <button
                                         key={`${item.city}-${idx}`}
                                         onClick={() => handleGlobalSelect(item)}
-                                        className="w-full p-5 hover:bg-blue-50 flex items-center justify-between group active:bg-blue-100 transition-all font-sans"
+                                        className="w-full p-4 md:p-5 hover:bg-blue-50 flex items-center justify-between group active:bg-blue-100 transition-all font-sans"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <span className="text-2xl transition-transform group-hover:scale-125">{item.emoji}</span>
+                                            <span className="text-xl md:text-2xl transition-transform group-hover:scale-125">{item.emoji}</span>
                                             <div className="text-left">
-                                                <p className="font-bold text-gray-800 text-lg group-hover:text-blue-700">{item.city}</p>
-                                                <p className="text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{item.department}</p>
+                                                <p className="font-bold text-gray-800 text-base md:text-lg group-hover:text-blue-700">{item.city}</p>
+                                                <p className="text-[9px] md:text-[10px] text-gray-400 font-mono tracking-tighter uppercase">{item.department}</p>
                                             </div>
                                         </div>
                                         <FaChevronRight className="text-gray-200 group-hover:text-blue-500 transition-all group-hover:translate-x-1" />

@@ -203,14 +203,14 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                     <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-white/10">
                         <FaGift className="animate-bounce" /> Beneficio Activado Correctamente
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+                    <h1 className="text-2xl md:text-5xl font-black text-white mb-4 tracking-tight">
                         ¡Felicidades, {localName.split(' ')[0]}! 🎉
                     </h1>
-                    <p className="text-blue-100/80 text-lg mb-8 max-w-xl mx-auto font-medium">
+                    <p className="text-blue-100/80 text-sm md:text-lg mb-8 max-w-xl mx-auto font-medium">
                         Tu premio exclusivo ha sido aplicado al total de tu cotización. ¡Estás a un paso de revolucionar tu negocio!
                     </p>
                     <div className="inline-flex flex-col md:flex-row items-center gap-4">
-                        <div className="bg-white text-blue-700 text-2xl font-black px-10 py-4 rounded-3xl shadow-2xl transform transition-transform hover:scale-105">
+                        <div className="bg-white text-blue-700 text-lg md:text-2xl font-black px-8 py-3 md:px-10 md:py-4 rounded-2xl md:rounded-3xl shadow-2xl transform transition-transform hover:scale-105">
                             🎁 {disc.label}
                         </div>
                     </div>
@@ -221,14 +221,14 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
             <div className="bg-white rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden relative">
 
                 {/* Header Formal */}
-                <div className="bg-[#1c242e] p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-blue-600">
+                <div className="bg-[#1c242e] p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-blue-600">
                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center p-3">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-2xl flex items-center justify-center p-2 md:p-3">
                             <img src="/logo.png" alt="Discovery" className="w-full h-full object-contain" />
                         </div>
                         <div className="text-left">
-                            <h3 className="text-white font-black text-xl tracking-tight uppercase">Discovery Systems</h3>
-                            <p className="text-blue-300 text-xs font-bold tracking-widest uppercase opacity-80">Cotización Final Confirmada</p>
+                            <h3 className="text-white font-black text-lg md:text-xl tracking-tight uppercase">Discovery Systems</h3>
+                            <p className="text-blue-300 text-[9px] md:text-xs font-bold tracking-widest uppercase opacity-80">Cotización Final Confirmada</p>
                         </div>
                     </div>
                     <div className="text-right hidden md:block">
@@ -242,20 +242,20 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                     <table className="w-full border-collapse">
                         <thead>
                             <tr className="bg-gray-50 text-left border-b border-gray-100">
-                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Detalle de Inversión</th>
-                                <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Cant</th>
-                                <th className="px-8 md:px-12 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Monto</th>
+                                <th className="px-6 md:px-12 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">Detalle de Inversión</th>
+                                <th className="px-4 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Cant</th>
+                                <th className="px-6 md:px-12 py-4 md:py-5 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Monto</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {selectedProducts.map((p, idx) => (
                                 <tr key={idx}>
-                                    <td className="px-8 md:px-12 py-5">
+                                    <td className="px-6 md:px-12 py-4 md:py-5">
                                         <h4 className="font-bold text-gray-800 text-sm whitespace-pre-wrap">{p.name || p.product_name || 'Artículo'}</h4>
                                         <p className="text-[10px] text-gray-400 font-bold uppercase">{p.category || p.category_name || 'General'}</p>
                                     </td>
-                                    <td className="px-4 py-5 text-center font-bold text-blue-600 text-sm">x{p.quantity || 1}</td>
-                                    <td className="px-8 md:px-12 py-5 text-right font-bold text-gray-900">{formatCurrency(p.price * (p.quantity || 1))}</td>
+                                    <td className="px-4 py-4 md:py-5 text-center font-bold text-blue-600 text-sm">x{p.quantity || 1}</td>
+                                    <td className="px-6 md:px-12 py-4 md:py-5 text-right font-bold text-gray-900 text-sm md:text-base">{formatCurrency(p.price * (p.quantity || 1))}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -287,14 +287,14 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                     <div className="w-full md:w-[320px] bg-white p-6 rounded-3xl shadow-xl border border-blue-50">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Valor Comercial</span>
-                            <span className="text-gray-400 font-bold line-through">{formatCurrency(subtotal)}</span>
+                            <span className="text-gray-400 font-bold line-through text-sm">{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t-2 border-dashed border-gray-100">
                             <div>
                                 <span className="text-xs font-black text-gray-900 uppercase">Total Final</span>
                                 <p className="text-[9px] text-blue-600 font-black uppercase">Neto a Pagar</p>
                             </div>
-                            <span className="text-3xl font-black text-blue-600 tabular-nums">
+                            <span className="text-2xl md:text-3xl font-black text-blue-600 tabular-nums">
                                 {formatCurrency(finalTotal)}
                             </span>
                         </div>
@@ -336,7 +336,7 @@ const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, bu
                             <button
                                 onClick={saveQuoteAndContinue}
                                 disabled={isSaving}
-                                className="w-full bg-blue-600 text-white text-lg font-black py-5 px-10 rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 relative overflow-hidden group active:scale-95 disabled:opacity-50"
+                                className="w-full bg-blue-600 text-white text-base md:text-lg font-black py-4 md:py-5 px-6 md:px-10 rounded-2xl shadow-2xl shadow-blue-500/30 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 relative overflow-hidden group active:scale-95 disabled:opacity-50"
                             >
                                 {isSaving ? 'Guardando...' : (
                                     <>Ver Mi Cotización Oficial <FaArrowRight /></>

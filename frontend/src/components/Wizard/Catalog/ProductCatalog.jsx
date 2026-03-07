@@ -17,6 +17,7 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
     const [cart, setCart] = useState({});
     const [currentStep, setCurrentStep] = useState(0);
     const [viewMode, setViewMode] = useState('grid');
+    const [showAll, setShowAll] = useState(false);
     const hasSpokenRef = useRef(false);
 
     // Define steps for Guided Flow (Combo only)
@@ -94,12 +95,25 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
 
     // Smart Filter: Match products by category names OR specific keywords
     const stepProducts = useMemo(() => {
-        if (!isGuided) return products;
+        if (showAll) return products;
+
+        // 1. FILTER BY SYSTEM TYPE FIRST (Global Filter)
+        let baseProducts = products;
+        if (systemType === 'Software') {
+            baseProducts = products.filter(p => p.system_type === 'Software' || p.system_type === 'All');
+        } else if (systemType === 'Combo') {
+            baseProducts = products.filter(p => p.system_type === 'Combo' || p.system_type === 'All');
+        } else if (systemType === 'Mix') {
+            baseProducts = products.filter(p => p.system_type === 'Mix' || p.system_type === 'All');
+        }
+
+        // 2. APPLY GUIDED STEPS FILTER (If Combo)
+        if (!isGuided) return baseProducts;
 
         // Split keywords to match partials (e.g. "hardware" in "hardware pos")
         const keywords = steps[currentStep].categories.flatMap(c => c.toLowerCase().split(' '));
 
-        return products.filter(p => {
+        return baseProducts.filter(p => {
             const pCat = (p.category_name || p.category || '').toLowerCase();
             const pName = (p.name || '').toLowerCase();
             const pSlug = (p.category_slug || '').toLowerCase();
@@ -112,7 +126,7 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                 (key.length > 3 && pCat.includes(key.substring(0, 4)))
             );
         });
-    }, [products, currentStep, isGuided]);
+    }, [products, currentStep, isGuided, systemType, showAll]);
 
     const handleNextStep = () => {
         stopSpeech();
@@ -139,6 +153,22 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
             setCurrentStep(curr => curr - 1);
             window.scrollTo(0, 0);
         }
+    };
+
+    const handleFinishEarly = () => {
+        stopSpeech();
+        const items = Object.entries(cart).map(([idStr, qty]) => {
+            const productId = parseInt(idStr);
+            const product = products.find(p => p.id === productId);
+            if (!product) return null;
+            return { ...product, quantity: qty };
+        }).filter(Boolean);
+
+        if (items.length === 0) {
+            // Un pequeño feedback visual si intenta terminar sin nada
+            return;
+        }
+        onContinue(items);
     };
 
     if (loading) return (
@@ -176,10 +206,10 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
 
                 {/* Step Context */}
                 <div className="mb-8">
-                    <h2 className="text-3xl font-black text-gray-900 uppercase">
+                    <h2 className="text-xl md:text-3xl font-black text-gray-900 uppercase">
                         {isGuided ? steps[currentStep].name : 'Catálogo de Soluciones'}
                     </h2>
-                    <p className="text-gray-500">
+                    <p className="text-sm md:text-gray-500">
                         {isGuided ? `Paso ${currentStep + 1} de ${steps.length}: Selecciona tus componentes.` : 'Elige lo que necesitas para tu negocio.'}
                     </p>
                 </div>
@@ -211,7 +241,7 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                                 <p className="text-xs text-gray-400 mb-4 h-10 overflow-hidden line-clamp-2">{product.description || 'Tecnología líder para tu punto de venta.'}</p>
 
                                 <div className="flex items-center justify-between mt-4">
-                                    <span className="text-2xl font-black text-gray-900">${parseFloat(product.price).toLocaleString()}</span>
+                                    <span className="text-xl md:text-2xl font-black text-gray-900">${parseFloat(product.price).toLocaleString()}</span>
                                     <div className="flex bg-gray-100 rounded-xl p-1 gap-2">
                                         {cart[product.id] > 0 && (
                                             <>
@@ -242,12 +272,7 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                         </div>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <button
-                                onClick={() => {
-                                    // Hacky way to disable filter temporarily: set systemType to something else
-                                    // but better if we just had a state for 'showAllOverride'
-                                    alert("Cargando catálogo completo...");
-                                    window.location.reload(); // Quick fix or we could add a state
-                                }}
+                                onClick={() => setShowAll(true)}
                                 className="text-blue-600 font-bold hover:underline py-2 px-4"
                             >
                                 Ver catálogo completo
@@ -267,10 +292,20 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
             <footer className="fixed bottom-0 left-0 w-full bg-[#1c242e] text-white p-6 shadow-[0_-20px_50px_rgba(0,0,0,0.3)] z-40 overflow-hidden">
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
                     <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Inversión Estimada</span>
-                        <span className="text-3xl font-black text-[#A8E0F0]">${calculateTotal().toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Inversión Estimada</span>
+                        <span className="text-xl md:text-3xl font-black text-[#A8E0F0]">${calculateTotal().toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
+                        {/* Botón Terminar Ya (Solo si es guiado y hay algo en el carrito) */}
+                        {isGuided && Object.keys(cart).length > 0 && currentStep < steps.length - 1 && (
+                            <button
+                                onClick={handleFinishEarly}
+                                className="hidden sm:flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/20 text-[#A8E0F0] rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
+                            >
+                                <FaCheck /> Finalizar Pedido
+                            </button>
+                        )}
+
                         {currentStep > 0 && (
                             <button
                                 onClick={handlePrevStep}
@@ -282,7 +317,7 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                         )}
                         <button
                             onClick={handleNextStep}
-                            className="group bg-[#A8E0F0] text-[#1c242e] px-10 py-4 rounded-2xl font-black text-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(168,224,240,0.4)]"
+                            className="group bg-[#A8E0F0] text-[#1c242e] px-6 py-3 md:px-10 md:py-4 rounded-xl md:rounded-2xl font-black text-base md:text-xl flex items-center gap-2 md:gap-3 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(168,224,240,0.4)]"
                         >
                             {currentStep < steps.length - 1 ? (
                                 <> SIGUIENTE <FaArrowRight className="group-hover:translate-x-1 transition-transform" /> </>
@@ -292,6 +327,18 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
                         </button>
                     </div>
                 </div>
+
+                {/* Botón Finalizar Móvil (Aparece solo si hay items y es guiado) */}
+                {isGuided && Object.keys(cart).length > 0 && currentStep < steps.length - 1 && (
+                    <div className="max-w-6xl mx-auto mt-4 sm:hidden">
+                        <button
+                            onClick={handleFinishEarly}
+                            className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/20 text-[#A8E0F0] rounded-xl font-bold text-[10px] uppercase tracking-widest"
+                        >
+                            <FaCheck /> Finalizar Pedido y Ver Resumen
+                        </button>
+                    </div>
+                )}
             </footer>
         </div>
     );

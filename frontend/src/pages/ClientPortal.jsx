@@ -145,33 +145,35 @@ const ClientPortal = () => {
     };
 
     const renderPremiumDocument = () => (
-        <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-4xl w-full relative animate-scale-in my-8 overflow-hidden">
-            <div className="bg-[#1c242e] p-8 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-blue-600">
+        <div className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-2xl max-w-4xl w-full relative animate-scale-in my-4 md:my-8 overflow-hidden">
+            <div className="bg-[#1c242e] p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b-4 border-blue-600">
                 <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center p-3 backdrop-blur-md">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 rounded-2xl flex items-center justify-center p-2.5 md:p-3 backdrop-blur-md">
                         <img src="/logo.png" alt="Discovery" className="w-full h-full object-contain" />
                     </div>
                     <div className="text-left">
-                        <h3 className="text-white font-black text-xl tracking-tight uppercase">Discovery Systems</h3>
+                        <h3 className="text-white font-black text-lg md:text-xl tracking-tight uppercase">Discovery Systems</h3>
                         <p className="text-blue-300 text-[10px] font-black tracking-[0.2em] uppercase opacity-80">Software & Hardware POS</p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-gray-400 text-[10px] uppercase font-black tracking-widest mb-1">Cotización Oficial</p>
-                    <p className="text-white font-mono text-lg">#DS-{String(id).padStart(4, '0')}</p>
+                <div className="text-left md:text-right w-full md:w-auto flex justify-between md:block">
+                    <div className="md:block">
+                        <p className="text-gray-400 text-[9px] md:text-[10px] uppercase font-black tracking-widest mb-1">Cotización Oficial</p>
+                        <p className="text-white font-mono text-base md:text-lg">#DS-{String(id).padStart(4, '0')}</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-10 bg-white">
+            <div className="p-6 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 bg-white">
                 <div>
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Preparado para:</span>
-                    <p className="text-2xl font-black text-gray-900 leading-tight">{quote?.client_name}</p>
-                    <p className="text-gray-500 font-medium">{quote?.client_phone}</p>
+                    <p className="text-xl md:text-2xl font-black text-gray-900 leading-tight">{quote?.client_name}</p>
+                    <p className="text-sm md:text-base text-gray-500 font-medium">{quote?.client_phone}</p>
                 </div>
                 <div className="md:text-right">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fecha de Emisión:</span>
-                    <p className="font-bold text-gray-800">{new Date(quote?.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                    <span className="inline-flex items-center gap-2 text-green-600 font-black text-[10px] bg-green-50 px-3 py-1 rounded-full border border-green-100 mt-2">
+                    <p className="font-bold text-gray-800 text-sm md:text-base">{new Date(quote?.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                    <span className="inline-flex items-center gap-2 text-green-600 font-black text-[9px] md:text-[10px] bg-green-50 px-2.5 md:px-3 py-1 rounded-full border border-green-100 mt-2">
                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Documento Verificado
                     </span>
                 </div>
@@ -201,21 +203,21 @@ const ClientPortal = () => {
                 </table>
             </div>
 
-            <div className="p-8 md:p-12 bg-gray-50/50 flex flex-col md:flex-row justify-between items-end gap-10 mt-6 border-t border-gray-100">
-                <div className="flex-1">
-                    <div className="bg-blue-600 text-white p-6 rounded-3xl shadow-xl flex items-center gap-5 relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform"></div>
-                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl"><FaGift /></div>
+            <div className="p-6 md:p-12 bg-gray-50/50 flex flex-col md:flex-row justify-between items-end gap-6 md:gap-10 mt-6 border-t border-gray-100">
+                <div className="flex-1 w-full md:w-auto">
+                    <div className="bg-blue-600 text-white p-5 md:p-6 rounded-3xl shadow-xl flex items-center gap-4 md:gap-5 relative overflow-hidden group">
+                        <div className="absolute right-0 top-0 w-20 h-20 md:w-24 md:h-24 bg-white/10 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform"></div>
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl"><FaGift /></div>
                         <div>
-                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-80">Beneficio Aplicado</h4>
-                            <p className="text-lg font-black">{quote?.prize_label}</p>
-                            {quote?.discount_amount > 0 && <p className="text-white/70 text-xs">- {formatCurrency(quote.discount_amount)} de descuento</p>}
+                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-80">Beneficio Aplicado</h4>
+                            <p className="text-base md:text-lg font-black">{quote?.prize_label}</p>
+                            {quote?.discount_amount > 0 && <p className="text-white/70 text-[10px] md:text-xs">- {formatCurrency(quote.discount_amount)} de descuento</p>}
                         </div>
                     </div>
                 </div>
-                <div className="w-full md:w-[320px] bg-white p-8 rounded-[2rem] shadow-2xl shadow-blue-900/10 border border-blue-50 text-right">
+                <div className="w-full md:w-[320px] bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-blue-900/10 border border-blue-50 text-right">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto de Inversión</p>
-                    <p className="text-4xl font-black text-blue-600">{formatCurrency(quote?.final_amount)}</p>
+                    <p className="text-3xl md:text-4xl font-black text-blue-600 tabular-nums">{formatCurrency(quote?.final_amount)}</p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase mt-2">IVA Incluido / Colombia</p>
                 </div>
             </div>
@@ -233,12 +235,12 @@ const ClientPortal = () => {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col font-sans h-screen overflow-hidden relative">
             <header className="bg-[#1c242e] border-b border-gray-800 shadow-md z-10 sticky top-0">
-                <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div className="max-w-4xl mx-auto px-4 py-2.5 md:py-3 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="Discovery" className="w-10 h-10 object-contain" />
+                        <img src="/logo.png" alt="Discovery" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                         <div>
-                            <h1 className="text-white font-bold text-base leading-none">{advisorName}</h1>
-                            <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
+                            <h1 className="text-white font-bold text-sm md:text-base leading-none">{advisorName}</h1>
+                            <p className="text-[9px] md:text-[10px] text-blue-300 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 bg-blue-300 rounded-full animate-pulse"></span> Asesor Discovery
                             </p>
                         </div>
@@ -259,9 +261,9 @@ const ClientPortal = () => {
                                         <FaRobot className="text-blue-300" />
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="bg-white p-5 rounded-3xl rounded-tl-none shadow-xl shadow-gray-200 border border-gray-50">
-                                            <p className="text-sm text-gray-800 leading-relaxed font-medium">{msg.text}</p>
-                                            <span className="text-[10px] text-gray-400 font-bold mt-2 block">{msg.time}</span>
+                                        <div className="bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl rounded-tl-none shadow-xl shadow-gray-200 border border-gray-50">
+                                            <p className="text-xs md:text-sm text-gray-800 leading-relaxed font-medium">{msg.text}</p>
+                                            <span className="text-[9px] md:text-[10px] text-gray-400 font-bold mt-2 block">{msg.time}</span>
                                         </div>
 
                                         {msg.type === 'proposal_card' && (
@@ -283,9 +285,9 @@ const ClientPortal = () => {
                                                         ))}
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row justify-between items-center pt-5 border-t border-gray-100 gap-4">
-                                                        <div className="text-left w-full sm:w-auto">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Total Inversión</p>
-                                                            <p className="text-2xl font-black text-blue-800">{formatCurrency(msg.data.total)}</p>
+                                                        <div className="text-left w-full sm:w-auto mb-2 md:mb-0">
+                                                            <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-tighter">Total Inversión</p>
+                                                            <p className="text-xl md:text-2xl font-black text-blue-800 tabular-nums">{formatCurrency(msg.data.total)}</p>
                                                         </div>
                                                         <button
                                                             onClick={() => setShowFullProposal(true)}
@@ -303,8 +305,8 @@ const ClientPortal = () => {
 
                             {msg.sender === 'user' && (
                                 <div className="max-w-[85%]">
-                                    <div className="bg-blue-600 text-white rounded-3xl rounded-br-none p-4 shadow-xl shadow-blue-100">
-                                        <p className="text-sm font-bold leading-relaxed">{msg.text}</p>
+                                    <div className="bg-blue-600 text-white rounded-2xl md:rounded-3xl rounded-br-none p-3 md:p-4 shadow-xl shadow-blue-100">
+                                        <p className="text-xs md:text-sm font-bold leading-relaxed">{msg.text}</p>
                                     </div>
                                 </div>
                             )}

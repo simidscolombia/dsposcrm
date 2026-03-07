@@ -34,15 +34,15 @@ const SystemTypeSelection = ({ onSelect }) => {
                     <button
                         key={opt.id}
                         onClick={() => onSelect(opt.id)}
-                        className={`flex flex-col items-center p-8 bg-white border-2 border-gray-100 rounded-2xl hover:border-${opt.color}-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group h-full`}
+                        className={`flex flex-col items-center p-6 md:p-8 bg-white border-2 border-gray-100 rounded-2xl hover:border-${opt.color}-500 hover:shadow-xl transition-all duration-300 transform md:hover:-translate-y-2 group h-full`}
                     >
-                        <div className={`w-20 h-20 rounded-full bg-${opt.color}-50 flex items-center justify-center mb-6 group-hover:bg-${opt.color}-100 transition-colors`}>
-                            <span className="text-4xl">{opt.icon}</span>
+                        <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-${opt.color}-50 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-${opt.color}-100 transition-colors`}>
+                            <span className="text-3xl md:text-4xl">{opt.icon}</span>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-${opt.color}-600">
+                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 md:mb-3 group-hover:text-${opt.color}-600">
                             {opt.name}
                         </h3>
-                        <p className="text-gray-500 text-sm leading-relaxed">
+                        <p className="text-gray-500 text-xs md:text-sm leading-relaxed">
                             {opt.desc}
                         </p>
                     </button>

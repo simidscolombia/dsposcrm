@@ -323,15 +323,15 @@ const SpinningWheel = ({ onSpinEnd, cartCategories = [] }) => {
             {/* Cabecera Inicial (Oculta si hay modal) */}
             {!result && !isSpinning && !showGiftModal && (
                 <div className="text-center mb-6 px-4">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
-                    <p className="text-sm md:text-base text-gray-500 mt-1">Prueba tu suerte y gana beneficios</p>
+                    <h2 className="text-xl md:text-3xl font-bold text-gray-800">🎁 Ruleta de la Suerte</h2>
+                    <p className="text-xs md:text-base text-gray-500 mt-1">Prueba tu suerte y gana beneficios</p>
                 </div>
             )}
 
             {/* Mensaje de Ánimo */}
             {isSpinning && (
                 <div className="text-center mb-6 animate-pulse">
-                    <h2 className="text-2xl md:text-3xl font-bold text-blue-600">¡Girando...! 🤞</h2>
+                    <h2 className="text-xl md:text-3xl font-bold text-blue-600">¡Girando...! 🤞</h2>
                 </div>
             )}
 
@@ -362,7 +362,7 @@ const SpinningWheel = ({ onSpinEnd, cartCategories = [] }) => {
             {!isSpinning && !result && !showGiftModal && (
                 <button
                     onClick={spinWheel}
-                    className="w-[90%] md:w-auto bg-gradient-to-r from-red-500 to-pink-600 text-white text-lg md:text-xl font-bold py-4 px-8 md:px-12 rounded-full shadow-xl hover:scale-105 transition-transform active:scale-95"
+                    className="w-[90%] md:w-auto bg-gradient-to-r from-red-500 to-pink-600 text-white text-base md:text-xl font-bold py-4 px-8 md:px-12 rounded-full shadow-xl hover:scale-105 transition-transform active:scale-95"
                 >
                     GIRAR AHORA
                 </button>
@@ -374,25 +374,25 @@ const SpinningWheel = ({ onSpinEnd, cartCategories = [] }) => {
 
                     <div className="bg-white/95 backdrop-blur-md p-6 md:p-10 rounded-3xl shadow-2xl text-center border-4 border-yellow-400 w-full max-w-sm relative animate-pop-in mx-auto">
 
-                        <div className="text-6xl md:text-8xl mb-4 md:mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
+                        <div className="text-5xl md:text-8xl mb-4 md:mb-6 animate-bounce text-yellow-500 mx-auto drop-shadow-md">
                             {result.icon || '🎁'}
                         </div>
 
-                        <h2 className="text-3xl md:text-5xl font-black text-gray-800 mb-2 tracking-tight">
+                        <h2 className="text-2xl md:text-5xl font-black text-gray-800 mb-2 tracking-tight">
                             ¡GANASTE!
                         </h2>
 
-                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-2xl md:text-4xl font-black py-3 px-4 md:py-4 md:px-6 rounded-2xl shadow-inner mb-4 md:mb-6 transform -rotate-2 mt-2 md:mt-4 inline-block border-2 border-white/50 break-words max-w-full">
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xl md:text-4xl font-black py-2 px-4 md:py-4 md:px-6 rounded-2xl shadow-inner mb-4 md:mb-6 transform -rotate-2 mt-2 md:mt-4 inline-block border-2 border-white/50 break-words max-w-full">
                             {result.label}
                         </div>
 
-                        <p className="text-gray-600 text-base md:text-lg mb-6 md:mb-8 font-medium px-2">
+                        <p className="text-gray-600 text-sm md:text-lg mb-6 md:mb-8 font-medium px-2">
                             {result.detail}
                         </p>
 
                         <button
                             onClick={() => onSpinEnd(result)}
-                            className="w-full bg-green-500 hover:bg-green-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 px-6 rounded-xl shadow-xl hover:shadow-2xl active:translate-y-1 transition-all flex items-center justify-center gap-2 md:gap-3"
+                            className="w-full bg-green-500 hover:bg-green-600 text-white text-base md:text-xl font-bold py-4 md:py-5 px-6 rounded-xl shadow-xl hover:shadow-2xl active:translate-y-1 transition-all flex items-center justify-center gap-2 md:gap-3"
                         >
                             RECLAMAR PREMIO <FaGift />
                         </button>
