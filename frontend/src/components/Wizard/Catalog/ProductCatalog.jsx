@@ -16,8 +16,6 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
     const [loading, setLoading] = useState(true);
     const [cart, setCart] = useState({});
     const [currentStep, setCurrentStep] = useState(0);
-    const [showAiBubble, setShowAiBubble] = useState(false);
-    const [aiMessage, setAiMessage] = useState('');
     const [viewMode, setViewMode] = useState('grid');
     const hasSpokenRef = useRef(false);
 
@@ -73,32 +71,6 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
         }
     }, [preSelectedProducts, products]);
 
-    // AI Assistant Personality & Speech
-    useEffect(() => {
-        if (!loading && products.length > 0) {
-            setTimeout(() => {
-                const welcomeMsg = `Hola, soy tu asistente Discovery. Basado en que tienes un ${businessType || 'negocio'}, te guiaré para armar el mejor kit.`;
-                setAiMessage(welcomeMsg);
-                setShowAiBubble(true);
-                // speak(welcomeMsg); // Auto-speech is often blocked, let's wait for user interaction or use a button
-            }, 1000);
-        }
-    }, [loading, businessType, products]);
-
-    // Update AI message per step
-    useEffect(() => {
-        if (isGuided && !loading) {
-            let stepMsg = "";
-            if (currentStep === 0) stepMsg = "Empecemos por el computador. Para tu sector, te recomiendo uno robusto.";
-            if (currentStep === 1) stepMsg = aiRules?.expert_tips?.[0] || "No olvides la impresora térmica, es vital para el despacho.";
-            if (currentStep === 2 && businessType?.toLowerCase().includes('restaurante')) {
-                stepMsg = "En restaurantes el lector no siempre es vital, pero ayuda mucho con snacks.";
-            }
-
-            setAiMessage(stepMsg);
-            // speak(stepMsg); // Voice feedback
-        }
-    }, [currentStep, isGuided, loading, aiRules]);
 
     const addToCart = (product) => {
         setCart(prev => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }));
@@ -178,32 +150,6 @@ const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProdu
 
     return (
         <div className="min-h-screen bg-gray-50/50 pb-32 pt-6 px-4">
-            {/* AI Floating Advisor */}
-            <AnimatePresence>
-                {showAiBubble && (
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="fixed top-24 right-4 z-50 flex flex-col items-end gap-3 max-w-xs"
-                    >
-                        <div className="bg-white p-4 rounded-2xl rounded-tr-none shadow-2xl border border-blue-100/50 relative">
-                            <p className="text-sm font-medium text-gray-700 leading-relaxed">{aiMessage}</p>
-                            <div className="absolute top-0 -right-2 w-4 h-4 bg-white rotate-45 border-t border-r border-blue-50" />
-                            <button
-                                onClick={() => speak(aiMessage)}
-                                className="mt-2 text-blue-500 text-xs font-bold flex items-center gap-1 hover:underline"
-                            >
-                                <FaVolumeUp /> Escuchar Asesoría
-                            </button>
-                        </div>
-                        <div className="w-16 h-16 bg-[#1c242e] rounded-full border-4 border-[#A8E0F0] flex items-center justify-center text-3xl text-[#A8E0F0] shadow-xl overflow-hidden">
-                            <motion.div animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-                                <FaRobot />
-                            </motion.div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <div className="max-w-6xl mx-auto">
                 {/* Stepper (Only for Combo) */}
