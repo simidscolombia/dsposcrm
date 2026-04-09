@@ -173,13 +173,13 @@ router.all('/init-tables', async (req, res) => {
 
         // Insertar usuario administrador por defecto (admin / admin123)
         // El hash es para 'admin123'
-        const checkUsers = await db.query('SELECT COUNT(*) FROM crm_users');
-        if (parseInt(checkUsers.rows[0].count) === 0) {
+        if (parseInt(checkUsers.rows[0].count) <= 1) { 
             await db.query(`
                 INSERT INTO crm_users (name, username, password_hash, role) 
-                VALUES ('Administrador', 'admin', '$2a$10$91L.5EavZsPTlSVjcJGV5OrOZBvLsdPUEeiULXUPnUUXnJ6wXyTDa', 'admin');
+                VALUES ('Administrador', 'admin', '$2a$10$JAtjqQIU0GmaTb0m/e0Oiex7qxTm0z6j0gIQPgDDPhh0l9TEGclpmi', 'admin')
+                ON CONFLICT (username) DO UPDATE SET password_hash = '$2a$10$JAtjqQIU0GmaTb0m/e0Oiex7qxTm0z6j0gIQPgDDPhh0l9TEGclpmi';
             `);
-            console.log('✅ Usuario administrador por defecto creado.');
+            console.log('✅ Usuario administrador sincronizado.');
         }
 
         res.json({ success: true, message: 'Todas las tablas administrativas configuradas, catálogo inicial poblado, cerebro de IA iniciado y sistema de seguridad inicializado correctamente.' });
