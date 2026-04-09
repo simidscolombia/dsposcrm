@@ -173,6 +173,7 @@ router.all('/init-tables', async (req, res) => {
 
         // Insertar usuario administrador por defecto (admin / admin123)
         // El hash es para 'admin123'
+        const checkUsers = await db.query('SELECT COUNT(*) FROM crm_users');
         if (parseInt(checkUsers.rows[0].count) <= 1) { 
             await db.query(`
                 INSERT INTO crm_users (name, username, password_hash, role) 
