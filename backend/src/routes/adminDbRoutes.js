@@ -157,16 +157,32 @@ router.all('/init-tables', async (req, res) => {
             console.log('✅ Catálogo inicial de productos creado.');
         }
 
-        // 10. Re-vincular de nuevo por seguridad
+        // 11. Crear Tabla de Usuarios Administrativos
         await db.query(`
-            UPDATE crm_products p
-            SET category_id = c.id
-            FROM crm_categories c
-            WHERE (LOWER(p.category) = LOWER(c.name) OR p.category = c.slug OR (p.category ILIKE '%hardware%' AND c.slug = 'hardware'))
-            AND (p.category_id IS NULL OR p.category_id != c.id);
+            CREATE TABLE IF NOT EXISTS crm_users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                username VARCHAR(100) NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role VARCHAR(50) DEFAULT 'admin',
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
         `);
+        console.log('✅ Tabla crm_users verificada.');
 
-        res.json({ success: true, message: 'Todas las tablas administrativas configuradas, catálogo inicial poblado y cerebro de IA iniciado correctamente.' });
+        // Insertar usuario administrador por defecto (admin / admin123)
+        // El hash es para 'admin123'
+        const checkUsers = await db.query('SELECT COUNT(*) FROM crm_users');
+        if (parseInt(checkUsers.rows[0].count) === 0) {
+            await db.query(`
+                INSERT INTO crm_users (name, username, password_hash, role) 
+                VALUES ('Administrador', 'admin', '$2a$10$91L.5EavZsPTlSVjcJGV5OrOZBvLsdPUEeiULXUPnUUXnJ6wXyTDa', 'admin');
+            `);
+            console.log('✅ Usuario administrador por defecto creado.');
+        }
+
+        res.json({ success: true, message: 'Todas las tablas administrativas configuradas, catálogo inicial poblado, cerebro de IA iniciado y sistema de seguridad inicializado correctamente.' });
 
     } catch (error) {
         console.error('Error inicializando DB:', error);

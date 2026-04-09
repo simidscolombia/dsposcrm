@@ -19,6 +19,9 @@ import AdminWhatsApp from './pages/admin/AdminWhatsApp';
 import AdminAI from './pages/admin/AdminAI';
 import AdminCMS from './pages/admin/AdminCMS';
 import AdminDesign from './pages/admin/AdminDesign';
+import AdminCloud from './pages/admin/AdminCloud';
+import LoginPage from './pages/admin/LoginPage';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
   // Global Click Sound Effect
@@ -87,31 +90,31 @@ function App() {
 
         <div className="flex-1">
           <Routes>
-            {/* Landing Page Principal */}
+            {/* Rutas Públicas */}
             <Route path="/" element={<HomePage />} />
-
-            {/* El Wizard Experto (Antes estaba en /) */}
             <Route path="/configurador" element={<QuotePage />} />
-
-            {/* Client Portal */}
             <Route path="/portal/:id" element={<ClientPortal />} />
+            <Route path="/login" element={<LoginPage />} />
 
-            {/* Rutas Administrativas */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="categories" element={<AdminCategories />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="prizes" element={<AdminPrizes />} />
-              <Route path="pipeline" element={<CRMPipeline />} />
-              <Route path="clients" element={<CRMClients />} />
-              <Route path="distributors" element={<CRMDistributors />} />
-              <Route path="billing" element={<CRMBilling />} />
-              <Route path="support" element={<CRMSupport />} />
-              <Route path="whatsapp" element={<AdminWhatsApp />} />
-              <Route path="ai" element={<AdminAI />} />
-              <Route path="cms" element={<AdminCMS />} />
-              <Route path="design" element={<AdminDesign />} />
+            {/* Rutas Administrativas Protegidas */}
+            <Route element={<ProtectedRoute redirectPath="/login" />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="prizes" element={<AdminPrizes />} />
+                <Route path="pipeline" element={<CRMPipeline />} />
+                <Route path="clients" element={<CRMClients />} />
+                <Route path="distributors" element={<CRMDistributors />} />
+                <Route path="billing" element={<CRMBilling />} />
+                <Route path="support" element={<CRMSupport />} />
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
+                <Route path="nubes" element={<AdminCloud />} />
+                <Route path="ai" element={<AdminAI />} />
+                <Route path="cms" element={<AdminCMS />} />
+                <Route path="design" element={<AdminDesign />} />
+              </Route>
             </Route>
           </Routes>
         </div>

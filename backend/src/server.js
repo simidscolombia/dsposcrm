@@ -1,4 +1,4 @@
-﻿import './polyfill.js';
+import './polyfill.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -20,6 +20,9 @@ import distributorRoutes from './routes/distributorRoutes.js'; // Distribuidores
 import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
 import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
 import aiRuleRoutes from './routes/aiRuleRoutes.js'; // Memoria de IA
+import cloudRoutes from './routes/cloudRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import { authenticateToken } from './middleware/authMiddleware.js';
 
 import morgan from 'morgan';
 dotenv.config();
@@ -34,23 +37,27 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 // Rutas
+app.use('/api/auth', authRoutes); // Login y validación de sesión
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/leads', leadRoutes);
-app.use('/api/admin', adminDbRoutes); // Ruta para DB Init
-app.use('/api/categories', categoryRoutes); // Ruta para Categorías
-app.use('/api/prizes', prizeRoutes); // Ruta para Premios
-app.use('/api/admin/crm', crmRoutes); // CRM completo
-app.use('/api/quotes', quoteRoutes); // Cotizaciones
-app.use('/api/config', configRoutes); // Configuración
-app.use('/api/pipeline', pipelineRoutes); // Pipeline ventas
-app.use('/api/clients', clientRoutes); // Clientes
-app.use('/api/payments', paymentRoutes); // Pagos y Cobros mensuales
-app.use('/api/distributors', distributorRoutes); // Socios y Distribuidores
-app.use('/api/tickets', ticketRoutes); // Soporte y Tickets
-app.use('/api/whatsapp', whatsappRoutes); // WhatsApp WAHA Integration
-app.use('/api/admin/ai-rules', aiRuleRoutes); // Cerebro de IA
+app.use('/api/admin', adminDbRoutes); // Ruta para DB Init (Pública para facilitar setup inicial)
+
+// Rutas Protegidas (Requieren Login)
+app.use('/api/categories', authenticateToken, categoryRoutes); 
+app.use('/api/prizes', authenticateToken, prizeRoutes); 
+app.use('/api/admin/crm', authenticateToken, crmRoutes); 
+app.use('/api/quotes', authenticateToken, quoteRoutes); 
+app.use('/api/config', authenticateToken, configRoutes); 
+app.use('/api/pipeline', authenticateToken, pipelineRoutes); 
+app.use('/api/clients', authenticateToken, clientRoutes); 
+app.use('/api/payments', authenticateToken, paymentRoutes); 
+app.use('/api/distributors', authenticateToken, distributorRoutes); 
+app.use('/api/tickets', authenticateToken, ticketRoutes); 
+app.use('/api/whatsapp', authenticateToken, whatsappRoutes); 
+app.use('/api/cloud', authenticateToken, cloudRoutes); 
+app.use('/api/admin/ai-rules', authenticateToken, aiRuleRoutes); 
 
 app.get('/health', (req, res) => {
   res.json({
