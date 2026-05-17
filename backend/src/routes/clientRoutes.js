@@ -5,6 +5,8 @@ import csvParser from 'csv-parser';
 import db from '../config/database.js';
 
 import os from 'os';
+import archiver from 'archiver';
+import path from 'path';
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir() + '/' });
 
@@ -399,6 +401,103 @@ router.get('/billing/summary', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// GET /api/clients/:id/provision/local
+// Generar instalador local para Windows
+// ============================================
+router.get('/:id/provision/local', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const clientReq = await db.query('SELECT * FROM crm_clients WHERE id = $1', [id]);
+        if (clientReq.rows.length === 0) return res.status(404).json({ success: false, error: 'Cliente no encontrado' });
+
+        const client = clientReq.rows[0];
+        
+        // Define paths
+        const zipName = `Instalador_SIMIDS_${client.business_name.replace(/[^a-zA-Z0-9]/g, '')}.zip`;
+        const templatesDir = path.join(process.cwd(), 'templates');
+        const batFilePath = path.join(templatesDir, 'install.bat');
+
+        // Paths to official codebase
+        const isLocal = process.env.NODE_ENV !== 'production';
+        const sourceBackendPath = isLocal 
+            ? path.join(process.cwd(), '..', '..', 'SIMIDS-OFFICIAL', 'simidspos-backend')
+            : '/var/www/simids-pos/backend';
+            
+        const sourceFrontendPath = isLocal 
+            ? path.join(process.cwd(), '..', '..', 'SIMIDS-OFFICIAL', 'simidspos-frontend')
+            : '/var/www/simids-pos/frontend';
+
+        res.attachment(zipName);
+        const archive = archiver('zip', { zlib: { level: 9 } }); // Maximum compression
+
+        archive.on('error', (err) => {
+            console.error('Archiver error:', err);
+            res.status(500).end();
+        });
+
+        archive.pipe(res);
+
+        // Add the install.bat script at the root of the ZIP
+        if (fs.existsSync(batFilePath)) {
+            archive.file(batFilePath, { name: 'Instalador_SIMIDS.bat' });
+        } else {
+            archive.append('@echo off\\necho Error: install.bat no encontrado en el servidor\\npause', { name: 'Instalador_SIMIDS.bat' });
+        }
+
+        // Add README
+        const readme = `SIMIDS POS - Instalador Local para ${client.business_name}
+        
+Instrucciones:
+1. Extraiga esta carpeta en el disco C: de la computadora (Recomendado: C:\\SIMIDS_POS\\).
+2. Haga doble clic en el archivo "Instalador_SIMIDS.bat".
+3. Espere a que la instalacion termine automaticamente.
+4. El sistema abrira la caja en el navegador de inmediato.
+`;
+        archive.append(readme, { name: 'LEER_PRIMERO.txt' });
+
+        // Add custom local .env file
+        const customEnv = `PORT=3000
+MONGODB_URI=mongodb://localhost:27017/simids_${client.business_name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}
+JWT_SECRET=local_secret_${Date.now()}
+CLIENT_ID=${client.id}
+TENANT_NAME=${client.business_name}
+NODE_ENV=production
+`;
+        archive.append(customEnv, { name: 'simidspos-backend/.env' });
+
+        // Stream the actual codebase directories into the zip
+        if (fs.existsSync(sourceBackendPath)) {
+            // Ignore node_modules to make zip smaller and faster
+            archive.directory(sourceBackendPath, 'simidspos-backend', (entry) => {
+                if (entry.name.includes('node_modules')) return false;
+                return entry;
+            });
+        }
+        
+        if (fs.existsSync(sourceFrontendPath)) {
+            archive.directory(sourceFrontendPath, 'simidspos-frontend', (entry) => {
+                if (entry.name.includes('node_modules')) return false;
+                return entry;
+            });
+        }
+
+        await archive.finalize();
+        
+        // Log activity
+        await db.query(\`
+            INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
+            VALUES ($1, 'installer_generated', $2, 'admin')
+        \`, [client.id, \`Generado Instalador Local para Windows\`]);
+
+    } catch (error) {
+        console.error('Error generating provision zip:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: error.message });
+        }
     }
 });
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
     FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
-    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic
+    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic, FaDownload
 } from 'react-icons/fa';
 
 const API_URL = '/api';
@@ -425,6 +425,13 @@ const CRMClients = () => {
                                                     title="Aviso: Mucho tiempo Desconectado"
                                                 >
                                                     <FaBell />
+                                                </button>
+                                                <button
+                                                    onClick={() => window.open(`${API_URL}/clients/${c.id}/provision/local`, '_blank')}
+                                                    className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition"
+                                                    title="Generar Instalador Local Automático (.zip)"
+                                                >
+                                                    <FaDownload />
                                                 </button>
                                                 <button
                                                     onClick={() => handleStatusNotify(c.id, 'downgrade_to_local')}

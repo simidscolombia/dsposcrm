@@ -25,6 +25,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.95.3",
+    "archiver": "^8.0.0",
     "axios": "^1.6.5",
     "bcryptjs": "^2.4.3",
     "bull": "^4.12.0",
