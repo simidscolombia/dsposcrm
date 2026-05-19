@@ -6,7 +6,7 @@ import {
     FaChevronDown, FaChevronUp, FaLightbulb, FaStar, FaArrowRight
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const CRMSupport = () => {
     const [tickets, setTickets] = useState([]);

@@ -36,7 +36,7 @@ const AdminPrizes = () => {
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(null);
 
-    const API_URL = '/api';
+    const API_URL = '';
 
     const fetchPrizes = async () => {
         try {

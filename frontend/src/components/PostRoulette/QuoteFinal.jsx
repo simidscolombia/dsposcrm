@@ -8,7 +8,7 @@ import {
     FaFileAlt, FaCheck, FaBuilding, FaArrowRight
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const QuoteFinal = ({ selectedProducts, prize, clientName, clientPhone, city, businessType, systemType }) => {
     const [quoteSaved, setQuoteSaved] = useState(false);

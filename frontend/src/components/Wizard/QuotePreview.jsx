@@ -65,7 +65,7 @@ const QuotePreview = ({
         setLoadingProducts(true);
         try {
             const RAW_API_URL = import.meta.env.VITE_API_URL || '';
-            const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
+            const API_URL = '';
             const res = await axios.get(`${API_URL}/api/products`);
             if (res.data?.success) {
                 setAllProducts(res.data.products);

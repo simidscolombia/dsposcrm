@@ -34,7 +34,7 @@ const SpinningWheel = ({ onSpinEnd, cartCategories = [] }) => {
             ];
 
             try {
-                const API_URL = '/api';
+                const API_URL = '';
                 // If cartCategories provided, fetch filtered prizes
                 const url = cartCategories.length > 0
                     ? `${API_URL}/prizes/by-categories?categories=${cartCategories.join(',')}`

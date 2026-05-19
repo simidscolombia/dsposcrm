@@ -10,7 +10,7 @@ const AdminCategories = () => {
     const [editMode, setEditMode] = useState(false);
     const [currentId, setCurrentId] = useState(null);
 
-    const API_URL = '/api';
+    const API_URL = '';
 
     const fetchCategories = async () => {
         try {

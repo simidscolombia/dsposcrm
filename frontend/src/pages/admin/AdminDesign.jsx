@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { FaPalette, FaImage, FaMagic, FaCheckCircle, FaRobot, FaExpand } from 'react-icons/fa';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
+const API_BASE = '';
 
 const AdminDesign = () => {
     const [image, setImage] = useState(null);

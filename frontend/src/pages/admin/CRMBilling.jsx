@@ -10,7 +10,7 @@ import {
     FaBan as BanIcon
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const CRMBilling = () => {
     const [payments, setPayments] = useState([]);

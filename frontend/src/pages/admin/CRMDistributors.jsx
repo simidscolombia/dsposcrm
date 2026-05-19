@@ -5,7 +5,7 @@ import {
     FaPercentage, FaUsers, FaCheckCircle, FaTimesCircle, FaWhatsapp
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const CRMDistributors = () => {
     const [distributors, setDistributors] = useState([]);

@@ -8,7 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { speak, stopSpeech } from '../../../utils/aiVoice';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
+const API_BASE = '';
 
 const ProductCatalog = ({ onContinue, systemType, businessType, preSelectedProducts = [] }) => {
     const [products, setProducts] = useState([]);

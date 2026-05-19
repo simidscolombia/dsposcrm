@@ -7,7 +7,7 @@ import {
     FaGift, FaDollarSign, FaArrowRight, FaSearch
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const STAGES = [
     { key: 'new', label: 'Nuevos', icon: <FaUserPlus />, color: '#3B82F6', bgLight: '#EFF6FF', borderColor: '#BFDBFE' },

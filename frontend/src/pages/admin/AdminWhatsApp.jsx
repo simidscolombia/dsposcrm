@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FaWhatsapp, FaPlug, FaPowerOff, FaQrcode, FaPaperPlane, FaHistory, FaSpinner, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaRedo, FaTools } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const AdminWhatsApp = () => {
     const [status, setStatus] = useState(null);

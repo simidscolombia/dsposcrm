@@ -12,7 +12,7 @@ const ConversationalStep = ({ onFinish, leadName }) => {
     const [questionCount, setQuestionCount] = useState(0);
 
     const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050';
-    const API_URL = RAW_API_URL.endsWith('/api') ? RAW_API_URL.slice(0, -4) : RAW_API_URL;
+    const API_URL = '';
 
     const handleSend = async () => {
         if (!inputValue.trim()) return;

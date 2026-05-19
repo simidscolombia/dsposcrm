@@ -7,7 +7,7 @@ import {
     FaArrowRight, FaGift, FaUserCircle, FaWhatsapp, FaTimes, FaDownload, FaEye
 } from 'react-icons/fa';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = '';
 
 const ClientPortal = () => {
     const { id } = useParams();

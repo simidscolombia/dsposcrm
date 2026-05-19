@@ -5,7 +5,7 @@ import {
     FaMoneyBillWave, FaFilter, FaTruck, FaUniversity, FaSync, FaBrain
 } from 'react-icons/fa';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {

@@ -7,7 +7,7 @@ import {
     FaArrowRight, FaPlay, FaUserTie, FaCommentDots, FaInfoCircle
 } from 'react-icons/fa';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
+const API_BASE = '';
 
 const HomePage = () => {
     const navigate = useNavigate();

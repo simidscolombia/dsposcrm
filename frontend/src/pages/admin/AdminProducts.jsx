@@ -14,7 +14,7 @@ const AdminProducts = () => {
     const [currentId, setCurrentId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const API_URL = '/api';
+    const API_URL = '';
 
     const fetchData = async () => {
         try {

@@ -17,7 +17,7 @@ const ChatbotWidget = ({ quoteContext, leadName, leadId }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const API_URL = '/api';
+  const API_URL = '';
 
   // Scroll automático al último mensaje
   useEffect(() => {

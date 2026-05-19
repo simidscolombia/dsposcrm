@@ -9,7 +9,7 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4050/api';
+    const API_URL = '';
 
     const handleLogin = async (e) => {
         e.preventDefault();

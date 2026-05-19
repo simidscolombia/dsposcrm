@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FaRobot, FaBrain, FaSave, FaPlus, FaTrash, FaLightbulb, FaImage, FaHeadset } from 'react-icons/fa';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://dspos.vercel.app/api';
+const API_BASE = '';
 
 const AdminAI = () => {
     const navigate = useNavigate();
