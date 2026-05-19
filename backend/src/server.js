@@ -22,6 +22,8 @@ import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
 import aiRuleRoutes from './routes/aiRuleRoutes.js'; // Memoria de IA
 import cloudRoutes from './routes/cloudRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import publicInstallRoutes from './routes/publicInstallRoutes.js';
+import infrastructureRoutes from './routes/infrastructureRoutes.js';
 import { authenticateToken } from './middleware/authMiddleware.js';
 
 import morgan from 'morgan';
@@ -34,7 +36,7 @@ app.use(morgan('dev'));
 app.use(cors({
   // ... (keep existing cors config)
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // Rutas
 app.use('/api/auth', authRoutes); // Login y validación de sesión
@@ -43,6 +45,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/admin', adminDbRoutes); // Ruta para DB Init (Pública para facilitar setup inicial)
+app.use('/api/public/install', publicInstallRoutes);
 
 // Rutas Protegidas (Requieren Login)
 app.use('/api/categories', authenticateToken, categoryRoutes); 
@@ -57,6 +60,7 @@ app.use('/api/distributors', authenticateToken, distributorRoutes);
 app.use('/api/tickets', authenticateToken, ticketRoutes); 
 app.use('/api/whatsapp', authenticateToken, whatsappRoutes); 
 app.use('/api/cloud', authenticateToken, cloudRoutes); 
+app.use('/api/infrastructure', authenticateToken, infrastructureRoutes);
 app.use('/api/admin/ai-rules', authenticateToken, aiRuleRoutes); 
 
 app.get('/health', (req, res) => {

@@ -3,8 +3,10 @@ import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
     FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
-    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic, FaDownload
+    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic, FaDownload, FaCloud, FaHome
 } from 'react-icons/fa';
+import CloudTab from '../../components/Admin/CloudTab';
+import ClientWizard from '../../components/Admin/ClientWizard';
 
 const API_URL = '/api';
 
@@ -20,11 +22,52 @@ const CRMClients = () => {
     const [editingClient, setEditingClient] = useState(null);
     const [formData, setFormData] = useState({});
     const [isExtractingRut, setIsExtractingRut] = useState(false);
+    const [downloadingId, setDownloadingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('todos');
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+    // Descarga controlada del instalador local con autenticación heredada
+    const handleDownloadInstaller = async (clientId, businessName) => {
+        setDownloadingId(clientId);
+        try {
+            const cleanName = businessName.replace(/[^a-zA-Z0-9]/g, '');
+            const res = await axios.get(`${API_URL}/clients/${clientId}/provision/local`, {
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Instalador_SIMIDS_${cleanName}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading installer:', error);
+            alert('Error al generar o descargar el instalador local. Valida tu conexión.');
+        } finally {
+            setDownloadingId(null);
+        }
+    };
 
     // Creates new client UI
     const handleNewClientClick = () => {
-        setFormData({ plan_type: 'local', is_active: true });
-        setEditingClient({ id: null }); // indicates new
+        setIsWizardOpen(true);
+    };
+
+    const handleWizardSave = async (wizardData) => {
+        try {
+            const res = await axios.post(`${API_URL}/clients`, wizardData);
+            if (res.data.success) {
+                alert('🚀 Cliente creado y aprovisionado con éxito.');
+                fetchClients();
+            } else {
+                alert('No se pudo guardar el cliente: ' + (res.data.error || 'Error desconocido'));
+            }
+        } catch (error) {
+            console.error('Error in wizard save:', error);
+            alert('Error al guardar: ' + (error.response?.data?.error || error.message));
+        }
     };
 
     useEffect(() => {
@@ -78,9 +121,11 @@ const CRMClients = () => {
     };
 
     const getPlanBadge = (plan) => {
-        if (plan === 'cloud') return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">Nube</span>;
-        if (plan === 'cloud_fe') return <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">Nube + FE</span>;
-        if (plan === 'local') return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">Local</span>;
+        if (plan === 'nube') return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">Nube</span>;
+        if (plan === 'nube_hibrida') return <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">Nube Híbrida</span>;
+        if (plan === 'monocaja') return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">Monocaja</span>;
+        if (plan === 'multicaja') return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-medium">Multicaja</span>;
+        if (plan === 'facturacion_electronica') return <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-medium">Fact. Electrónica</span>;
         return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">{plan}</span>;
     };
 
@@ -322,7 +367,27 @@ const CRMClients = () => {
                 </div>
             )}
 
-            {/* List & Filters */}
+            {/* Tab Bar */}
+            <div className="flex gap-1 mb-4 bg-white rounded-xl p-1 border border-gray-200 shadow-sm w-fit">
+                <button onClick={() => setActiveTab('todos')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'todos' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    <FaUsers size={14} /> Todos
+                </button>
+                <button onClick={() => setActiveTab('nube')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'nube' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    <FaCloud size={14} /> Nube ☁️
+                </button>
+                <button onClick={() => setActiveTab('locales')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'locales' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    <FaHome size={14} /> Locales 🏠
+                </button>
+            </div>
+
+            {/* Tab: Nube */}
+            {activeTab === 'nube' && <CloudTab crmClients={clients} onEditClick={handleEditClick} />}
+
+            {/* Tab: Todos / Locales */}
+            {(activeTab === 'todos' || activeTab === 'locales') && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-50/50">
 
@@ -346,9 +411,11 @@ const CRMClients = () => {
                                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
                             >
                                 <option value="">Todos los Planes</option>
-                                <option value="cloud">Nube (Básico)</option>
-                                <option value="cloud_fe">Nube + Elec.</option>
-                                <option value="local">P. Local</option>
+                                <option value="monocaja">Monocaja</option>
+                                <option value="multicaja">Multicaja</option>
+                                <option value="nube">Nube</option>
+                                <option value="nube_hibrida">Nube Híbrida</option>
+                                <option value="facturacion_electronica">Facturación Electrónica</option>
                             </select>
                         </div>
                     </div>
@@ -427,11 +494,16 @@ const CRMClients = () => {
                                                     <FaBell />
                                                 </button>
                                                 <button
-                                                    onClick={() => window.open(`${API_URL}/clients/${c.id}/provision/local`, '_blank')}
-                                                    className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition"
+                                                    onClick={() => handleDownloadInstaller(c.id, c.business_name)}
+                                                    disabled={downloadingId !== null}
+                                                    className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Generar Instalador Local Automático (.zip)"
                                                 >
-                                                    <FaDownload />
+                                                    {downloadingId === c.id ? (
+                                                        <FaSpinner className="animate-spin text-emerald-600" />
+                                                     ) : (
+                                                        <FaDownload />
+                                                     )}
                                                 </button>
                                                 <button
                                                     onClick={() => handleStatusNotify(c.id, 'downgrade_to_local')}
@@ -456,6 +528,7 @@ const CRMClients = () => {
                     </table>
                 </div>
             </div>
+            )}
 
             {/* Edit Modal Minimalist */}
             {editingClient && (
@@ -530,10 +603,12 @@ const CRMClients = () => {
                             <div className="md:col-span-2 mt-4"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Facturación / Suscripción</h3></div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">Plan</label>
-                                <select name="plan_type" value={formData.plan_type || 'local'} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm bg-white">
-                                    <option value="local">Local Fijo</option>
-                                    <option value="cloud">Nube Básico</option>
-                                    <option value="cloud_fe">Nube Frontend Ex.</option>
+                                <select name="plan_type" value={formData.plan_type || 'monocaja'} onChange={handleUpdateChange} className="w-full p-2 border border-gray-200 rounded text-sm bg-white">
+                                    <option value="monocaja">Monocaja</option>
+                                    <option value="multicaja">Multicaja</option>
+                                    <option value="nube">Nube</option>
+                                    <option value="nube_hibrida">Nube Híbrida</option>
+                                    <option value="facturacion_electronica">Facturación Electrónica</option>
                                 </select>
                             </div>
                             <div>
@@ -599,6 +674,15 @@ const CRMClients = () => {
                         </div>
                     </div>
                 </div>
+            )}
+            {isWizardOpen && (
+                <ClientWizard
+                    isOpen={isWizardOpen}
+                    onClose={() => setIsWizardOpen(false)}
+                    distributors={options.distributors || []}
+                    advisors={options.advisors || []}
+                    onSave={handleWizardSave}
+                />
             )}
         </div>
     );

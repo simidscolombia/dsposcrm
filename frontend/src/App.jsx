@@ -19,8 +19,8 @@ import AdminWhatsApp from './pages/admin/AdminWhatsApp';
 import AdminAI from './pages/admin/AdminAI';
 import AdminCMS from './pages/admin/AdminCMS';
 import AdminDesign from './pages/admin/AdminDesign';
-import AdminCloud from './pages/admin/AdminCloud';
 import LoginPage from './pages/admin/LoginPage';
+import PublicInstallPage from './pages/PublicInstallPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
@@ -65,7 +65,7 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v6.5 - SYMBOLIC REBUILD 🚀");
+    console.log("v6.7 - SYMBOLIC REBUILD 🚀");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);
@@ -78,7 +78,7 @@ function App() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              <span>Discovery Systems POS v6.6</span>
+              <span>Discovery Systems POS v6.7</span>
             </div>
             <Link to="/admin" className="bg-blue-500/10 hover:bg-blue-500/20 text-[#A8E0F0] px-2 py-0.5 rounded border border-blue-500/30 transition-all flex items-center gap-1 group">
               <span className="opacity-70 group-hover:opacity-100">🔐</span>
@@ -95,6 +95,7 @@ function App() {
             <Route path="/configurador" element={<QuotePage />} />
             <Route path="/portal/:id" element={<ClientPortal />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/instalar/:token" element={<PublicInstallPage />} />
 
             {/* Rutas Administrativas Protegidas */}
             <Route element={<ProtectedRoute redirectPath="/login" />}>
@@ -110,7 +111,6 @@ function App() {
                 <Route path="billing" element={<CRMBilling />} />
                 <Route path="support" element={<CRMSupport />} />
                 <Route path="whatsapp" element={<AdminWhatsApp />} />
-                <Route path="nubes" element={<AdminCloud />} />
                 <Route path="ai" element={<AdminAI />} />
                 <Route path="cms" element={<AdminCMS />} />
                 <Route path="design" element={<AdminDesign />} />

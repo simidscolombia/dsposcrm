@@ -90,9 +90,6 @@ const AdminLayout = () => {
                     <NavLink to="/admin/config" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
                         <FaTools /> Configuración
                     </NavLink>
-                    <NavLink to="/admin/nubes" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
-                        <FaServer /> Gestión de Nubes
-                    </NavLink>
                     <NavLink to="/admin/whatsapp" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
                         <FaWhatsapp /> WhatsApp
                     </NavLink>

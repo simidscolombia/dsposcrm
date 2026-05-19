@@ -5,8 +5,9 @@ import csvParser from 'csv-parser';
 import db from '../config/database.js';
 
 import os from 'os';
-import archiver from 'archiver';
 import path from 'path';
+import { ZipArchive } from 'archiver';
+
 const router = express.Router();
 const upload = multer({ dest: os.tmpdir() + '/' });
 
@@ -82,7 +83,8 @@ router.post('/', async (req, res) => {
         const {
             business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
             plan_type, monthly_amount, billing_day, pos_version, server_name,
-            cloud_url, anydesk_id, advisor_id, notes, priority, started_at
+            cloud_url, anydesk_id, advisor_id, notes, priority, started_at,
+            install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id
         } = req.body;
 
         if (!business_name || !whatsapp) {
@@ -101,15 +103,24 @@ router.post('/', async (req, res) => {
             INSERT INTO crm_clients (
                 business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
                 plan_type, monthly_amount, billing_day, pos_version, server_name,
-                cloud_url, anydesk_id, advisor_id, notes, priority, started_at, next_billing_date
+                cloud_url, anydesk_id, advisor_id, notes, priority, started_at, next_billing_date,
+                install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id
             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
-                      DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '27 days')
+                      DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '27 days',
+                      $20,$21,$22,$23,$24,$25,$26)
             RETURNING *
         `, [
             business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
             plan_type || 'local', amount, billing_day || 28, pos_version,
             server_name, cloud_url, anydesk_id, advisor_id, notes, priority || 'normal',
-            started_at || new Date()
+            started_at || new Date(),
+            install_type || 'local_pc',
+            subdomain || null,
+            server_id || null,
+            cluster_id || null,
+            db_name || null,
+            distributor_id || null,
+            technician_id || null
         ]);
 
         // Log activity
@@ -432,7 +443,7 @@ router.get('/:id/provision/local', async (req, res) => {
             : '/var/www/simids-pos/frontend';
 
         res.attachment(zipName);
-        const archive = archiver('zip', { zlib: { level: 9 } }); // Maximum compression
+        const archive = new ZipArchive({ zlib: { level: 9 } }); // Maximum compression
 
         archive.on('error', (err) => {
             console.error('Archiver error:', err);
@@ -488,16 +499,93 @@ NODE_ENV=production
         await archive.finalize();
         
         // Log activity
-        await db.query(\`
+        await db.query(`
             INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
             VALUES ($1, 'installer_generated', $2, 'admin')
-        \`, [client.id, \`Generado Instalador Local para Windows\`]);
+        `, [client.id, `Generado Instalador Local para Windows`]);
 
     } catch (error) {
         console.error('Error generating provision zip:', error);
         if (!res.headersSent) {
             res.status(500).json({ success: false, error: error.message });
         }
+    }
+});
+
+// ============================================
+// POST /api/clients/sync-from-infra
+// Sync a single infrastructure client to crm_clients
+// ============================================
+router.post('/sync-from-infra', async (req, res) => {
+    try {
+        const { infra_client_id } = req.body;
+        if (!infra_client_id) return res.status(400).json({ success: false, error: 'infra_client_id requerido' });
+
+        // Check if already synced
+        const existing = await db.query('SELECT id FROM crm_clients WHERE infra_client_id = $1', [infra_client_id]);
+        if (existing.rows.length > 0) {
+            return res.json({ success: true, message: 'Cliente ya sincronizado', client_id: existing.rows[0].id });
+        }
+
+        // Get infra client data
+        const infra = await db.query('SELECT * FROM infrastructure_pos_clients WHERE id = $1', [infra_client_id]);
+        if (infra.rows.length === 0) return res.status(404).json({ success: false, error: 'Cliente de infraestructura no encontrado' });
+
+        const ic = infra.rows[0];
+
+        // Insert into crm_clients
+        const result = await db.query(`
+            INSERT INTO crm_clients (
+                business_name, cloud_url, plan_type, install_type, subdomain, 
+                server_id, cluster_id, db_name, infra_client_id, audit_status,
+                is_active, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'approved', true, NOW())
+            RETURNING *
+        `, [
+            ic.owner_name || ic.name,
+            ic.domain ? `https://${ic.domain}` : null,
+            ic.plan_type || 'cloud',
+            'cloud',
+            ic.name,
+            ic.server_id,
+            ic.cluster_id,
+            ic.db_name,
+            ic.id
+        ]);
+
+        res.json({ success: true, message: 'Cliente sincronizado exitosamente', client: result.rows[0] });
+    } catch (error) {
+        console.error('Error syncing client:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// POST /api/clients/generate-link
+// Generate a temporary install token link
+// ============================================
+router.post('/generate-link', async (req, res) => {
+    try {
+        const { install_type = 'cloud', expires_hours = 72 } = req.body;
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + expires_hours * 60 * 60 * 1000);
+
+        await db.query(
+            'INSERT INTO install_tokens (token, install_type, expires_at) VALUES ($1, $2, $3)',
+            [token, install_type, expiresAt]
+        );
+
+        const baseUrl = process.env.FRONTEND_URL || 'https://crm.simids.app';
+        res.json({
+            success: true,
+            token,
+            url: `${baseUrl}/#/instalar/${token}`,
+            expires_at: expiresAt
+        });
+    } catch (error) {
+        console.error('Error generating link:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
