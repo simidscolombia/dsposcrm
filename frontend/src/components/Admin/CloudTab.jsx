@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaServer, FaDatabase, FaCheckCircle, FaExclamationTriangle, FaSearch, FaSync, FaGlobe, FaTerminal, FaEdit, FaUserPlus, FaSpinner, FaHdd, FaUsers, FaCloud, FaFileInvoice, FaDownload, FaTrash, FaUpload, FaExternalLinkAlt, FaTimesCircle } from 'react-icons/fa';
 
-const API = '/api/infrastructure';
+const API = '/infrastructure';
 
 const StatCard = ({ icon: Icon, label, value, color, bg, onClick, active }) => (
   <div 
@@ -80,7 +80,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
   const handleSync = async (infraClient) => {
     setSyncingId(infraClient.id);
     try {
-      const res = await axios.post('/api/clients/sync-from-infra', { infra_client_id: infraClient.id });
+      const res = await axios.post('/clients/sync-from-infra', { infra_client_id: infraClient.id });
       if (res.data.success) {
         alert(`✅ ${infraClient.name} sincronizado al CRM exitosamente`);
         fetchAll();
@@ -94,7 +94,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
   const handleFullSync = async () => {
     setSyncingIntegrity(true);
     try {
-      await axios.post('/api/infrastructure/audit-integrity');
+      await axios.post('/infrastructure/audit-integrity');
       await fetchAll();
       alert('✅ Auditoría y auto-descubrimiento en tiempo real de todos los servidores y bases de datos completado.');
     } catch (error) {
@@ -116,7 +116,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
     
     try {
       if (tab === 'pm2') {
-        const res = await axios.get(`/api/infrastructure/pm2/${client.server_id}`);
+        const res = await axios.get(`/infrastructure/pm2/${client.server_id}`);
         if (res.data.success) {
           // Find matching process by name
           const proc = res.data.data.find(p => p.name.includes(client.name));
@@ -125,7 +125,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
       } else if (tab === 'db') {
         // Fetch database activity (last invoice/use)
         try {
-          const actRes = await axios.get(`/api/infrastructure/mongo/activity/${client.cluster_id}/${client.db_name}`);
+          const actRes = await axios.get(`/infrastructure/mongo/activity/${client.cluster_id}/${client.db_name}`);
           if (actRes.data.success) {
             setDbActivity(actRes.data.lastActivity);
           }
@@ -133,7 +133,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
         
         // Fetch collection stats
         try {
-          const colRes = await axios.get(`/api/infrastructure/mongo/${client.cluster_id}/${client.db_name}/collections`);
+          const colRes = await axios.get(`/infrastructure/mongo/${client.cluster_id}/${client.db_name}/collections`);
           if (colRes.data.success) {
             setDbCollections(colRes.data.data);
           }
@@ -150,7 +150,7 @@ export default function CloudTab({ crmClients, onEditClick }) {
     if (!inspectClient) return;
     setInspectLoading(true);
     try {
-      const res = await axios.get(`/api/infrastructure/pm2/${inspectClient.server_id}/logs/${inspectClient.name}`);
+      const res = await axios.get(`/infrastructure/pm2/${inspectClient.server_id}/logs/${inspectClient.name}`);
       if (res.data.success) {
         setPm2Logs(res.data.data);
       }

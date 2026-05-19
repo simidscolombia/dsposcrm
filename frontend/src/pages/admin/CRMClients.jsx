@@ -8,7 +8,7 @@ import {
 import CloudTab from '../../components/Admin/CloudTab';
 import ClientWizard from '../../components/Admin/ClientWizard';
 
-const API_URL = '/api';
+const API_URL = '';
 
 const CRMClients = () => {
     const [clients, setClients] = useState([]);
