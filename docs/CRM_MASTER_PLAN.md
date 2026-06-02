@@ -1,6 +1,6 @@
 # 🚀 Discovery Systems AI CRM — Plan Maestro
 
-> Documento de referencia del proyecto. Última actualización: 20 Feb 2026
+> Documento de referencia del proyecto. Última actualización: 02 Jun 2026 (Cruce Nube por Subdominio)
 
 ---
 
@@ -238,6 +238,7 @@ FASE 2: SISTEMA DE COBROS AUTOMATIZADO
 2.4 — Secuencia automática de cobro (notificaciones)
 2.5 — Dashboard de cobros (quién pagó, quién no)
 2.6 — Upload de comprobantes + verificación
+2.7 — Reconciliación y Cruce de Facturas por Subdominio (Conectado con Admin POS) [COMPLETADO]
 
 FASE 3: INTEGRACIÓN WHATSAPP
 ════════════════════════════

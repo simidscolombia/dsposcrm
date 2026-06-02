@@ -622,10 +622,14 @@ router.post('/alerts/:id/resolve', async (req, res) => {
     }
 });
 
-// ============================================
-// GET /api/billing/cross-check
-// Generar reporte de cruce masivo entre CRM y Admin POS
-// ============================================
+// Helper para obtener el subdominio limpio
+const getSubdomainFromUrl = (url) => {
+    if (!url) return null;
+    let cleaned = url.toLowerCase().trim().replace(/^(https?:\/\/)?(www\.)?/, '');
+    const part = cleaned.split('.')[0];
+    return part || null;
+};
+
 router.get('/cross-check', async (req, res) => {
     try {
         // 1. Obtener todos los clientes Cloud/Cloud_FE del CRM
@@ -642,20 +646,55 @@ router.get('/cross-check', async (req, res) => {
         `);
         const billingMonths = monthsRes.rows;
 
-        // 3. Obtener todas las facturas Cloud del Admin
-        const adminInvoicesRes = await adminService.getTodasFacturasAdmin(0, 5000, 'Cloud');
+        // 3. Obtener todas las facturas del Admin (tanto Cloud como Local)
+        const adminInvoicesRes = await adminService.getTodasFacturasAdmin(0, 5000, '');
         const adminInvoices = adminInvoicesRes.ok ? adminInvoicesRes.facturas : [];
 
-        // 4. Organizar facturas por NIT normalizado
-        const invoicesByNit = {};
+        // 4. Mapear subdominios y NITs para el cruce inteligente
+        const invoicesByClient = {};
+        const unlinkedInvoices = [];
+
+        const clientSubdomains = clients.map(c => ({
+            id: c.id,
+            nit: c.nit,
+            subdomain: getSubdomainFromUrl(c.cloud_url)
+        })).filter(c => c.subdomain);
+
         adminInvoices.forEach(inv => {
-            if (inv.cliente && inv.cliente.nit) {
-                const { base } = adminService.normalizarNIT(inv.cliente.nit);
-                if (base) {
-                    if (!invoicesByNit[base]) {
-                        invoicesByNit[base] = [];
-                    }
-                    invoicesByNit[base].push(inv);
+            const note = (inv.nota || '').toLowerCase();
+            const clientNit = inv.cliente?.nit;
+            const { base: invoiceNitBase } = adminService.normalizarNIT(clientNit);
+
+            let matchedClient = null;
+
+            // A. Primero intentar cruce por subdominio en la observación/nota
+            for (const cs of clientSubdomains) {
+                if (note.includes(cs.subdomain)) {
+                    matchedClient = cs;
+                    break;
+                }
+            }
+
+            // B. Fallback: Cruce por NIT
+            if (!matchedClient && invoiceNitBase) {
+                const found = clients.find(c => {
+                    const { base: clientNitBase } = adminService.normalizarNIT(c.nit);
+                    return clientNitBase === invoiceNitBase;
+                });
+                if (found) {
+                    matchedClient = { id: found.id, subdomain: getSubdomainFromUrl(found.cloud_url) };
+                }
+            }
+
+            if (matchedClient) {
+                if (!invoicesByClient[matchedClient.id]) {
+                    invoicesByClient[matchedClient.id] = [];
+                }
+                invoicesByClient[matchedClient.id].push(inv);
+            } else {
+                // Si la nota tiene indicios de ser de la nube (contiene poslatino o similar) pero no se enlazó
+                if (note.includes('poslatino') || note.includes('nube') || note.includes('cloud') || note.includes('.com') || note.includes('.co')) {
+                    unlinkedInvoices.push(inv);
                 }
             }
         });
@@ -671,26 +710,22 @@ router.get('/cross-check', async (req, res) => {
 
         // 6. Construir reporte comparativo
         const report = clients.map(client => {
-            const { base: clientNitBase } = adminService.normalizarNIT(client.nit);
-            
-            // Meses de este cliente
             const cMonths = monthsByClientId[client.id] || [];
             const pendingMonths = cMonths.filter(m => m.status === 'pending');
             const paidMonths = cMonths.filter(m => m.status === 'paid');
             const giftedMonths = cMonths.filter(m => m.status === 'gifted');
 
-            // Facturas reales del Admin para este cliente
-            const cInvoices = clientNitBase ? (invoicesByNit[clientNitBase] || []) : [];
+            // Facturas vinculadas por el algoritmo
+            const cInvoices = invoicesByClient[client.id] || [];
             const latestInvoice = cInvoices.length > 0 ? cInvoices[0] : null;
 
-            // Último mes registrado en el CRM
             let latestBillingMonthStr = 'N/A';
             if (cMonths.length > 0) {
                 const latest = cMonths[0]; // ordenados desc
                 latestBillingMonthStr = `${latest.month.toString().padStart(2, '0')}/${latest.year}`;
             }
 
-            // Datos faltantes/incompletos
+            // Datos incompletos
             const missingFields = [];
             if (!client.nit) missingFields.push('NIT');
             if (!client.email) missingFields.push('email');
@@ -703,8 +738,20 @@ router.get('/cross-check', async (req, res) => {
             if (cMonths.length === 0) {
                 statusCheck = 'Sin registrar meses';
             } else if (pendingMonths.length > 0) {
-                // Verificar si alguno de los meses pendientes no tiene factura creada
-                const hasUninvoicedPending = pendingMonths.some(pm => !pm.admin_invoice_id);
+                // Verificar si alguno de los meses pendientes no tiene factura vinculada en CRM ni tampoco en el cruce de admin
+                const hasUninvoicedPending = pendingMonths.some(pm => {
+                    // Si no tiene factura vinculada por ID en client_billing_months
+                    if (!pm.admin_invoice_id) {
+                        // Buscar si existe alguna factura en el cruce para este año/mes
+                        const hasInvForMonth = cInvoices.some(inv => {
+                            const invDate = new Date(inv.fecha);
+                            return invDate.getFullYear() === pm.year && (invDate.getMonth() + 1) === pm.month;
+                        });
+                        return !hasInvForMonth;
+                    }
+                    return false;
+                });
+
                 if (hasUninvoicedPending) {
                     statusCheck = 'Sin facturar';
                 } else {
@@ -741,8 +788,23 @@ router.get('/cross-check', async (req, res) => {
                     prefijo: latestInvoice.prefijo,
                     numero_dian: latestInvoice.numero_dian,
                     cufe: latestInvoice.cufe,
-                    pdf_url: latestInvoice.pdf_url
+                    pdf_url: latestInvoice.pdf_url,
+                    nota: latestInvoice.nota
                 } : null,
+                invoices: cInvoices.map(inv => ({
+                    id: inv.id,
+                    numero: inv.numero,
+                    fecha: inv.fecha,
+                    monto: inv.monto,
+                    tipo_pago: inv.tipo_pago,
+                    es_credito: inv.es_credito,
+                    es_electronica: inv.es_electronica,
+                    prefijo: inv.prefijo,
+                    numero_dian: inv.numero_dian,
+                    cufe: inv.cufe,
+                    pdf_url: inv.pdf_url,
+                    nota: inv.nota
+                })),
                 data_completeness: {
                     complete: hasCompleteData,
                     missing: missingFields
@@ -764,7 +826,22 @@ router.get('/cross-check', async (req, res) => {
         res.json({
             success: true,
             stats,
-            report
+            report,
+            unlinkedInvoices: unlinkedInvoices.slice(0, 100).map(inv => ({
+                id: inv.id,
+                numero: inv.numero,
+                fecha: inv.fecha,
+                monto: inv.monto,
+                tipo_pago: inv.tipo_pago,
+                es_credito: inv.es_credito,
+                es_electronica: inv.es_electronica,
+                prefijo: inv.prefijo,
+                numero_dian: inv.numero_dian,
+                cufe: inv.cufe,
+                pdf_url: inv.pdf_url,
+                nota: inv.nota,
+                cliente: inv.cliente
+            }))
         });
 
     } catch (error) {

@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa';
 import CloudTab from '../../components/Admin/CloudTab';
 import ClientWizard from '../../components/Admin/ClientWizard';
+import CruceTab from '../../components/Admin/CruceTab';
 
 const API_URL = '';
 
@@ -701,10 +702,17 @@ const CRMClients = () => {
                         </span>
                     )}
                 </button>
+                <button onClick={() => setActiveTab('cruce')}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'cruce' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    <FaFileInvoice size={14} /> Cruce Nube 📊
+                </button>
             </div>
 
             {/* Tab: Nube */}
             {activeTab === 'nube' && <CloudTab crmClients={clients} onEditClick={handleEditClick} />}
+
+            {/* Tab: Cruce de Caja */}
+            {activeTab === 'cruce' && <CruceTab onEditClick={handleEditClick} />}
 
             {/* Tab: Vencimientos */}
             {activeTab === 'vencimientos' && (
