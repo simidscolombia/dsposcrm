@@ -622,5 +622,156 @@ router.post('/alerts/:id/resolve', async (req, res) => {
     }
 });
 
+// ============================================
+// GET /api/billing/cross-check
+// Generar reporte de cruce masivo entre CRM y Admin POS
+// ============================================
+router.get('/cross-check', async (req, res) => {
+    try {
+        // 1. Obtener todos los clientes Cloud/Cloud_FE del CRM
+        const clientsRes = await db.query(`
+            SELECT * FROM crm_clients 
+            WHERE plan_type IN ('cloud', 'cloud_fe')
+        `);
+        const clients = clientsRes.rows;
+
+        // 2. Obtener todos los meses de cobro del CRM
+        const monthsRes = await db.query(`
+            SELECT * FROM client_billing_months 
+            ORDER BY year DESC, month DESC
+        `);
+        const billingMonths = monthsRes.rows;
+
+        // 3. Obtener todas las facturas Cloud del Admin
+        const adminInvoicesRes = await adminService.getTodasFacturasAdmin(0, 5000, 'Cloud');
+        const adminInvoices = adminInvoicesRes.ok ? adminInvoicesRes.facturas : [];
+
+        // 4. Organizar facturas por NIT normalizado
+        const invoicesByNit = {};
+        adminInvoices.forEach(inv => {
+            if (inv.cliente && inv.cliente.nit) {
+                const { base } = adminService.normalizarNIT(inv.cliente.nit);
+                if (base) {
+                    if (!invoicesByNit[base]) {
+                        invoicesByNit[base] = [];
+                    }
+                    invoicesByNit[base].push(inv);
+                }
+            }
+        });
+
+        // 5. Organizar meses de cobro por client_id
+        const monthsByClientId = {};
+        billingMonths.forEach(m => {
+            if (!monthsByClientId[m.client_id]) {
+                monthsByClientId[m.client_id] = [];
+            }
+            monthsByClientId[m.client_id].push(m);
+        });
+
+        // 6. Construir reporte comparativo
+        const report = clients.map(client => {
+            const { base: clientNitBase } = adminService.normalizarNIT(client.nit);
+            
+            // Meses de este cliente
+            const cMonths = monthsByClientId[client.id] || [];
+            const pendingMonths = cMonths.filter(m => m.status === 'pending');
+            const paidMonths = cMonths.filter(m => m.status === 'paid');
+            const giftedMonths = cMonths.filter(m => m.status === 'gifted');
+
+            // Facturas reales del Admin para este cliente
+            const cInvoices = clientNitBase ? (invoicesByNit[clientNitBase] || []) : [];
+            const latestInvoice = cInvoices.length > 0 ? cInvoices[0] : null;
+
+            // Último mes registrado en el CRM
+            let latestBillingMonthStr = 'N/A';
+            if (cMonths.length > 0) {
+                const latest = cMonths[0]; // ordenados desc
+                latestBillingMonthStr = `${latest.month.toString().padStart(2, '0')}/${latest.year}`;
+            }
+
+            // Datos faltantes/incompletos
+            const missingFields = [];
+            if (!client.nit) missingFields.push('NIT');
+            if (!client.email) missingFields.push('email');
+            if (!client.whatsapp) missingFields.push('whatsapp');
+            if (!client.cloud_url) missingFields.push('cloud_url');
+            const hasCompleteData = missingFields.length === 0;
+
+            // Determinar estado de cobro
+            let statusCheck = 'Al día';
+            if (cMonths.length === 0) {
+                statusCheck = 'Sin registrar meses';
+            } else if (pendingMonths.length > 0) {
+                // Verificar si alguno de los meses pendientes no tiene factura creada
+                const hasUninvoicedPending = pendingMonths.some(pm => !pm.admin_invoice_id);
+                if (hasUninvoicedPending) {
+                    statusCheck = 'Sin facturar';
+                } else {
+                    statusCheck = 'En mora';
+                }
+            }
+
+            return {
+                id: client.id,
+                business_name: client.business_name,
+                contact_name: client.contact_name || '',
+                nit: client.nit || '',
+                plan_type: client.plan_type,
+                monthly_amount: client.monthly_amount,
+                cloud_url: client.cloud_url || '',
+                payment_status: client.payment_status,
+                whatsapp: client.whatsapp || '',
+                email: client.email || '',
+                latest_billing_month: latestBillingMonthStr,
+                stats: {
+                    total_months: cMonths.length,
+                    pending: pendingMonths.length,
+                    paid: paidMonths.length,
+                    gifted: giftedMonths.length
+                },
+                latest_invoice: latestInvoice ? {
+                    id: latestInvoice.id,
+                    numero: latestInvoice.numero,
+                    fecha: latestInvoice.fecha,
+                    monto: latestInvoice.monto,
+                    tipo_pago: latestInvoice.tipo_pago,
+                    es_credito: latestInvoice.es_credito,
+                    es_electronica: latestInvoice.es_electronica,
+                    prefijo: latestInvoice.prefijo,
+                    numero_dian: latestInvoice.numero_dian,
+                    cufe: latestInvoice.cufe,
+                    pdf_url: latestInvoice.pdf_url
+                } : null,
+                data_completeness: {
+                    complete: hasCompleteData,
+                    missing: missingFields
+                },
+                status_check: statusCheck
+            };
+        });
+
+        // 7. Calcular estadísticas generales
+        const stats = {
+            total_clients: report.length,
+            al_dia: report.filter(r => r.status_check === 'Al día').length,
+            en_mora: report.filter(r => r.status_check === 'En mora').length,
+            sin_facturar: report.filter(r => r.status_check === 'Sin facturar').length,
+            sin_meses: report.filter(r => r.status_check === 'Sin registrar meses').length,
+            datos_incompletos: report.filter(r => !r.data_completeness.complete).length
+        };
+
+        res.json({
+            success: true,
+            stats,
+            report
+        });
+
+    } catch (error) {
+        console.error('[BillingRoutes] Error en reporte de cruce masivo:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;
 

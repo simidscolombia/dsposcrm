@@ -154,6 +154,34 @@ export const emitirFacturaElectronica = async (facturaId) => {
     }
 };
 
+/**
+ * Obtiene todas las facturas del sistema (por defecto de tipo Cloud)
+ */
+export const getTodasFacturasAdmin = async (desde = 0, limite = 1000, venta = 'Cloud') => {
+    try {
+        const { data } = await adminAxios.get('/facturas/todas', {
+            params: { desde, limite, venta }
+        });
+        return { ok: true, ...data };
+    } catch (error) {
+        console.error('[AdminService] Error al obtener todas las facturas:', error.message);
+        return { ok: false, facturas: [], total: 0, msg: error.message };
+    }
+};
+
+/**
+ * Obtiene todos los clientes del Admin
+ */
+export const getTodosClientesAdmin = async () => {
+    try {
+        const { data } = await adminAxios.get('/clientes/todos');
+        return { ok: true, ...data };
+    } catch (error) {
+        console.error('[AdminService] Error al obtener todos los clientes:', error.message);
+        return { ok: false, clientes: [], total: 0, msg: error.message };
+    }
+};
+
 export default {
     verificarConexionAdmin,
     getFacturasCliente,
@@ -162,5 +190,7 @@ export default {
     buscarClienteEnAdmin,
     normalizarNIT,
     marcarFacturaPagada,
-    emitirFacturaElectronica
+    emitirFacturaElectronica,
+    getTodasFacturasAdmin,
+    getTodosClientesAdmin
 };
