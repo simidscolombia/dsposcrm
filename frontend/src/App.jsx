@@ -19,6 +19,9 @@ import AdminWhatsApp from './pages/admin/AdminWhatsApp';
 import AdminAI from './pages/admin/AdminAI';
 import AdminCMS from './pages/admin/AdminCMS';
 import AdminDesign from './pages/admin/AdminDesign';
+import AdminGateways from './pages/admin/AdminGateways';
+import AdminCloud from './pages/admin/AdminCloud';
+import AdminCloudLegacy from './pages/admin/AdminCloudLegacy';
 import LoginPage from './pages/admin/LoginPage';
 import PublicInstallPage from './pages/PublicInstallPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -65,7 +68,7 @@ function App() {
 
     document.addEventListener('click', playClickSound);
 
-    console.log("v6.9 - API REFACTOR REBUILD 🚀");
+    console.log("v7.5 - NUEVO FLUJO DE FACTURACIÓN Y EMISIÓN DIAN 🚀");
 
     return () => document.removeEventListener('click', playClickSound);
   }, []);
@@ -78,7 +81,7 @@ function App() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              <span>Discovery Systems POS v6.9</span>
+              <span>Discovery Systems POS v7.5</span>
             </div>
             <Link to="/admin" className="bg-blue-500/10 hover:bg-blue-500/20 text-[#A8E0F0] px-2 py-0.5 rounded border border-blue-500/30 transition-all flex items-center gap-1 group">
               <span className="opacity-70 group-hover:opacity-100">🔐</span>
@@ -114,6 +117,9 @@ function App() {
                 <Route path="ai" element={<AdminAI />} />
                 <Route path="cms" element={<AdminCMS />} />
                 <Route path="design" element={<AdminDesign />} />
+                <Route path="gateways" element={<AdminGateways />} />
+                <Route path="cloud" element={<AdminCloud />} />
+                <Route path="cloud-legacy" element={<AdminCloudLegacy />} />
               </Route>
             </Route>
           </Routes>

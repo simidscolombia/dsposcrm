@@ -84,7 +84,8 @@ router.post('/', async (req, res) => {
             business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
             plan_type, monthly_amount, billing_day, pos_version, server_name,
             cloud_url, anydesk_id, advisor_id, notes, priority, started_at,
-            install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id
+            install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id,
+            billing_start_date, billing_cycle, has_electronic_billing
         } = req.body;
 
         if (!business_name || !whatsapp) {
@@ -104,10 +105,11 @@ router.post('/', async (req, res) => {
                 business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
                 plan_type, monthly_amount, billing_day, pos_version, server_name,
                 cloud_url, anydesk_id, advisor_id, notes, priority, started_at, next_billing_date,
-                install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id
+                install_type, subdomain, server_id, cluster_id, db_name, distributor_id, technician_id,
+                billing_start_date, billing_cycle, has_electronic_billing
             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
                       DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '27 days',
-                      $20,$21,$22,$23,$24,$25,$26)
+                      $20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
             RETURNING *
         `, [
             business_name, contact_name, whatsapp, email, city, address, nit, legal_representative,
@@ -120,7 +122,10 @@ router.post('/', async (req, res) => {
             cluster_id || null,
             db_name || null,
             distributor_id || null,
-            technician_id || null
+            technician_id || null,
+            billing_start_date || started_at || new Date(),
+            billing_cycle || 'monthly',
+            has_electronic_billing || false
         ]);
 
         // Log activity
@@ -287,7 +292,8 @@ router.put('/:id', async (req, res) => {
             'business_name', 'contact_name', 'whatsapp', 'email', 'city', 'address', 'nit', 'legal_representative',
             'plan_type', 'monthly_amount', 'billing_day', 'payment_status',
             'pos_version', 'server_name', 'cloud_url', 'anydesk_id',
-            'advisor_id', 'distributor_id', 'technician_id', 'notes', 'priority', 'is_active'
+            'advisor_id', 'distributor_id', 'technician_id', 'notes', 'priority', 'is_active',
+            'billing_start_date', 'billing_cycle', 'next_billing_date', 'has_electronic_billing'
         ];
 
         const updates = [];
@@ -317,7 +323,26 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Cliente no encontrado' });
         }
 
-        res.json({ success: true, client: result.rows[0] });
+        // Recalculate profile completion on the fly
+        const updatedClient = result.rows[0];
+        let score = 0;
+        if (updatedClient.business_name) score += 10;
+        if (updatedClient.whatsapp) score += 10;
+        if (updatedClient.city) score += 10;
+        if (updatedClient.nit) score += 10;
+        if (updatedClient.legal_representative) score += 10;
+        if (updatedClient.plan_type) score += 10;
+        if (updatedClient.plan_type === 'local' && updatedClient.anydesk_id) score += 10;
+        else if (updatedClient.plan_type !== 'local' && updatedClient.cloud_url) score += 10;
+        else if (updatedClient.anydesk_id || updatedClient.cloud_url) score += 10;
+        if (updatedClient.billing_start_date) score += 15;
+        if (updatedClient.billing_cycle) score += 15;
+
+        const finalScore = Math.min(score, 100);
+        await db.query('UPDATE crm_clients SET profile_completion = $1 WHERE id = $2', [finalScore, id]);
+        updatedClient.profile_completion = finalScore;
+
+        res.json({ success: true, client: updatedClient });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -585,6 +610,81 @@ router.post('/generate-link', async (req, res) => {
         });
     } catch (error) {
         console.error('Error generating link:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// GET /api/clients/:id/payments-history
+// Obtener historial financiero manual del cliente
+// ============================================
+router.get('/:id/payments-history', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await db.query(
+            'SELECT * FROM crm_payments_history WHERE client_id = $1 ORDER BY payment_date DESC, id DESC',
+            [id]
+        );
+        res.json({ success: true, history: result.rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// POST /api/clients/:id/payments-history
+// Registrar un pago histórico y actualizar fecha de corte
+// ============================================
+router.post('/:id/payments-history', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { payment_date, amount, months_covered, method, notes } = req.body;
+
+        if (!payment_date || !amount) {
+            return res.status(400).json({ success: false, error: 'Fecha y monto son requeridos' });
+        }
+
+        // 1. Insert historic payment
+        const result = await db.query(`
+            INSERT INTO crm_payments_history (client_id, payment_date, amount, months_covered, method, notes)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+        `, [id, payment_date, amount, months_covered || 1, method || 'transfer', notes || '']);
+
+        // 2. Recalculate next billing date
+        const clientRes = await db.query('SELECT billing_start_date FROM crm_clients WHERE id = $1', [id]);
+        if (clientRes.rows.length > 0 && clientRes.rows[0].billing_start_date) {
+            const historySum = await db.query('SELECT SUM(months_covered) as total_months FROM crm_payments_history WHERE client_id = $1', [id]);
+            const totalMonths = parseInt(historySum.rows[0].total_months || 0);
+            
+            await db.query(`
+                UPDATE crm_clients 
+                SET next_billing_date = billing_start_date + CAST($2 || ' months' AS INTERVAL)
+                WHERE id = $1
+            `, [id, totalMonths]);
+        }
+
+        // 3. Trigger profile completion recalculation
+        const clientFull = await db.query('SELECT * FROM crm_clients WHERE id = $1', [id]);
+        const client = clientFull.rows[0];
+        let score = 0;
+        if (client.business_name) score += 10;
+        if (client.whatsapp) score += 10;
+        if (client.city) score += 10;
+        if (client.nit) score += 10;
+        if (client.legal_representative) score += 10;
+        if (client.plan_type) score += 10;
+        if (client.plan_type === 'local' && client.anydesk_id) score += 10;
+        else if (client.plan_type !== 'local' && client.cloud_url) score += 10;
+        else if (client.anydesk_id || client.cloud_url) score += 10;
+        if (client.billing_start_date) score += 15;
+        if (client.billing_cycle) score += 15;
+
+        const finalScore = Math.min(score, 100);
+        await db.query('UPDATE crm_clients SET profile_completion = $1 WHERE id = $2', [finalScore, id]);
+
+        res.status(201).json({ success: true, payment: result.rows[0], profile_completion: finalScore });
+    } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });

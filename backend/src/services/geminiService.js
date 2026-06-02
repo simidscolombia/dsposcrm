@@ -437,6 +437,88 @@ Responde SOLO en formato JSON válido:
             legalRepresentative: "JUAN PEREZ PRUEBA"
         };
     }
+
+    /**
+     * Procesa mensajes de clientes relacionados con cobros y facturas usando Gemini AI
+     */
+    async handleBillingConversation(client, pendingMonth, userMessage) {
+        const cleanAmount = pendingMonth 
+            ? parseFloat(pendingMonth.amount).toLocaleString('es-CO') 
+            : parseFloat(client.monthly_amount || 0).toLocaleString('es-CO');
+        
+        const periodStr = pendingMonth 
+            ? `${pendingMonth.month}/${pendingMonth.year}` 
+            : 'Ninguno';
+
+        const boldLink = pendingMonth && pendingMonth.bold_link_url 
+            ? pendingMonth.bold_link_url 
+            : `https://checkout.bold.co/payment/simulated-link-crm-${client.id}`; // simulated fallback
+
+        const systemPrompt = `Eres el Asistente IA de Cobros de Discovery Systems. Tu objetivo es ayudar al cliente con su facturación de forma atenta, educada y profesional.
+Contexto del Cliente:
+- Nombre del negocio: ${client.business_name}
+- Nombre de contacto: ${client.contact_name || 'Cliente'}
+- Valor de mensualidad POS: $${cleanAmount}
+- Plan contratado: ${client.plan_type}
+- Mes pendiente de cobro: ${periodStr}
+- Monto del cobro actual: $${cleanAmount}
+- Link de pago de Bold: ${boldLink}
+
+Pautas para responder:
+1. Responde a la pregunta del usuario de forma concisa y amable (máximo 3 oraciones).
+2. Si el usuario solicita un **mes de cortesía/gratuito** (ej. 'me dijeron que este mes era gratis', 'no me cobren este mes', 'solicito cortesía'), debes responder de forma amable diciendo que reportarás la solicitud al administrador y establecer la acción en 'request_courtesy'.
+3. Si el usuario solicita hablar con una persona, asesor humano o hace una pregunta compleja fuera del ámbito de cobros, debes establecer la acción en 'escalate' y responder que un asesor se comunicará pronto.
+4. Si el usuario pregunta cuánto debe o pide el link de pago, bríndale el monto y el link de pago Bold de forma directa.
+5. Si el usuario afirma que ya pagó ('ya pagué', 'realicé el pago', 'ya transferí'):
+   - Si el estado en el sistema es 'pending' (pendiente), infórmale que la transacción puede tardar unos minutos en verse reflejada y que guarde su comprobante.
+   - Si el estado es 'paid' (pagado), confírmale que ya está al día.
+
+Debes responder estrictamente en formato JSON válido, sin markdown ni backticks:
+{
+  "response": "Texto de la respuesta para el cliente",
+  "action": "none" | "request_courtesy" | "escalate",
+  "explanation": "Breve explicación técnica de la acción"
+}`;
+
+        try {
+            if (!process.env.GEMINI_API_KEY) throw new Error("Falta GEMINI_API_KEY");
+
+            const model = this.genAI.getGenerativeModel({
+                model: this.modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `${systemPrompt}\n\nMensaje del cliente: "${userMessage}"`;
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+
+            return JSON.parse(text);
+
+        } catch (error) {
+            console.error('[GeminiService] Error en conversación de cobros:', error.message);
+            // Fallback en caso de falla de API o Key no configurada
+            let responseText = 'Disculpa la molestia, he transferido tu consulta a un asesor de servicio para que te colabore de inmediato. ¡Feliz día! 😊';
+            let action = 'escalate';
+
+            // Detección heurística básica para simulación en caso de fallback
+            const lowerMsg = userMessage.toLowerCase();
+            if (lowerMsg.includes('cuánto') || lowerMsg.includes('pagar') || lowerMsg.includes('link') || lowerMsg.includes('mensualidad') || lowerMsg.includes('cuenta')) {
+                responseText = `Hola. Tu mensualidad del período ${periodStr} es de $${cleanAmount}. Puedes pagar de forma segura en este link: ${boldLink} 😊`;
+                action = 'none';
+            } else if (lowerMsg.includes('gratis') || lowerMsg.includes('cortesia') || lowerMsg.includes('regalo') || lowerMsg.includes('cobren')) {
+                responseText = 'Entendido, voy a registrar tu solicitud de mes de cortesía en el sistema para que el administrador la verifique. Te avisaremos tan pronto sea aprobada.';
+                action = 'request_courtesy';
+            }
+
+            return {
+                response: responseText,
+                action: action,
+                explanation: `Fallback por error en Gemini: ${error.message}`
+            };
+        }
+    }
 }
 
 export default new GeminiService();
+

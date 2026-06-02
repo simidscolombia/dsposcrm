@@ -4,6 +4,8 @@
 import express from 'express';
 import whatsappService from '../services/whatsappService.js';
 import db from '../config/database.js';
+import geminiService from '../services/geminiService.js';
+
 
 const router = express.Router();
 
@@ -264,21 +266,112 @@ router.post('/webhook', async (req, res) => {
         const event = req.body;
         console.log('📨 WAHA Webhook:', event.event, event.payload?.from);
 
-        // Guardar mensajes entrantes
+        // Guardar mensajes entrantes y procesar
         if (event.event === 'message' && event.payload) {
             const from = event.payload.from?.replace('@c.us', '') || 'unknown';
             const body = event.payload.body || '';
 
+            // 1. Log en base de datos
             try {
                 await db.query(`
                     INSERT INTO crm_whatsapp_log (phone, message, direction, status)
                     VALUES ($1, $2, 'inbound', 'received')
                 `, [from, body.substring(0, 500)]);
             } catch (e) { /* */ }
+
+            // 2. Normalizar número para buscar cliente
+            let cleanPhone = from;
+            if (from.startsWith('57') && from.length === 12) {
+                cleanPhone = from.substring(2);
+            }
+
+            // 3. Buscar cliente activo
+            const clientRes = await db.query(`
+                SELECT * FROM crm_clients 
+                WHERE whatsapp LIKE $1 AND is_active = true
+                LIMIT 1
+            `, [`%${cleanPhone}%`]);
+
+            if (clientRes.rows.length > 0) {
+                const client = clientRes.rows[0];
+                console.log(`[WAHA Webhook] Cliente identificado: ${client.business_name} (ID: ${client.id})`);
+
+                // 4. Obtener mes pendiente más antiguo
+                const monthRes = await db.query(`
+                    SELECT * FROM client_billing_months
+                    WHERE client_id = $1 AND status = 'pending'
+                    ORDER BY year ASC, month ASC
+                    LIMIT 1
+                `, [client.id]);
+                
+                const pendingMonth = monthRes.rows.length > 0 ? monthRes.rows[0] : null;
+
+                // Si no hay link de Bold y hay mes pendiente, generamos link de cobro Bold preventivamente
+                if (pendingMonth && !pendingMonth.bold_link_url) {
+                    try {
+                        const boldService = (await import('../services/boldService.js')).default;
+                        const boldRes = await boldService.crearLinkPagoBold({
+                            billingMonthId: pendingMonth.id,
+                            businessName: client.business_name,
+                            nit: client.nit,
+                            amount: pendingMonth.amount,
+                            month: pendingMonth.month,
+                            year: pendingMonth.year
+                        });
+
+                        if (boldRes.success) {
+                            pendingMonth.bold_link_url = boldRes.payment_url;
+                            pendingMonth.bold_link_id = boldRes.link_id;
+                            pendingMonth.bold_transaction_id = boldRes.reference;
+                            
+                            await db.query(`
+                                UPDATE client_billing_months 
+                                SET bold_link_id = $1, 
+                                    bold_link_url = $2,
+                                    bold_transaction_id = $3,
+                                    updated_at = NOW()
+                                WHERE id = $4
+                            `, [boldRes.link_id, boldRes.payment_url, boldRes.reference, pendingMonth.id]);
+                        }
+                    } catch (boldErr) {
+                        console.error('[WAHA Webhook] Error al auto-generar link Bold:', boldErr.message);
+                    }
+                }
+
+                // 5. Procesar conversación con Gemini
+                const aiResult = await geminiService.handleBillingConversation(client, pendingMonth, body);
+                
+                console.log(`[WAHA Webhook] Gemini respuesta: "${aiResult.response}" | Acción: ${aiResult.action}`);
+
+                // 6. Ejecutar acción de IA
+                if (aiResult.action === 'request_courtesy' && pendingMonth) {
+                    // Crear alerta de cortesía en base de datos
+                    await db.query(`
+                        INSERT INTO crm_billing_alerts (client_id, billing_month_id, alert_type, reason, status)
+                        VALUES ($1, $2, 'courtesy_request', $3, 'pending')
+                        ON CONFLICT DO NOTHING
+                    `, [client.id, pendingMonth.id, 'courtesy_request', `Cliente solicita mes de cortesía para el período ${pendingMonth.month}/${pendingMonth.year}. Mensaje: "${body}"`]);
+                    
+                    console.log(`[WAHA Webhook] 🔵 Registrada alerta de solicitud de cortesía para cliente #${client.id}`);
+                }
+
+                // 7. Enviar la respuesta vía WhatsApp al cliente
+                const responsePhone = whatsappService.formatPhoneNumber(from);
+                await whatsappService.sendTextMessage(responsePhone, aiResult.response);
+
+                // Log el mensaje saliente
+                try {
+                    await db.query(`
+                        INSERT INTO crm_whatsapp_log (phone, message, direction, status)
+                        VALUES ($1, $2, 'outbound', 'sent')
+                    `, [responsePhone, aiResult.response.substring(0, 500)]);
+                } catch (e) { /* */ }
+            }
         }
 
         res.json({ success: true });
     } catch (error) {
+        console.error('[WAHA Webhook] Error en webhook:', error);
         res.json({ success: true }); // Always respond 200 to webhooks
     }
 });

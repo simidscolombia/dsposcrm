@@ -1,23 +1,27 @@
 import db from '../config/database.js';
-import { Client } from 'ssh2';
+import { spawn } from 'child_process';
 import { MongoClient, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 
 function execRemoteSSH(host, cmd) {
+    const SSH_KEY = process.env.DEPLOY_SSH_KEY || 'C:\\Users\\elkin\\.ssh\\do_key_2';
     return new Promise((resolve, reject) => {
-        const conn = new Client();
-        const timeout = setTimeout(() => { conn.end(); reject(new Error('timeout')); }, 25000);
-        conn.on('ready', () => {
-            conn.exec(cmd, (err, stream) => {
-                if (err) { clearTimeout(timeout); return reject(err); }
-                let out = '';
-                stream.on('data', d => out += d);
-                stream.stderr.on('data', d => out += d);
-                stream.on('close', () => { clearTimeout(timeout); conn.end(); resolve(out.trim()); });
-            });
-        }).on('error', e => { clearTimeout(timeout); reject(e); })
-        .connect({ host, port: 22, username: 'root', password: process.env.SSH_PASSWORD });
+        const timeout = setTimeout(() => { reject(new Error('SSH timeout after 30s')); }, 30000);
+        const proc = spawn('ssh', ['-i', SSH_KEY, '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=10', 'root@' + host, cmd], { shell: false });
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', (d) => { stdout += d.toString(); });
+        proc.stderr.on('data', (d) => { stderr += d.toString(); });
+        proc.on('close', (code) => {
+            clearTimeout(timeout);
+            resolve((stdout.trim() || stderr.trim()));
+        });
+        proc.on('error', (err) => {
+            clearTimeout(timeout);
+            reject(err);
+        });
+        proc.stdin.end();
     });
 }
 
@@ -192,8 +196,8 @@ class InfrastructureController {
             // 1. AUTO-DESCUBRIMIENTO Y REGISTRO EN TIEMPO REAL
             for (const srv of servers) {
                 try {
-                    // Buscar todos los archivos .env en /root/clients/
-                    const findOutput = await execRemoteSSH(srv.ip, 'find /root/clients/ -maxdepth 3 -name ".env" 2>/dev/null');
+                    // Buscar todos los archivos .env en /var/www/clients/ y /root/clients/
+                    const findOutput = await execRemoteSSH(srv.ip, 'find /var/www/clients/ /root/clients/ -maxdepth 3 -name ".env" 2>/dev/null | sort -u');
                     if (!findOutput) continue;
                     
                     const envPaths = findOutput.split('\n').filter(p => p.trim().length > 0);

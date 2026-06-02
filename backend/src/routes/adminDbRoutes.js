@@ -177,8 +177,8 @@ router.all('/init-tables', async (req, res) => {
         if (parseInt(checkUsers.rows[0].count) <= 1) { 
             await db.query(`
                 INSERT INTO crm_users (name, username, password_hash, role) 
-                VALUES ('Administrador', 'admin', '$2a$10$JAtjqQIU0GmaTb0m/e0Oiex7qxTm0z6j0gIQPgDDPhh0l9TEGclpmi', 'admin')
-                ON CONFLICT (username) DO UPDATE SET password_hash = '$2a$10$JAtjqQIU0GmaTb0m/e0Oiex7qxTm0z6j0gIQPgDDPhh0l9TEGclpmi';
+                VALUES ('Administrador', 'admin', '$2a$10$Abz3fmb23hVyr7b6WehTMexnIK/9zXdryTVhkiXbsQIOzYAn3l.c2', 'admin')
+                ON CONFLICT (username) DO UPDATE SET password_hash = '$2a$10$Abz3fmb23hVyr7b6WehTMexnIK/9zXdryTVhkiXbsQIOzYAn3l.c2';
             `);
             console.log('✅ Usuario administrador sincronizado.');
         }

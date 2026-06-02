@@ -1,4 +1,4 @@
-﻿import pg from 'pg';
+import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,7 +7,7 @@ const { Pool } = pg;
 
 // Ajuste para Supabase y Vercel Serverless
 // Usamos la URL completa para respetar ?pgbouncer=true y otros params
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || '';
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 
 const pool = new Pool({

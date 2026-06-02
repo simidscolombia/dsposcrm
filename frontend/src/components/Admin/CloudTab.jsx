@@ -48,6 +48,11 @@ export default function CloudTab({ crmClients, onEditClick }) {
   const [syncingIntegrity, setSyncingIntegrity] = useState(false);
   const [showServersModal, setShowServersModal] = useState(false);
   const [showClustersModal, setShowClustersModal] = useState(false);
+  const [selectedServerId, setSelectedServerId] = useState(null);
+  const [selectedServerName, setSelectedServerName] = useState(null);
+  const [selectedClusterId, setSelectedClusterId] = useState(null);
+  const [selectedClusterName, setSelectedClusterName] = useState(null);
+  const [revealedClusters, setRevealedClusters] = useState({});
 
   // Inspector Panel States
   const [inspectClient, setInspectClient] = useState(null);
@@ -319,7 +324,11 @@ export default function CloudTab({ crmClients, onEditClick }) {
             value={stats.totalServers} 
             color="text-indigo-600" 
             bg="bg-indigo-50" 
-            onClick={() => setShowServersModal(true)}
+            onClick={() => {
+              setSelectedServerId(null);
+              setSelectedServerName(null);
+              setShowServersModal(true);
+            }}
           />
           <StatCard 
             icon={FaDatabase} 
@@ -327,7 +336,11 @@ export default function CloudTab({ crmClients, onEditClick }) {
             value={stats.totalClusters} 
             color="text-cyan-600" 
             bg="bg-cyan-50" 
-            onClick={() => setShowClustersModal(true)}
+            onClick={() => {
+              setSelectedClusterId(null);
+              setSelectedClusterName(null);
+              setShowClustersModal(true);
+            }}
           />
           <StatCard 
             icon={FaCheckCircle} 
@@ -427,14 +440,22 @@ export default function CloudTab({ crmClients, onEditClick }) {
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
                       <button 
-                        onClick={() => setShowServersModal(true)}
+                        onClick={() => {
+                          setSelectedServerId(c.server_id);
+                          setSelectedServerName(c.server_name);
+                          setShowServersModal(true);
+                        }}
                         className="text-xs bg-gray-100 px-2 py-1 rounded-lg w-fit flex items-center gap-1 font-bold hover:bg-indigo-50 hover:text-indigo-700 transition cursor-pointer"
-                        title="Ver lista de Servidores"
+                        title="Ver detalles del Servidor"
                       >
                         <FaServer className="text-indigo-500" size={10} /> {c.server_name}
                       </button>
                       <button 
-                        onClick={() => setShowClustersModal(true)}
+                        onClick={() => {
+                          setSelectedClusterId(c.cluster_id);
+                          setSelectedClusterName(c.cluster_name);
+                          setShowClustersModal(true);
+                        }}
                         className="text-[10px] text-gray-500 bg-gray-50 hover:bg-cyan-50 hover:text-cyan-700 px-2 py-1 rounded-lg flex items-center gap-1 w-fit transition cursor-pointer"
                         title="Ver lista de Clusters"
                       >
@@ -831,23 +852,32 @@ export default function CloudTab({ crmClients, onEditClick }) {
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 p-6 animate-scale-up text-left">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black uppercase tracking-wider flex items-center gap-2 text-indigo-700">
-                <FaServer /> Lista de Servidores (Droplets)
+                <FaServer /> {selectedServerId || selectedServerName ? 'Detalles del Servidor VPS' : 'Lista de Servidores (Droplets)'}
               </h3>
               <button onClick={() => setShowServersModal(false)} className="text-gray-400 hover:text-red-500"><FaTimesCircle size={24} /></button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
-              <table className="w-full text-left text-sm">
+               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-50 text-[10px] text-gray-500 uppercase font-bold sticky top-0">
                   <tr><th className="px-4 py-2">ID</th><th className="px-4 py-2">Nombre</th><th className="px-4 py-2">IP / Host</th></tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {servers.length > 0 ? servers.map(s => (
-                    <tr key={s.id} className="hover:bg-indigo-50/30">
-                      <td className="px-4 py-2 font-mono text-xs">{s.id}</td>
-                      <td className="px-4 py-2 font-bold text-gray-800">{s.name}</td>
-                      <td className="px-4 py-2 font-mono text-indigo-600">{s.ip}</td>
-                    </tr>
-                  )) : <tr><td colSpan="3" className="px-4 py-8 text-center text-gray-500">No hay servidores registrados.</td></tr>}
+                  {servers.length > 0 ? (
+                    servers
+                      .filter(s => {
+                        if (!selectedServerId && !selectedServerName) return true;
+                        const matchId = selectedServerId && String(s.id) === String(selectedServerId);
+                        const matchName = selectedServerName && String(s.name).toLowerCase().trim() === String(selectedServerName).toLowerCase().trim();
+                        return matchId || matchName;
+                      })
+                      .map(s => (
+                        <tr key={s.id} className="hover:bg-indigo-50/30">
+                          <td className="px-4 py-2 font-mono text-xs">{s.id}</td>
+                          <td className="px-4 py-2 font-bold text-gray-800">{s.name}</td>
+                          <td className="px-4 py-2 font-mono text-indigo-600">{s.ip}</td>
+                        </tr>
+                      ))
+                  ) : <tr><td colSpan="3" className="px-4 py-8 text-center text-gray-500">No hay servidores registrados.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -861,23 +891,62 @@ export default function CloudTab({ crmClients, onEditClick }) {
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-gray-100 p-6 animate-scale-up text-left">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black uppercase tracking-wider flex items-center gap-2 text-cyan-700">
-                <FaDatabase /> Clusters de Base de Datos
+                <FaDatabase /> {selectedClusterId || selectedClusterName ? 'Detalles del Cluster de BD' : 'Lista de Clusters (Bases de Datos)'}
               </h3>
               <button onClick={() => setShowClustersModal(false)} className="text-gray-400 hover:text-red-500"><FaTimesCircle size={24} /></button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-50 text-[10px] text-gray-500 uppercase font-bold sticky top-0">
-                  <tr><th className="px-4 py-2">ID</th><th className="px-4 py-2">Nombre</th><th className="px-4 py-2">Host / Cluster URI</th></tr>
+                  <tr>
+                    <th className="px-4 py-2">ID</th>
+                    <th className="px-4 py-2">Nombre</th>
+                    <th className="px-4 py-2">Host</th>
+                    <th className="px-4 py-2">URI de Conexión</th>
+                    <th className="px-4 py-2 text-right">Acciones</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {clusters.length > 0 ? clusters.map(c => (
-                    <tr key={c.id} className="hover:bg-cyan-50/30">
-                      <td className="px-4 py-2 font-mono text-xs">{c.id}</td>
-                      <td className="px-4 py-2 font-bold text-gray-800">{c.name}</td>
-                      <td className="px-4 py-2 font-mono text-xs text-cyan-600 truncate max-w-[250px]" title={c.uri}>{c.host}</td>
-                    </tr>
-                  )) : <tr><td colSpan="3" className="px-4 py-8 text-center text-gray-500">No hay clusters registrados.</td></tr>}
+                  {clusters.length > 0 ? (
+                    clusters
+                      .filter(cl => {
+                        if (!selectedClusterId && !selectedClusterName) return true;
+                        const matchId = selectedClusterId && String(cl.id) === String(selectedClusterId);
+                        const matchName = selectedClusterName && String(cl.name).toLowerCase().trim() === String(selectedClusterName).toLowerCase().trim();
+                        return matchId || matchName;
+                      })
+                      .map(c => (
+                        <tr key={c.id} className="hover:bg-cyan-50/30">
+                          <td className="px-4 py-2 font-mono text-xs">{c.id}</td>
+                          <td className="px-4 py-2 font-bold text-gray-800">{c.name}</td>
+                          <td className="px-4 py-2 font-mono text-xs text-gray-500 truncate max-w-[150px]" title={c.host}>{c.host}</td>
+                          <td className="px-4 py-2 font-mono text-xs text-cyan-600 truncate max-w-[200px]" title={c.uri}>
+                            {revealedClusters[c.id] ? c.uri : 'mongodb+srv://••••••••••••'}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button 
+                                onClick={() => setRevealedClusters(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition"
+                                title={revealedClusters[c.id] ? "Ocultar URI" : "Revelar URI"}
+                              >
+                                {revealedClusters[c.id] ? 'Ocultar' : 'Revelar'}
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(c.uri);
+                                  alert('URI de conexión copiado al portapapeles!');
+                                }}
+                                className="px-2 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 rounded text-xs font-bold transition"
+                                title="Copiar URI"
+                              >
+                                Copiar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  ) : <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No hay clusters registrados.</td></tr>}
                 </tbody>
               </table>
             </div>

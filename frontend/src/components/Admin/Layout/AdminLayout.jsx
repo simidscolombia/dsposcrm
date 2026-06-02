@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaTools, FaHandshake, FaHeadset, FaWhatsapp, FaBrain, FaImage, FaBars, FaTimes, FaServer } from 'react-icons/fa';
+import { FaBox, FaTags, FaChartLine, FaSignOutAlt, FaRocket, FaGift, FaUsers, FaFunnelDollar, FaFileInvoiceDollar, FaTools, FaHandshake, FaHeadset, FaWhatsapp, FaBrain, FaImage, FaBars, FaTimes, FaServer, FaCreditCard, FaCloud } from 'react-icons/fa';
 
 const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -90,8 +90,17 @@ const AdminLayout = () => {
                     <NavLink to="/admin/config" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
                         <FaTools /> Configuración
                     </NavLink>
+                    <NavLink to="/admin/gateways" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
+                        <FaCreditCard /> Pasarelas de Pago
+                    </NavLink>
                     <NavLink to="/admin/whatsapp" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
                         <FaWhatsapp /> WhatsApp
+                    </NavLink>
+                    <NavLink to="/admin/cloud" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
+                        <FaCloud /> Torre Cloud
+                    </NavLink>
+                    <NavLink to="/admin/cloud-legacy" onClick={() => setIsSidebarOpen(false)} className={linkClass}>
+                        <FaServer /> Cloud Legacy
                     </NavLink>
 
                     {/* IA Discovery Section */}

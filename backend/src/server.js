@@ -1,5 +1,10 @@
 import './polyfill.js';
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import cors from 'cors';
 import dotenv from 'dotenv';
 import db from './config/database.js'; // Importar DB
@@ -13,9 +18,12 @@ import prizeRoutes from './routes/prizeRoutes.js'; // Nueva ruta de premios
 import crmRoutes from './routes/crmRoutes.js'; // CRM completo
 import quoteRoutes from './routes/quoteRoutes.js'; // Cotizaciones
 import configRoutes from './routes/configRoutes.js'; // Configuración
+import gatewayRoutes from './routes/gatewayRoutes.js'; // Pasarelas
 import pipelineRoutes from './routes/pipelineRoutes.js'; // Pipeline ventas
 import clientRoutes from './routes/clientRoutes.js'; // Clientes
 import paymentRoutes from './routes/paymentRoutes.js'; // Pagos y Cobros
+import billingRoutes from './routes/billingRoutes.js'; // Nuevo: Cobros Mensuales
+import boldWebhookRoutes from './routes/boldWebhookRoutes.js'; // Webhook Bold (público)
 import distributorRoutes from './routes/distributorRoutes.js'; // Distribuidores
 import ticketRoutes from './routes/ticketRoutes.js'; // Soporte / Tickets
 import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp WAHA
@@ -25,6 +33,8 @@ import authRoutes from './routes/authRoutes.js';
 import publicInstallRoutes from './routes/publicInstallRoutes.js';
 import infrastructureRoutes from './routes/infrastructureRoutes.js';
 import { authenticateToken } from './middleware/authMiddleware.js';
+import billingSchedulerService from './services/billingSchedulerService.js';
+
 
 import morgan from 'morgan';
 dotenv.config();
@@ -46,19 +56,27 @@ app.use('/api/products', productRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/admin', adminDbRoutes); // Ruta para DB Init (Pública para facilitar setup inicial)
 app.use('/api/public/install', publicInstallRoutes);
+app.use('/api/webhooks/bold', boldWebhookRoutes); // Webhook Bold - PÚBLICO (sin auth)
 
 // Rutas Protegidas (Requieren Login)
 app.use('/api/categories', authenticateToken, categoryRoutes); 
 app.use('/api/prizes', authenticateToken, prizeRoutes); 
 app.use('/api/admin/crm', authenticateToken, crmRoutes); 
 app.use('/api/quotes', authenticateToken, quoteRoutes); 
+app.use('/api/config/gateways', authenticateToken, gatewayRoutes);
 app.use('/api/config', authenticateToken, configRoutes); 
 app.use('/api/pipeline', authenticateToken, pipelineRoutes); 
 app.use('/api/clients', authenticateToken, clientRoutes); 
 app.use('/api/payments', authenticateToken, paymentRoutes); 
+app.use('/api/billing', authenticateToken, billingRoutes); 
 app.use('/api/distributors', authenticateToken, distributorRoutes); 
 app.use('/api/tickets', authenticateToken, ticketRoutes); 
-app.use('/api/whatsapp', authenticateToken, whatsappRoutes); 
+app.use('/api/whatsapp', (req, res, next) => {
+  if (req.path === '/webhook') {
+    return next();
+  }
+  authenticateToken(req, res, next);
+}, whatsappRoutes); 
 app.use('/api/cloud', authenticateToken, cloudRoutes); 
 app.use('/api/infrastructure', authenticateToken, infrastructureRoutes);
 app.use('/api/admin/ai-rules', authenticateToken, aiRuleRoutes); 
@@ -87,11 +105,22 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+// Serve frontend in production
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log('🚀 Servidor Discovery Systems corriendo en puerto ' + PORT);
     console.log('✅ Health check: http://localhost:' + PORT + '/health');
     console.log('🤖 AI API: http://localhost:' + PORT + '/api/ai');
+    
+    // Iniciar planificador de cobros
+    billingSchedulerService.start();
   });
 }
 
