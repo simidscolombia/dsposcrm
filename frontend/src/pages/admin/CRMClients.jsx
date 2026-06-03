@@ -3,7 +3,7 @@ import axios from 'axios';
 import {
     FaUsers, FaSearch, FaFilter, FaEdit, FaServer,
     FaDesktop, FaVideo, FaCheckCircle, FaTimesCircle, FaWhatsapp, FaCopy, FaExternalLinkAlt, FaBuilding, FaWrench,
-    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic, FaDownload, FaCloud, FaHome, FaRocket, FaCalendarAlt, FaExclamationTriangle
+    FaArrowDown, FaBell, FaFileCsv, FaSpinner, FaPlus, FaCloudUploadAlt, FaMagic, FaDownload, FaCloud, FaHome, FaRocket, FaCalendarAlt, FaExclamationTriangle, FaFileInvoice
 } from 'react-icons/fa';
 import CloudTab from '../../components/Admin/CloudTab';
 import ClientWizard from '../../components/Admin/ClientWizard';
