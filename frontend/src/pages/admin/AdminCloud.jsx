@@ -4,7 +4,8 @@ import {
     FaPlus, FaTerminal, FaDatabase, FaNetworkWired, FaPlay, FaStop,
     FaSearch, FaTimes, FaCheckCircle, FaExclamationCircle, FaSpinner,
     FaDownload, FaCodeBranch, FaChevronDown, FaChevronUp, FaLink,
-    FaCloud, FaMemory, FaMicrochip, FaHdd
+    FaCloud, FaMemory, FaMicrochip, FaHdd,
+    FaExchangeAlt, FaExclamationTriangle, FaInbox, FaWhatsapp, FaBuilding, FaInfoCircle
 } from 'react-icons/fa';
 
 const RAW_API = import.meta.env.VITE_API_URL || 'http://localhost:4050/api';
@@ -55,6 +56,16 @@ const AdminCloud = () => {
     const [isStreaming, setIsStreaming]   = useState(false);
     const [showConsole, setShowConsole]   = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
+
+    // Cruce y Uso state
+    const [cruceLoading, setCruceLoading] = useState(false);
+    const [cruceStats, setCruceStats]     = useState(null);
+    const [cruceReport, setCruceReport]   = useState([]);
+    const [cruceOrphans, setCruceOrphans] = useState([]);
+    const [cruceUnlinked, setCruceUnlinked] = useState([]);
+    const [cruceSearch, setCruceSearch]   = useState('');
+    const [cruceFilter, setCruceFilter]   = useState('todos'); // todos, al_dia, en_mora, sin_facturar, sin_meses
+    const [downloadingId, setDownloadingId] = useState(null);
 
     // New Client form
     const [showNewClient, setShowNewClient] = useState(false);
@@ -148,6 +159,103 @@ const AdminCloud = () => {
             const data = await res.json();
             setPatches(data.patches || data || []);
         } catch (e) { console.error('Error loading patches', e); }
+    };
+
+    // ── Cruce y Uso Actions ──────────────────────────────────────────────────
+    const loadCruceData = async () => {
+        setCruceLoading(true);
+        try {
+            const res = await fetch(`${API}/api/billing/cross-check`, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setCruceStats(data.stats);
+                setCruceReport(data.report || []);
+                setCruceOrphans(data.orphanClouds || []);
+                setCruceUnlinked(data.unlinkedInvoices || []);
+            }
+        } catch (e) {
+            console.error('Error loading cross-check data', e);
+        } finally {
+            setCruceLoading(false);
+        }
+    };
+
+    const handleDownloadPDF = async (invoiceId) => {
+        setDownloadingId(invoiceId);
+        try {
+            const res = await fetch(`${API}/api/billing/admin-invoices/${invoiceId}/pdf`, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            if (!res.ok) throw new Error('Error al descargar PDF');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `factura-${invoiceId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            alert("Error al descargar PDF");
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
+    const handleDeleteOrphan = async (id, name) => {
+        const dropDb = window.confirm(`¿Estás seguro de eliminar la nube huérfana '${name}'?\n\nPresiona ACEPTAR si también deseas ELIMINAR la base de datos MongoDB asociada.\nPresiona CANCELAR si solo deseas limpiar el proceso PM2 e Nginx sin borrar los datos.`);
+        const confirmDelete = window.confirm(`CONFIRMACIÓN FINAL: ¿Realmente deseas eliminar '${name}'? Esta acción no se puede deshacer.`);
+        if (!confirmDelete) return;
+
+        setLogs(prev => [...prev, `[SYSTEM] 🗑️ Iniciando eliminación de nube huérfana: ${name}...`]);
+        try {
+            const res = await fetch(`${API}/api/infrastructure/clients/${id}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${getToken()}` 
+                },
+                body: JSON.stringify({ dropDatabase: dropDb })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setLogs(prev => [...prev, `[SYSTEM] ✅ Nube huérfana ${name} eliminada con éxito.`]);
+                alert(`Nube huérfana ${name} eliminada con éxito.`);
+                loadCruceData();
+            } else {
+                setLogs(prev => [...prev, `[SYSTEM] ❌ Error al eliminar: ${data.error}`]);
+                alert(`Error al eliminar: ${data.error}`);
+            }
+        } catch (e) {
+            setLogs(prev => [...prev, `[SYSTEM] ❌ Error de red: ${e.message}`]);
+            alert(`Error de red: ${e.message}`);
+        }
+    };
+
+    const last6Months = (() => {
+        const months = [];
+        const d = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const target = new Date(d.getFullYear(), d.getMonth() - i, 1);
+            months.push({
+                year: target.getFullYear(),
+                month: target.getMonth() + 1,
+                name: target.toLocaleString('es-ES', { month: 'short' }).toUpperCase(),
+                fullName: target.toLocaleString('es-ES', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    })();
+
+    const getInvoiceForPeriod = (invoices, year, month) => {
+        if (!invoices) return null;
+        return invoices.find(inv => {
+            const d = new Date(inv.fecha);
+            return d.getFullYear() === year && (d.getMonth() + 1) === month;
+        });
     };
 
     // ── PM2 Actions ────────────────────────────────────────────────────────
@@ -292,10 +400,11 @@ const AdminCloud = () => {
                 <div className="flex gap-1">
                     {[
                         { id: 'instances', icon: FaServer, label: `Instancias (${instances.length})` },
+                        { id: 'cruce',     icon: FaExchangeAlt, label: 'Cruce y Uso' },
                         { id: 'deploy',    icon: FaRocket, label: 'Deploy & Crear' },
                         { id: 'patches',   icon: FaCodeBranch, label: 'Parches' },
                     ].map(t => (
-                        <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'patches') loadPatches(); if (t.id === 'instances') loadInstalledVPS(); }}
+                        <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'patches') loadPatches(); if (t.id === 'instances') loadInstalledVPS(); if (t.id === 'cruce') loadCruceData(); }}
                             className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-t-xl transition-all ${tab === t.id ? 'bg-slate-800 text-white border-t border-x border-slate-700/50' : 'text-slate-500 hover:text-slate-300'}`}>
                             <t.icon size={12} /> {t.label}
                         </button>
@@ -419,6 +528,303 @@ const AdminCloud = () => {
                                     ))}
                                 </div>
                             </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ─── Cruce y Uso Tab ─── */}
+                {tab === 'cruce' && (
+                    <div className="flex-1 overflow-auto p-6 bg-white text-slate-800 space-y-6">
+                        {/* Statistics Grid */}
+                        {cruceLoading && !cruceStats ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                <FaSpinner className="animate-spin text-blue-600 w-10 h-10" />
+                                <p className="text-sm font-black text-slate-500 uppercase tracking-widest animate-pulse">Sincronizando Facturación e Infraestructura...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {cruceStats && (
+                                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaBuilding className="text-blue-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Total Clientes</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceStats.total_clients}</div>
+                                        </div>
+                                        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaCheckCircle className="text-green-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Al Día Nube</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceStats.al_dia}</div>
+                                        </div>
+                                        <div className="bg-red-50 border border-red-100 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaExclamationTriangle className="text-red-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">En Mora</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceStats.en_mora}</div>
+                                        </div>
+                                        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaFileInvoice className="text-amber-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Falta Facturar</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceStats.sin_facturar}</div>
+                                        </div>
+                                        <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaCloud className="text-purple-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Nubes Huérfanas</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceStats.total_orphans}</div>
+                                        </div>
+                                        <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 transition-all duration-300">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <FaInbox className="text-slate-600" />
+                                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Facturas Libres</span>
+                                            </div>
+                                            <div className="text-2xl font-black text-slate-800">{cruceUnlinked.length}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Filter / Search bar */}
+                                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+                                    <div className="relative flex-1 w-full md:max-w-md">
+                                        <FaSearch className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar negocio, NIT o dominio..."
+                                            value={cruceSearch}
+                                            onChange={(e) => setCruceSearch(e.target.value)}
+                                            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 w-full md:w-auto items-center flex-wrap">
+                                        <button 
+                                            onClick={loadCruceData} 
+                                            disabled={cruceLoading}
+                                            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition active:scale-95 shadow-sm"
+                                        >
+                                            {cruceLoading ? <FaSpinner className="animate-spin" /> : <FaSync />} Cruzar y Sincronizar
+                                        </button>
+                                        <select 
+                                            value={cruceFilter} 
+                                            onChange={(e) => setCruceFilter(e.target.value)}
+                                            className="px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="todos">Todos los Clientes</option>
+                                            <option value="al_dia">Al Día</option>
+                                            <option value="en_mora">En Mora</option>
+                                            <option value="sin_facturar">Falta Facturar</option>
+                                            <option value="sin_meses">Sin Períodos</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Comparison Table */}
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="overflow-x-auto max-h-[50vh]">
+                                        <table className="w-full text-left text-sm whitespace-nowrap">
+                                            <thead className="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100 sticky top-0 z-10">
+                                                <tr>
+                                                    <th className="px-5 py-3">Cliente / Nube</th>
+                                                    <th className="px-5 py-3">Cruce</th>
+                                                    <th className="px-5 py-3">Uso Técnico</th>
+                                                    <th className="px-5 py-3">Servicios VPS</th>
+                                                    {last6Months.map((m, idx) => (
+                                                        <th key={idx} className="px-4 py-3 text-center border-l border-slate-100" title={m.fullName}>
+                                                            {m.name}
+                                                        </th>
+                                                    ))}
+                                                    <th className="px-5 py-3 text-right">Contacto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-slate-700">
+                                                {cruceReport
+                                                    .filter(c => {
+                                                        const matchesSearch = 
+                                                            c.business_name?.toLowerCase().includes(cruceSearch.toLowerCase()) ||
+                                                            c.nit?.toLowerCase().includes(cruceSearch.toLowerCase()) ||
+                                                            c.cloud_url?.toLowerCase().includes(cruceSearch.toLowerCase());
+                                                        if (!matchesSearch) return false;
+                                                        if (cruceFilter === 'al_dia') return c.status_check === 'Al día';
+                                                        if (cruceFilter === 'en_mora') return c.status_check === 'En mora';
+                                                        if (cruceFilter === 'sin_facturar') return c.status_check === 'Sin facturar';
+                                                        if (cruceFilter === 'sin_meses') return c.status_check === 'Sin registrar meses';
+                                                        return true;
+                                                    })
+                                                    .map((c) => (
+                                                        <tr key={c.id} className="hover:bg-slate-50/55 transition-colors">
+                                                            <td className="px-5 py-3">
+                                                                <div className="font-bold text-slate-900">{c.business_name}</div>
+                                                                <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 font-mono">
+                                                                    <span>{c.nit || 'Sin NIT'}</span>
+                                                                    <span>•</span>
+                                                                    <a 
+                                                                        href={c.cloud_url.startsWith('http') ? c.cloud_url : `https://${c.cloud_url}`} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer" 
+                                                                        className="text-blue-500 hover:text-blue-700 flex items-center gap-0.5 hover:underline"
+                                                                    >
+                                                                        {c.cloud_url} <FaLink size={8} />
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-5 py-3">
+                                                                {c.status_check === 'Al día' && (
+                                                                    <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-200 rounded text-[10px] font-extrabold uppercase">Al Día</span>
+                                                                )}
+                                                                {c.status_check === 'En mora' && (
+                                                                    <span className="px-2 py-0.5 bg-red-100 text-red-800 border border-red-200 rounded text-[10px] font-extrabold uppercase animate-pulse">En Mora</span>
+                                                                )}
+                                                                {c.status_check === 'Sin facturar' && (
+                                                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded text-[10px] font-extrabold uppercase">Falta Facturar</span>
+                                                                )}
+                                                                {c.status_check === 'Sin registrar meses' && (
+                                                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-extrabold uppercase">Sin Períodos</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-5 py-3 text-xs font-mono">
+                                                                {c.usage ? (
+                                                                    <div>
+                                                                        <div className="font-bold text-slate-800">{c.usage.db_size_mb.toFixed(2)} MB</div>
+                                                                        <div className="text-[10px] text-slate-400">{c.usage.server_name} · P:{c.usage.port}</div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-400">Sin mapeo técnico</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-5 py-3 text-xs">
+                                                                {c.usage ? (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className={`w-2 h-2 rounded-full ${c.usage.has_link ? 'bg-green-500' : 'bg-red-500'}`} title={c.usage.has_link ? 'Nginx Ok' : 'Nginx Falta'} />
+                                                                        <span className={`w-2 h-2 rounded-full ${c.usage.has_system ? 'bg-green-500' : 'bg-red-500'}`} title={c.usage.has_system ? 'PM2 Ok' : 'PM2 Falta'} />
+                                                                        <span className={`w-2 h-2 rounded-full ${c.usage.has_db ? 'bg-green-500' : 'bg-red-500'}`} title={c.usage.has_db ? 'MongoDB Ok' : 'MongoDB Falta'} />
+                                                                        <span className="text-[10px] uppercase font-bold text-slate-500 font-mono">({c.usage.status})</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-400">—</span>
+                                                                )}
+                                                            </td>
+                                                            
+                                                            {last6Months.map((m, idx) => {
+                                                                const inv = getInvoiceForPeriod(c.invoices, m.year, m.month);
+                                                                return (
+                                                                    <td key={idx} className="px-3 py-3 border-l border-slate-100 text-center text-xs">
+                                                                        {inv ? (
+                                                                            <button
+                                                                                onClick={() => handleDownloadPDF(inv.id)}
+                                                                                disabled={downloadingId === inv.id}
+                                                                                className="px-2 py-1 rounded bg-green-50 border border-green-200 text-green-700 font-extrabold text-[10px] hover:bg-green-100 transition shadow-sm inline-flex items-center gap-0.5"
+                                                                                title={`Factura #${inv.numero}\nMonto: $${parseFloat(inv.monto).toLocaleString('es-CO')}`}
+                                                                            >
+                                                                                {downloadingId === inv.id ? <FaSpinner className="animate-spin text-green-700" /> : `📄 #${inv.numero}`}
+                                                                            </button>
+                                                                        ) : (
+                                                                            <span 
+                                                                                className="text-amber-500 font-extrabold text-[10px] px-1.5 py-0.5 bg-amber-50/50 border border-amber-200/50 rounded inline-block"
+                                                                                title="No se detecta factura emitida"
+                                                                            >
+                                                                                ⚠️ Falta
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                );
+                                                            })}
+
+                                                            <td className="px-5 py-3 text-right">
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <a 
+                                                                        href={`https://wa.me/57${c.whatsapp?.replace(/\D/g, '')}`} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer" 
+                                                                        className="w-8 h-8 rounded-lg bg-green-50 border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-100 transition"
+                                                                        title="Hablar por WhatsApp"
+                                                                    >
+                                                                        <FaWhatsapp size={14} />
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Orphan Clouds Section */}
+                                <div className="pt-4 border-t border-slate-200">
+                                    <h3 className="text-slate-800 font-black text-lg mb-2 flex items-center gap-2">
+                                        <FaExclamationTriangle className="text-purple-600" /> Nubes Huérfanas en Infraestructura
+                                    </h3>
+                                    <p className="text-slate-500 text-xs mb-4">
+                                        Estas nubes están consumiendo recursos en el VPS y MongoDB, pero no tienen un registro comercial correspondiente en el CRM.
+                                    </p>
+
+                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm whitespace-nowrap">
+                                                <thead className="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-wider font-bold border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-5 py-3">Subdominio</th>
+                                                        <th className="px-5 py-3">Base de Datos</th>
+                                                        <th className="px-5 py-3">Servidor / Puerto</th>
+                                                        <th className="px-5 py-3">Servicios VPS</th>
+                                                        <th className="px-5 py-3">Estado Infra</th>
+                                                        <th className="px-5 py-3 text-right">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 text-slate-700 font-mono text-xs">
+                                                    {cruceOrphans.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="6" className="px-5 py-8 text-center text-slate-400 font-bold font-sans">
+                                                                No hay nubes huérfanas detectadas. ¡Todo está en orden comercial! ✨
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        cruceOrphans.map(orphan => (
+                                                            <tr key={orphan.id} className="hover:bg-purple-50/25 transition-colors">
+                                                                <td className="px-5 py-3 font-bold text-slate-900 font-sans">
+                                                                    {orphan.name}
+                                                                </td>
+                                                                <td className="px-5 py-3">
+                                                                    <div className="font-bold text-slate-800">{orphan.db_size_mb.toFixed(2)} MB</div>
+                                                                    <div className="text-[10px] text-slate-400">{orphan.db_name || 'Sin DB'}</div>
+                                                                </td>
+                                                                <td className="px-5 py-3">
+                                                                    {orphan.server_name} · Puerto {orphan.port || '—'}
+                                                                </td>
+                                                                <td className="px-5 py-3">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className={`w-2 h-2 rounded-full ${orphan.has_link ? 'bg-green-500' : 'bg-red-500'}`} title={orphan.has_link ? 'Nginx Ok' : 'Nginx Falta'} />
+                                                                        <span className={`w-2 h-2 rounded-full ${orphan.has_system ? 'bg-green-500' : 'bg-red-500'}`} title={orphan.has_system ? 'PM2 Ok' : 'PM2 Falta'} />
+                                                                        <span className={`w-2 h-2 rounded-full ${orphan.has_db ? 'bg-green-500' : 'bg-red-500'}`} title={orphan.has_db ? 'MongoDB Ok' : 'MongoDB Falta'} />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-5 py-3">
+                                                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-800 border border-purple-200 rounded text-[10px] font-extrabold uppercase font-sans">{orphan.status}</span>
+                                                                </td>
+                                                                <td className="px-5 py-3 text-right">
+                                                                    <button 
+                                                                        onClick={() => handleDeleteOrphan(orphan.id, orphan.name)}
+                                                                        className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg hover:text-red-700 transition"
+                                                                        title="Eliminar de Infraestructura"
+                                                                    >
+                                                                        <FaTrash size={12} />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}

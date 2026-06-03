@@ -571,14 +571,26 @@ router.get('/cross-check', async (req, res) => {
         const adminInvoicesRes = await adminService.getTodasFacturasAdmin(0, 5000, '');
         const adminInvoices = adminInvoicesRes.ok ? adminInvoicesRes.facturas : [];
 
-        // 4. Mapear subdominios y NITs para el cruce inteligente
+        // 4. Obtener datos técnicos de infraestructura
+        const infraRes = await db.query('SELECT * FROM infrastructure_pos_clients');
+        const infraClients = infraRes.rows;
+
+        // Mapear info de infraestructura por nombre (subdominio) para acceso rápido
+        const infraMap = {};
+        infraClients.forEach(ic => {
+            if (ic.name) {
+                infraMap[ic.name.toLowerCase().trim()] = ic;
+            }
+        });
+
+        // 5. Mapear subdominios y NITs para el cruce inteligente
         const invoicesByClient = {};
         const unlinkedInvoices = [];
 
         const clientSubdomains = clients.map(c => ({
             id: c.id,
             nit: c.nit,
-            subdomain: getSubdomainFromUrl(c.cloud_url)
+            subdomain: getSubdomainFromUrl(c.cloud_url) || c.subdomain
         })).filter(c => c.subdomain);
 
         adminInvoices.forEach(inv => {
@@ -590,7 +602,7 @@ router.get('/cross-check', async (req, res) => {
 
             // A. Primero intentar cruce por subdominio en la observación/nota
             for (const cs of clientSubdomains) {
-                if (note.includes(cs.subdomain)) {
+                if (note.includes(cs.subdomain.toLowerCase())) {
                     matchedClient = cs;
                     break;
                 }
@@ -603,7 +615,7 @@ router.get('/cross-check', async (req, res) => {
                     return clientNitBase === invoiceNitBase;
                 });
                 if (found) {
-                    matchedClient = { id: found.id, subdomain: getSubdomainFromUrl(found.cloud_url) };
+                    matchedClient = { id: found.id, subdomain: getSubdomainFromUrl(found.cloud_url) || found.subdomain };
                 }
             }
 
@@ -620,7 +632,7 @@ router.get('/cross-check', async (req, res) => {
             }
         });
 
-        // 5. Organizar meses de cobro por client_id
+        // 6. Organizar meses de cobro por client_id
         const monthsByClientId = {};
         billingMonths.forEach(m => {
             if (!monthsByClientId[m.client_id]) {
@@ -629,7 +641,7 @@ router.get('/cross-check', async (req, res) => {
             monthsByClientId[m.client_id].push(m);
         });
 
-        // 6. Construir reporte comparativo
+        // 7. Construir reporte comparativo enriquecido con uso técnico
         const report = clients.map(client => {
             const cMonths = monthsByClientId[client.id] || [];
             const pendingMonths = cMonths.filter(m => m.status === 'pending');
@@ -679,6 +691,10 @@ router.get('/cross-check', async (req, res) => {
                     statusCheck = 'En mora';
                 }
             }
+
+            // Enriquecer con datos técnicos de uso (infraestructura)
+            const subdomainKey = (getSubdomainFromUrl(client.cloud_url) || client.subdomain || '').toLowerCase().trim();
+            const infra = infraMap[subdomainKey] || null;
 
             return {
                 id: client.id,
@@ -730,24 +746,66 @@ router.get('/cross-check', async (req, res) => {
                     complete: hasCompleteData,
                     missing: missingFields
                 },
-                status_check: statusCheck
+                status_check: statusCheck,
+                usage: infra ? {
+                    infra_client_id: infra.id,
+                    server_name: infra.server_name,
+                    cluster_name: infra.cluster_name,
+                    db_name: infra.db_name,
+                    db_size_mb: parseFloat(infra.db_size_mb || 0),
+                    port: infra.port,
+                    has_link: infra.has_link,
+                    has_system: infra.has_system,
+                    has_db: infra.has_db,
+                    status: infra.status,
+                    updated_at: infra.updated_at
+                } : null
             };
         });
 
-        // 7. Calcular estadísticas generales
+        // 8. Detectar nubes huérfanas (nubes en infraestructura que no están registradas/activas en crm_clients)
+        const activeCrmSubdomains = new Set(
+            clients.map(c => (getSubdomainFromUrl(c.cloud_url) || c.subdomain || '').toLowerCase().trim()).filter(Boolean)
+        );
+
+        const orphanClouds = infraClients.filter(ic => {
+            const sub = (ic.name || '').toLowerCase().trim();
+            // Si el nombre no está en los subdominios de CRM activos o es una nube inactiva
+            return sub && !activeCrmSubdomains.has(sub);
+        }).map(infra => ({
+            id: infra.id,
+            name: infra.name,
+            domain: infra.domain,
+            server_name: infra.server_name,
+            cluster_name: infra.cluster_name,
+            db_name: infra.db_name,
+            db_size_mb: parseFloat(infra.db_size_mb || 0),
+            port: infra.port,
+            status: infra.status,
+            has_link: infra.has_link,
+            has_system: infra.has_system,
+            has_db: infra.has_db,
+            owner_name: infra.owner_name,
+            owner_phone: infra.owner_phone,
+            updated_at: infra.updated_at
+        }));
+
+        // 9. Calcular estadísticas generales
         const stats = {
             total_clients: report.length,
             al_dia: report.filter(r => r.status_check === 'Al día').length,
             en_mora: report.filter(r => r.status_check === 'En mora').length,
             sin_facturar: report.filter(r => r.status_check === 'Sin facturar').length,
             sin_meses: report.filter(r => r.status_check === 'Sin registrar meses').length,
-            datos_incompletos: report.filter(r => !r.data_completeness.complete).length
+            datos_incompletos: report.filter(r => !r.data_completeness.complete).length,
+            total_orphans: orphanClouds.length
         };
 
         res.json({
             success: true,
             stats,
             report,
+            orphanClouds,
             unlinkedInvoices: unlinkedInvoices.slice(0, 100).map(inv => ({
                 id: inv.id,
                 numero: inv.numero,
