@@ -2,6 +2,7 @@ import express from 'express';
 import db from '../config/database.js';
 import adminService from '../services/adminService.js';
 import boldService from '../services/boldService.js';
+import billingFlowService from '../services/billingFlowService.js';
 
 const router = express.Router();
 
@@ -276,101 +277,21 @@ router.post('/months/:id/mark-paid', async (req, res) => {
         const { id } = req.params;
         const { metodo_pago = 'transferencia' } = req.body;
 
-        // 1. Obtener registro de mes
-        const monthRes = await db.query(`
-            SELECT b.*, c.nit, c.business_name 
-            FROM client_billing_months b
-            JOIN crm_clients c ON b.client_id = c.id
-            WHERE b.id = $1
-        `, [id]);
-
-        if (monthRes.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Registro de mes no encontrado' });
-        }
-
-        const billingData = monthRes.rows[0];
-
-        if (!billingData.admin_invoice_id) {
-            return res.status(400).json({ success: false, error: 'Este mes no tiene una factura creada en admin' });
-        }
-
-        // 2. Marcar como pagada en el Admin POS
-        const payRes = await adminService.marcarFacturaPagada(billingData.admin_invoice_id, metodo_pago);
-        if (!payRes.ok) {
-            return res.status(500).json({ success: false, error: payRes.msg || 'Error al marcar factura como pagada en admin' });
-        }
-
-        // 3. Emitir Factura Electrónica DIAN
-        const dianRes = await adminService.emitirFacturaElectronica(billingData.admin_invoice_id);
-        if (!dianRes.ok) {
-            // Nota: Aunque falle la emisión DIAN, el pago ya se registró. Informamos del error DIAN.
-            // Actualizamos el estado del mes en base de datos CRM a pagado igualmente
-            await db.query(`
-                UPDATE client_billing_months 
-                SET status = 'paid',
-                    payment_method = $1,
-                    paid_date = NOW(),
-                    updated_at = NOW()
-                WHERE id = $2
-            `, [metodo_pago, id]);
-
-            // Actualizar estado de pago general del cliente
-            await db.query(`
-                UPDATE crm_clients 
-                SET payment_status = 'active',
-                    last_payment_date = NOW()
-                WHERE id = $1
-            `, [billingData.client_id]);
-
-            return res.json({
-                success: true,
-                warning: 'Factura marcada como pagada, pero falló la emisión a la DIAN',
-                error_dian: dianRes.msg || dianRes.errors,
-                factura_pagada: payRes.factura
-            });
-        }
-
-        // 4. Si todo sale bien, guardar la información y actualizar estado a pagado
-        await db.query(`
-            UPDATE client_billing_months 
-            SET status = 'paid',
-                payment_method = $1,
-                paid_date = NOW(),
-                updated_at = NOW()
-            WHERE id = $2
-        `, [metodo_pago, id]);
-
-        // Actualizar crm_clients
-        await db.query(`
-            UPDATE crm_clients 
-            SET payment_status = 'active',
-                last_payment_date = NOW()
-            WHERE id = $1
-        `, [billingData.client_id]);
-
-        // Log de actividad
-        await db.query(`
-            INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
-            VALUES ($1, 'billing_paid_dian', $2, 'admin')
-        `, [
-            billingData.client_id, 
-            `Factura del mes ${billingData.month}/${billingData.year} pagada (${metodo_pago}) y emitida a la DIAN. CUFE: ${dianRes.cufe}`
-        ]);
+        const flowResult = await billingFlowService.processSuccessfulPayment({
+            billingMonthId: parseInt(id),
+            paymentMethod: metodo_pago,
+            gatewayTransactionId: 'manual',
+            reference: `PAGO_MANUAL_${Date.now()}`
+        });
 
         res.json({
             success: true,
-            message: 'Factura pagada y enviada a la DIAN exitosamente',
-            factura_pagada: payRes.factura,
-            dian: {
-                cufe: dianRes.cufe,
-                pdf_url: dianRes.pdf_url,
-                numero_dian: dianRes.number,
-                prefijo: dianRes.prefix
-            }
+            message: 'Factura pagada y procesada exitosamente',
+            ...flowResult
         });
 
     } catch (error) {
-        console.error('[BillingRoutes] Error al marcar como pagado y enviar a la DIAN:', error);
+        console.error('[BillingRoutes] Error al marcar como pagado manualmente:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

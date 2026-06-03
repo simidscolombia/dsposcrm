@@ -4,6 +4,7 @@
 import express from 'express';
 import db from '../config/database.js';
 import wompiService from '../services/wompiService.js';
+import billingFlowService from '../services/billingFlowService.js';
 
 const router = express.Router();
 
@@ -53,36 +54,28 @@ router.post('/', async (req, res) => {
                 if (payResult.rows.length > 0) {
                     const payment = payResult.rows[0];
 
-                    // Marcar como pagado
-                    await db.query(`
-                        UPDATE crm_payments 
-                        SET status = 'paid', 
-                            payment_method = 'wompi',
-                            payment_date = NOW(),
-                            wompi_transaction_id = $1,
-                            notes = COALESCE(notes, '') || ' | Pago Wompi confirmado automáticamente',
-                            updated_at = NOW()
-                        WHERE id = $2
-                    `, [txId, payment.id]);
+                    // Buscar el registro correspondiente en client_billing_months para vincularlo
+                    const monthRes = await db.query(
+                        `SELECT id FROM client_billing_months WHERE client_id = $1 AND month = $2 AND year = $3`,
+                        [payment.client_id, payment.period_month, payment.period_year]
+                    );
 
-                    // Reactivar cliente
-                    await db.query(`
-                        UPDATE crm_clients 
-                        SET payment_status = 'active', last_payment_date = NOW()
-                        WHERE id = $1
-                    `, [payment.client_id]);
+                    let billingMonthId = null;
+                    if (monthRes.rows.length > 0) {
+                        billingMonthId = monthRes.rows[0].id;
+                    }
 
-                    // Log
-                    await db.query(`
-                        INSERT INTO crm_activity_log (client_id, activity_type, description, metadata, performed_by)
-                        VALUES ($1, 'wompi_payment_confirmed', $2, $3, 'wompi_webhook')
-                    `, [
-                        payment.client_id,
-                        `✅ Pago de $${txAmount} confirmado automáticamente vía Wompi para ${payment.period_month}/${payment.period_year}`,
-                        JSON.stringify({ transaction_id: txId, reference: txReference, amount: txAmount })
-                    ]);
-
-                    console.log(`✅ Pago #${payment.id} de ${payment.business_name} marcado como PAGADO`);
+                    // Procesar el pago a través del servicio unificado (actualiza crm_payments y client_billing_months)
+                    await billingFlowService.processSuccessfulPayment({
+                        billingMonthId: billingMonthId,
+                        clientId: payment.client_id,
+                        year: payment.period_year,
+                        month: payment.period_month,
+                        paymentMethod: 'wompi',
+                        gatewayTransactionId: txId,
+                        reference: txReference,
+                        amount: txAmount
+                    });
                 } else {
                     console.warn(`⚠️ No se encontró pago para referencia: ${txReference}`);
                 }

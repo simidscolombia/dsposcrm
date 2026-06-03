@@ -10,6 +10,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import db from '../config/database.js';
+import billingFlowService from '../services/billingFlowService.js';
 
 const router = express.Router();
 
@@ -138,49 +139,15 @@ router.post('/', async (req, res) => {
         }
 
         // ──────────────────────────────────────
-        // 6. Marcar como pagado
+        // 6. Procesar el pago a través del servicio unificado
         // ──────────────────────────────────────
-        await db.query(`
-            UPDATE client_billing_months 
-            SET status = 'paid',
-                paid_date = NOW(),
-                payment_method = $1,
-                bold_transaction_id = COALESCE(bold_transaction_id, $2),
-                notes = COALESCE(notes, '') || ' | Pago confirmado vía Bold webhook (' || $3 || ')',
-                updated_at = NOW()
-            WHERE id = $4
-        `, [paymentMethodType, reference, transactionId, monthRecord.id]);
-
-        console.log(`[Bold Webhook] ✅ Mes ${monthRecord.month}/${monthRecord.year} del cliente #${monthRecord.client_id} marcado como PAGADO automáticamente.`);
-
-        // ──────────────────────────────────────
-        // 7. Log de actividad
-        // ──────────────────────────────────────
-        await db.query(`
-            INSERT INTO crm_activity_log (client_id, activity_type, description, performed_by)
-            VALUES ($1, 'bold_payment_confirmed', $2, 'bold_webhook')
-        `, [
-            monthRecord.client_id,
-            `Pago Bold confirmado automáticamente para mes ${monthRecord.month}/${monthRecord.year}. Monto: $${amountTotal}. Transacción: ${transactionId}`
-        ]);
-
-        // ──────────────────────────────────────
-        // 8. Actualizar estado general del cliente
-        // ──────────────────────────────────────
-        const pendingCheck = await db.query(
-            `SELECT COUNT(*) FROM client_billing_months WHERE client_id = $1 AND status = 'pending'`,
-            [monthRecord.client_id]
-        );
-
-        const hasPending = parseInt(pendingCheck.rows[0].count) > 0;
-        const newClientStatus = hasPending ? 'grace' : 'active';
-
-        await db.query(
-            `UPDATE crm_clients SET payment_status = $1, last_payment_date = NOW() WHERE id = $2`,
-            [newClientStatus, monthRecord.client_id]
-        );
-
-        console.log(`[Bold Webhook] Estado del cliente #${monthRecord.client_id} actualizado a: ${newClientStatus}`);
+        await billingFlowService.processSuccessfulPayment({
+            billingMonthId: monthRecord.id,
+            paymentMethod: 'bold',
+            gatewayTransactionId: transactionId,
+            reference: reference,
+            amount: amountTotal
+        });
 
         return res.json({
             received: true,
