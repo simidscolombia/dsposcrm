@@ -46,6 +46,10 @@ const PlanBadge = ({ plan }) => {
 };
 
 export default function AdminCloud() {
+  const [activeTab, setActiveTab] = useState('infra');
+  const [crossCheckData, setCrossCheckData] = useState(null);
+  const [loadingCrossCheck, setLoadingCrossCheck] = useState(false);
+
   const [stats, setStats] = useState(null);
   const [clients, setClients] = useState([]);
   const [servers, setServers] = useState([]);
@@ -82,7 +86,17 @@ export default function AdminCloud() {
     setLoading(false);
   };
 
+  const fetchCrossCheck = async () => {
+    setLoadingCrossCheck(true);
+    try {
+      const res = await axios.get('/api/billing/cross-check', headers());
+      setCrossCheckData(res.data);
+    } catch (e) { console.error(e); }
+    setLoadingCrossCheck(false);
+  };
+
   useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { if (activeTab === 'crossCheck' && !crossCheckData) fetchCrossCheck(); }, [activeTab]);
 
   // --- HANDLERS ---
   
@@ -192,12 +206,18 @@ export default function AdminCloud() {
           <p className="text-gray-500 text-sm mt-1">Gestión Centralizada de Clientes, Servidores y Bases de Datos</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={fetchAll} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95">
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+            <button onClick={() => setActiveTab('infra')} className={`px-6 py-2 rounded-lg font-bold transition-all text-sm ${activeTab === 'infra' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Infraestructura</button>
+            <button onClick={() => setActiveTab('crossCheck')} className={`px-6 py-2 rounded-lg font-bold transition-all text-sm flex items-center gap-2 ${activeTab === 'crossCheck' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}><FiActivity /> Cruce y Uso</button>
+          </div>
+          <button onClick={activeTab === 'infra' ? fetchAll : fetchCrossCheck} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold transition-all shadow-sm active:scale-95 text-sm">
             <FiRefreshCw /> Sincronizar
           </button>
         </div>
       </div>
 
+      {activeTab === 'infra' && (
+        <>
       {/* Stats Quick View */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -283,6 +303,102 @@ export default function AdminCloud() {
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === 'crossCheck' && (
+        <div className="space-y-6">
+          {loadingCrossCheck ? (
+            <div className="flex justify-center p-12 text-indigo-600 font-bold"><FiRefreshCw className="animate-spin text-2xl mr-3" /> Analizando cruce de datos...</div>
+          ) : crossCheckData ? (
+            <>
+              {/* Resumen de Cruce */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <StatCard icon={FiCheckCircle} label="Al Día" value={crossCheckData.stats.al_dia} color="text-green-600" bg="bg-green-50" />
+                <StatCard icon={FiAlertTriangle} label="En Mora" value={crossCheckData.stats.en_mora} color="text-orange-600" bg="bg-orange-50" />
+                <StatCard icon={FiFileText} label="Sin Facturar" value={crossCheckData.stats.sin_facturar} color="text-red-600" bg="bg-red-50" />
+                <StatCard icon={FiDatabase} label="Nubes Huérfanas" value={crossCheckData.stats.nubes_huerfanas} color="text-purple-600" bg="bg-purple-50" />
+                <StatCard icon={FiAlertTriangle} label="Datos Incompletos" value={crossCheckData.stats.datos_incompletos} color="text-gray-600" bg="bg-gray-100" />
+              </div>
+
+              {/* Huérfanos */}
+              {crossCheckData.orphan_clouds?.length > 0 && (
+                <div className="bg-white rounded-3xl border border-red-200 shadow-sm overflow-hidden mt-6">
+                  <div className="p-4 bg-red-50 border-b border-red-100 text-red-800 font-bold flex items-center gap-2">
+                    <FiAlertTriangle /> Nubes Huérfanas Detectadas (Infraestructura activa pero sin registro en CRM)
+                  </div>
+                  <div className="p-4 divide-y divide-gray-100">
+                    {crossCheckData.orphan_clouds.map(oc => (
+                      <div key={oc.id} className="py-3 flex justify-between items-center">
+                        <div>
+                          <div className="font-bold text-gray-800">{oc.name || oc.domain}</div>
+                          <div className="text-xs text-gray-500 font-mono mt-1">Dueño: {oc.owner_name} - {oc.owner_phone}</div>
+                        </div>
+                        <StatusBadge status="orphan" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Clientes con Problemas */}
+              <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+                <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 flex justify-between items-center">
+                  <span>Reporte General de Clientes</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50 text-[11px] text-gray-500 font-bold uppercase tracking-widest border-b border-gray-100">
+                        <th className="px-6 py-4">Cliente</th>
+                        <th className="px-6 py-4">Estado</th>
+                        <th className="px-6 py-4">Meses CRM</th>
+                        <th className="px-6 py-4">Factura DIAN</th>
+                        <th className="px-6 py-4">Problemas</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm">
+                      {crossCheckData.report.map(r => (
+                        <tr key={r.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-gray-900">{r.business_name}</div>
+                            <div className="text-[11px] text-gray-500 font-mono">{r.nit}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                              r.status_check === 'Al día' ? 'bg-green-100 text-green-700' :
+                              r.status_check === 'En mora' ? 'bg-orange-100 text-orange-700' :
+                              r.status_check === 'Sin facturar' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                            }`}>{r.status_check}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2 text-xs">
+                              <span className="text-green-600 font-bold" title="Pagados">{r.stats.paid} ✓</span>
+                              <span className="text-orange-600 font-bold" title="Pendientes">{r.stats.pending} ⏳</span>
+                            </div>
+                            <div className="text-[10px] text-gray-400 mt-1">Último: {r.latest_billing_month}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {r.latest_invoice ? (
+                              <div>
+                                <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{r.latest_invoice.prefijo}-{r.latest_invoice.numero_dian || r.latest_invoice.numero}</span>
+                              </div>
+                            ) : <span className="text-gray-400 italic text-xs">Sin factura</span>}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-red-500 font-medium">
+                            {!r.data_completeness.complete && <div>Falta: {r.data_completeness.missing.join(', ')}</div>}
+                            {!r.usage && <div className="text-orange-500">Sin nube enlazada</div>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
 
       {/* --- MODAL CLIENT HUB --- */}
       {clientModal.open && (
